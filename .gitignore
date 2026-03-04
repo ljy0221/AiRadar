@@ -11,8 +11,10 @@ out/
 
 # VS Code
 .vscode/
+AiRader/.gradle/
+.vscode/
 
-.claude/*
+.claude/
 CLAUDE.md
 # STS
 .apt_generated
