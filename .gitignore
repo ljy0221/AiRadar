@@ -1,4 +1,6 @@
 .idea/
+AiRader/.gradle/
+.vscode/
 
-.claude/*
+.claude/
 CLAUDE.md
