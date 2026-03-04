@@ -5,14 +5,17 @@ services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     container_name: zookeeper
+    hostname: zookeeper
     ports:
       - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
 
   kafka:
     image: confluentinc/cp-kafka:7.4.0
     container_name: kafka
+    hostname: kafka
     depends_on:
       - zookeeper
     ports:
@@ -20,16 +23,23 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
-  redis:
-    build: ./redis
-    container_name: redis
+  spark:
+    build: ./spark
+    container_name: spark
+    hostname: spark
+    depends_on:
+      - kafka
     ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-
-volumes:
-  redis-data:
+      - "8080:8080"
+      - "7077:7077"
+    command: >
+      /opt/spark/bin/spark-class
+      org.apache.spark.deploy.master.Master
