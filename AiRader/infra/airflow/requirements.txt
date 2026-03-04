@@ -1,0 +1,8 @@
+requests
+pandas
+kafka-python
+redis
+python-dotenv
+beautifulsoup4
+lxml
+apache-airflow-providers-apache-kafka
