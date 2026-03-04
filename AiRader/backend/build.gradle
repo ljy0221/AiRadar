@@ -25,6 +25,10 @@ configurations {
     }
 }
 
+repositories {
+    mavenCentral()
+}
+
 dependencies {
     // 1. Spring Boot Core
     implementation 'org.springframework.boot:spring-boot-starter-web'
