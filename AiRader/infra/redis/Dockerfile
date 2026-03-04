@@ -6,3 +6,4 @@ EXPOSE 6379
 
 # Redis 서버 실행
 CMD ["redis-server"]
+
