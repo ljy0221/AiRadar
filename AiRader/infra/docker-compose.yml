@@ -38,8 +38,21 @@ services:
     depends_on:
       - kafka
     ports:
-      - "8080:8080"
-      - "7077:7077"
-    command: >
-      /opt/spark/bin/spark-class
-      org.apache.spark.deploy.master.Master
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  airflow:
+    build: ./airflow
+    container_name: airflow
+    ports:
+      - "8081:8080"
+    command: airflow standalone
+    volumes:
+      - ./dags:/opt/airflow/dags
+    depends_on:
+      - kafka
+      - redis
+
+volumes:
+  redis-data:
