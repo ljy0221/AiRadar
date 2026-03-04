@@ -23,9 +23,13 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-
   redis:
     build: ./redis
     container_name: redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
