@@ -35,9 +35,8 @@ services:
     build: ./airflow
     container_name: airflow
     ports:
-      - "8080:8080"
-    environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      - "8081:8080"
+    command: airflow standalone
     volumes:
       - ./dags:/opt/airflow/dags
     depends_on:
