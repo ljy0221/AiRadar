@@ -1,17 +1,80 @@
+# =========================
+# IDE
+# =========================
+
 # IntelliJ
 .idea/
+*.iws
 *.iml
+*.ipr
+out/
 
-# Gradle
+# VS Code
+.vscode/
+
+# STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# =========================
+# Build / Gradle
+# =========================
+
 .gradle/
 build/
+bin/
 
+# Gradle wrapper jar는 추적
+!gradle/wrapper/gradle-wrapper.jar
+
+# src 내부 build 허용
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# src 내부 bin 허용
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# src 내부 out 허용
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# =========================
 # Logs
+# =========================
+
 *.log
 
+# =========================
+# Environment
+# =========================
+
+.env
+
+# =========================
 # OS
+# =========================
+
 .DS_Store
 Thumbs.db
 
-# Env
-.env
+# =========================
+# NetBeans
+# =========================
+
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# =========================
+# 기타
+# =========================
+
+HELP.md
