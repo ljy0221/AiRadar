@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /opt/spark
 
-# Spark 추가 패키지
+# Spark에서 사용할 추가 패키지 (Kafka, Delta Lake, S3, Redis, PostgreSQL 연동)
 ENV SPARK_PACKAGES="org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,\
 io.delta:delta-spark_2.12:3.1.0,\
 org.apache.hadoop:hadoop-aws:3.3.4,\
