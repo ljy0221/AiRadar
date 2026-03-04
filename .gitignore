@@ -12,6 +12,8 @@ out/
 # VS Code
 .vscode/
 
+.claude/*
+CLAUDE.md
 # STS
 .apt_generated
 .classpath
