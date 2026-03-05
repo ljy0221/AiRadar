@@ -41,6 +41,21 @@ public class GoldServingJob {
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
             .config("spark.sql.catalog.spark_catalog",
                     "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+            // S3A (MinIO) 설정 — ⚠️ 기본값은 로컬 개발 전용, Staging 이상은 환경변수로만 주입
+            .config("spark.hadoop.fs.s3a.impl",
+                    "org.apache.hadoop.fs.s3a.S3AFileSystem")
+            .config("spark.hadoop.fs.s3a.endpoint",
+                    System.getenv().getOrDefault("MINIO_ENDPOINT", "http://localhost:9000"))
+            .config("spark.hadoop.fs.s3a.access.key",
+                    System.getenv().getOrDefault("AWS_ACCESS_KEY_ID", "minioadmin"))
+            .config("spark.hadoop.fs.s3a.secret.key",
+                    System.getenv().getOrDefault("AWS_SECRET_ACCESS_KEY", "minioadmin123"))
+            .config("spark.hadoop.fs.s3a.path.style.access", "true")
+            .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
+            .config("spark.hadoop.fs.s3a.aws.credentials.provider",
+                    "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider")
+            .config("spark.hadoop.fs.s3a.fast.upload", "true")
+            .config("spark.hadoop.fs.s3a.multipart.size", "104857600")
             .getOrCreate();
 
         spark.sparkContext().setLogLevel("WARN");
