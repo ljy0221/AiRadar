@@ -34,7 +34,7 @@ services:
 
   # ── 데이터베이스 ──────────────────────────────────────────────────────────────
   postgres:
-    image: postgres:16
+    image: pgvector/pgvector:pg16
     container_name: postgres
     hostname: postgres
     ports:
@@ -187,6 +187,32 @@ services:
         postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow_user}:${AIRFLOW_DB_PASSWORD:-airflow_secret}@postgres:5432/${POSTGRES_DB:-airader}?options=-csearch_path%3Dairflow
       AIRFLOW__CELERY__RESULT_BACKEND: redis://redis:6379/0
       AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+
+  # ── AI 분석 서버 ──────────────────────────────────────────────────────────────
+  ai-server:
+    build: ../ai-server
+    container_name: ai-server
+    hostname: ai-server
+    ports:
+      - "8000:8000"
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      EMBEDDING_MODEL: paraphrase-multilingual-mpnet-base-v2
+      AI_BATCH_SIZE: "10"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB:-airader}
+      POSTGRES_USER: ${POSTGRES_USER:-airader}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airader_secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s   # 모델 로딩 시간 확보
 
 volumes:
   postgres-data:
