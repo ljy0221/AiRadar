@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.3.5'
     id 'io.spring.dependency-management' version '1.1.6'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'  // Spark용 Fat JAR 생성
 }
 
 ext {
@@ -61,4 +62,33 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// -----------------------------------------------------------------------------
+// Airflow SparkSubmitOperator용 Fat JAR
+// Spring Boot nested JAR 포맷은 Spark와 호환 안 됨 → Shadow JAR 필수
+// 출력: build/libs/airader-spark.jar
+// -----------------------------------------------------------------------------
+shadowJar {
+    archiveBaseName = 'airader-spark'
+    archiveClassifier = ''
+    archiveVersion = ''
+    mergeServiceFiles()  // META-INF/services 병합 (Delta Lake 카탈로그 등록에 필요)
+}
+
+// -----------------------------------------------------------------------------
+// Spark Job 로컬 실행 태스크
+// 사용: ./gradlew runSparkJob -Pjob=SilverRefinementJob -PbronzePath=/data/bronze
+// -----------------------------------------------------------------------------
+tasks.register('runSparkJob', JavaExec) {
+    def jobName = project.findProperty('job') ?: 'SilverRefinementJob'
+    mainClass = "com.mcp.airader.spark.${jobName}"
+    classpath = sourceSets.main.runtimeClasspath
+    jvmArgs = [
+        '--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.util=ALL-UNNAMED',
+    ]
+    environment 'BRONZE_BASE_PATH', project.findProperty('bronzePath') ?: '/tmp/bronze'
+    environment 'SILVER_BASE_PATH', project.findProperty('silverPath') ?: '/tmp/silver'
 }
