@@ -11,8 +11,16 @@ import org.apache.spark.sql.types.StructType;
 
 import java.sql.Date;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+
+import static com.mcp.airader.spark.utils.SparkUtils.bronzePath;
+import static com.mcp.airader.spark.utils.SparkUtils.getArg;
+import static com.mcp.airader.spark.utils.SparkUtils.safeGet;
+import static com.mcp.airader.spark.utils.SparkUtils.safeGetArray;
+import static com.mcp.airader.spark.utils.SparkUtils.safeInt;
+import static com.mcp.airader.spark.utils.SparkUtils.safeLong;
+
+import static com.mcp.airader.spark.models.SilverSchemas.*;
 
 /**
  * Bronze → Silver 정제 Job
@@ -32,59 +40,6 @@ import java.util.List;
  *   - 같은 --date로 재실행 시 Silver Overwrite → 멱등성 보장
  */
 public class SilverRefinementJob {
-
-    // Silver 스키마: news
-    private static final StructType NEWS_SILVER_SCHEMA = DataTypes.createStructType(new StructField[]{
-        DataTypes.createStructField("article_id",   DataTypes.StringType,    false),
-        DataTypes.createStructField("title",        DataTypes.StringType,    true),
-        DataTypes.createStructField("content",      DataTypes.StringType,    true),
-        DataTypes.createStructField("url",          DataTypes.StringType,    true),
-        DataTypes.createStructField("source",       DataTypes.StringType,    true),
-        DataTypes.createStructField("published_at", DataTypes.StringType,    true),
-        DataTypes.createStructField("sentiment",    DataTypes.StringType,    true),
-        DataTypes.createStructField("keywords",     DataTypes.createArrayType(DataTypes.StringType), true),
-        DataTypes.createStructField("score",        DataTypes.DoubleType,    true),
-        DataTypes.createStructField("summary",      DataTypes.StringType,    true),
-        DataTypes.createStructField("category",     DataTypes.StringType,    true),
-        DataTypes.createStructField("region",       DataTypes.StringType,    true),
-        DataTypes.createStructField("error_log",    DataTypes.StringType,    true),
-        DataTypes.createStructField("batch_date",   DataTypes.DateType,      false),
-    });
-
-    // Silver 스키마: paper
-    private static final StructType PAPER_SILVER_SCHEMA = DataTypes.createStructType(new StructField[]{
-        DataTypes.createStructField("paper_id",      DataTypes.StringType,   false),
-        DataTypes.createStructField("title",         DataTypes.StringType,   true),
-        DataTypes.createStructField("abstract",      DataTypes.StringType,   true),
-        DataTypes.createStructField("url",           DataTypes.StringType,   true),
-        DataTypes.createStructField("source",        DataTypes.StringType,   true),
-        DataTypes.createStructField("authors",       DataTypes.createArrayType(DataTypes.StringType), true),
-        DataTypes.createStructField("published_at",  DataTypes.StringType,   true),
-        DataTypes.createStructField("keywords",      DataTypes.createArrayType(DataTypes.StringType), true),
-        DataTypes.createStructField("summary",       DataTypes.StringType,   true),
-        DataTypes.createStructField("category",      DataTypes.StringType,   true),
-        DataTypes.createStructField("research_area", DataTypes.StringType,   true),
-        DataTypes.createStructField("error_log",     DataTypes.StringType,   true),
-        DataTypes.createStructField("batch_date",    DataTypes.DateType,     false),
-    });
-
-    // Silver 스키마: github
-    private static final StructType GITHUB_SILVER_SCHEMA = DataTypes.createStructType(new StructField[]{
-        DataTypes.createStructField("repo_id",       DataTypes.StringType,   false),
-        DataTypes.createStructField("repo_name",     DataTypes.StringType,   true),
-        DataTypes.createStructField("description",   DataTypes.StringType,   true),
-        DataTypes.createStructField("language",      DataTypes.StringType,   true),
-        DataTypes.createStructField("topics",        DataTypes.createArrayType(DataTypes.StringType), true),
-        DataTypes.createStructField("stars",         DataTypes.LongType,     true),
-        DataTypes.createStructField("forks",         DataTypes.LongType,     true),
-        DataTypes.createStructField("open_issues",   DataTypes.IntegerType,  true),
-        DataTypes.createStructField("weekly_commits",DataTypes.IntegerType,  true),
-        DataTypes.createStructField("star_delta_7d", DataTypes.IntegerType,  true),
-        DataTypes.createStructField("ai_relevance",  DataTypes.BooleanType,  true),
-        DataTypes.createStructField("keywords",      DataTypes.createArrayType(DataTypes.StringType), true),
-        DataTypes.createStructField("error_log",     DataTypes.StringType,   true),
-        DataTypes.createStructField("batch_date",    DataTypes.DateType,     false),
-    });
 
     public static void main(String[] args) {
         String date = getArg(args, "--date");
@@ -126,8 +81,7 @@ public class SilverRefinementJob {
     }
 
     private static void processBronzeToSilver(SparkSession spark, String date, String sourceType) {
-        String bronzePath = System.getenv().getOrDefault("BRONZE_BASE_PATH", "/tmp/bronze")
-            + "/" + sourceType + "/date=" + date;
+        String bronzePath = bronzePath(sourceType, date);
         String silverPath = System.getenv().getOrDefault("SILVER_BASE_PATH", "/tmp/silver")
             + "/" + sourceType;
 
@@ -146,6 +100,10 @@ public class SilverRefinementJob {
 
         Dataset<Row> silver = analyzePartitions(spark, repartitioned, sourceType, date);
 
+        // count와 write 양쪽에서 재계산하지 않도록 cache
+        silver.cache();
+        long count = silver.count();
+
         // Overwrite로 멱등성 보장 — Delta 트랜잭션으로 원자적 커밋
         silver.write()
             .format("delta")
@@ -154,7 +112,7 @@ public class SilverRefinementJob {
             .partitionBy("batch_date")
             .save(silverPath);
 
-        long count = silver.count();
+        silver.unpersist();
         System.out.println("[Silver] 완료: " + count + "건 → " + silverPath);
     }
 
@@ -298,36 +256,5 @@ public class SilverRefinementJob {
         };
     }
 
-    // -------------------------------------------------------------------------
-    // 유틸
-    // -------------------------------------------------------------------------
-
-    private static String safeGet(Row row, String field) {
-        try { return row.getAs(field); } catch (Exception e) { return null; }
-    }
-
-    private static String[] safeGetArray(Row row, String field) {
-        try {
-            scala.collection.Seq<?> seq = row.getAs(field);
-            if (seq == null) return new String[]{};
-            return scala.collection.JavaConverters.seqAsJavaList(seq)
-                .stream().map(Object::toString).toArray(String[]::new);
-        } catch (Exception e) { return new String[]{}; }
-    }
-
-    private static Long safeLong(Row row, String field) {
-        try { return row.getAs(field); } catch (Exception e) { return null; }
-    }
-
-    private static Integer safeInt(Row row, String field) {
-        try { return row.getAs(field); } catch (Exception e) { return null; }
-    }
-
-    /** CLI 인자 파싱: --key value 형식 */
-    private static String getArg(String[] args, String key) {
-        for (int i = 0; i < args.length - 1; i++) {
-            if (args[i].equals(key)) return args[i + 1];
-        }
-        return null;
-    }
+    
 }
