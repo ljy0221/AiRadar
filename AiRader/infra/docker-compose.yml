@@ -1,5 +1,8 @@
+version: "3.8"
+
 services:
 
+  # ── 메시지 브로커 ─────────────────────────────────────────────────────────────
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     container_name: zookeeper
@@ -22,52 +25,14 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-
       KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      # Kafka 브로커 간 내부 통신용으로 사용할 리스너 이름 지정
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
-  spark:
-    build: ./spark
-    container_name: spark
-    hostname: spark
-    depends_on:
-      - kafka
-    ports:
-      - "8080:8080"
-      - "7077:7077"
-    command: >
-      /opt/spark/bin/spark-class
-      org.apache.spark.deploy.master.Master
-
-  spark-worker:
-    build: ./spark
-    container_name: spark-worker
-    depends_on:
-      - spark
-    environment:
-      SPARK_MASTER: "spark://spark:7077"
-      SPARK_WORKER_CORES: "1"
-      SPARK_WORKER_MEMORY: "1G"
-    command: >
-      /opt/spark/bin/spark-class
-      org.apache.spark.deploy.worker.Worker
-      spark://spark:7077
-
-  redis:
-    image: redis:7
-    container_name: redis
-    hostname: redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-
+  # ── 데이터베이스 ──────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16
     container_name: postgres
@@ -75,26 +40,155 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: airader
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: ${POSTGRES_DB:-airader}
+      POSTGRES_USER: ${POSTGRES_USER:-airader}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airader_secret}
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/01_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-airader}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # Airflow 전용 스키마/유저 생성 (1회성 init, postgres healthy 이후 실행)
+  postgres-init:
+    image: postgres:16
+    container_name: postgres-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGDATABASE: ${POSTGRES_DB:-airader}
+      PGUSER: ${POSTGRES_USER:-airader}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-airader_secret}
+    entrypoint: >
+      /bin/sh -c "
+        psql -c \"CREATE SCHEMA IF NOT EXISTS airflow;\";
+        psql -c \"DO \$\$BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${AIRFLOW_DB_USER:-airflow_user}') THEN CREATE USER ${AIRFLOW_DB_USER:-airflow_user} WITH PASSWORD '${AIRFLOW_DB_PASSWORD:-airflow_secret}'; END IF; END\$\$;\";
+        psql -c \"GRANT ALL ON SCHEMA airflow TO ${AIRFLOW_DB_USER:-airflow_user};\";
+        psql -c \"ALTER USER ${AIRFLOW_DB_USER:-airflow_user} SET search_path = airflow;\";
+        echo 'Airflow 스키마 초기화 완료';
+      "
+    restart: "no"
+
+  # ── 캐시 ──────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    hostname: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  # ── Delta Lake 스토리지 (MinIO = 로컬 S3-compatible) ─────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    hostname: minio
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # MinIO Console UI
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # Bronze / Silver 버킷 초기화 (MinIO healthy 이후 실행, 멱등성 보장)
+  minio-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+        mc mb --ignore-existing local/airader;
+        mc mb --ignore-existing local/airader/bronze;
+        mc mb --ignore-existing local/airader/silver;
+        echo 'MinIO 버킷 초기화 완료';
+      "
+    restart: "no"
+
+  # ── Spark ─────────────────────────────────────────────────────────────────────
+  spark:
+    build: ./spark
+    container_name: spark
+    hostname: spark
+    depends_on:
+      minio:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    ports:
+      - "4040:4040"   # Spark UI
+      - "8080:8080"   # Spark Master Web UI
+      - "7077:7077"   # Spark Master
+    environment:
+      # Delta Lake 경로 (s3a://airader/bronze, s3a://airader/silver)
+      BRONZE_BASE_PATH: s3a://airader/bronze
+      SILVER_BASE_PATH: s3a://airader/silver
+      # S3A → MinIO 접속 정보
+      MINIO_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      # PostgreSQL (Gold 레이어 Upsert)
+      POSTGRES_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-airader}
+      POSTGRES_USER: ${POSTGRES_USER:-airader}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airader_secret}
+      # AI Server
+      AI_SERVER_URL: http://ai-server:8000
+      AI_SERVER_CONCURRENCY: "10"
+    volumes:
+      - ../backend/build/libs/airader-spark.jar:/opt/spark-jobs/airader-spark.jar
+    command: >
+      /bin/sh -c "
+        /opt/spark/sbin/start-master.sh &&
+        /opt/spark/sbin/start-worker.sh spark://spark:7077 &&
+        tail -f /dev/null
+      "
+
+  # ── Airflow ───────────────────────────────────────────────────────────────────
   airflow:
     build: ./airflow
     container_name: airflow
+    hostname: airflow
     ports:
       - "8081:8080"
     command: airflow standalone
     volumes:
-      - ./dags:/opt/airflow/dags
+      - ./airflow/dags:/opt/airflow/dags
     depends_on:
-      - kafka
-      - redis
-      - postgres
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      redis:
+        condition: service_started
+    env_file:
+      - ./airflow/airflow.env
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
+        postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow_user}:${AIRFLOW_DB_PASSWORD:-airflow_secret}@postgres:5432/${POSTGRES_DB:-airader}?options=-csearch_path%3Dairflow
+      AIRFLOW__CELERY__RESULT_BACKEND: redis://redis:6379/0
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
 
 volumes:
-  redis-data:
   postgres-data:
+  redis-data:
+  minio-data:
