@@ -1,5 +1,7 @@
 package com.mcp.airader.spark;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
@@ -9,10 +11,16 @@ import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.sql.Date;
+import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Bronze → Silver 정제 Job
@@ -21,10 +29,11 @@ import java.util.List;
  *   ./gradlew runSparkJob -Pjob=SilverRefinementJob --date 2025-03-05 --source-type news
  *
  * 환경변수:
- *   BRONZE_BASE_PATH  : Bronze Delta Lake 루트 경로
- *   SILVER_BASE_PATH  : Silver Delta Lake 루트 경로
- *   AI_SERVER_URL     : AI 분석 서버 URL (현재 Mock 처리)
- *   AI_SERVER_CONCURRENCY : AI 서버 최대 동시 요청 수 (기본 10)
+ *   BRONZE_BASE_PATH      : Bronze Delta Lake 루트 경로
+ *   SILVER_BASE_PATH      : Silver Delta Lake 루트 경로
+ *   AI_SERVER_URL         : AI 분석 서버 URL (기본: http://localhost:8000)
+ *   AI_SERVER_CONCURRENCY : Spark 파티션 수 = AI 서버 동시 요청 수 (기본 10)
+ *   AI_BATCH_SIZE         : 배치당 레코드 수 (기본 10)
  *
  * 규칙:
  *   - Bronze는 절대 수정하지 않는다 (ReadOnly)
@@ -33,7 +42,20 @@ import java.util.List;
  */
 public class SilverRefinementJob {
 
-    // Silver 스키마: news
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(5))
+        .build();
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private static final String AI_SERVER_URL =
+        System.getenv().getOrDefault("AI_SERVER_URL", "http://localhost:8000");
+
+    private static final int AI_BATCH_SIZE = Integer.parseInt(
+        System.getenv().getOrDefault("AI_BATCH_SIZE", "10")
+    );
+
+    // Silver 스키마: news (embedding은 ai-server가 content_embeddings 테이블에 직접 저장)
     private static final StructType NEWS_SILVER_SCHEMA = DataTypes.createStructType(new StructField[]{
         DataTypes.createStructField("article_id",   DataTypes.StringType,    false),
         DataTypes.createStructField("title",        DataTypes.StringType,    true),
@@ -51,24 +73,24 @@ public class SilverRefinementJob {
         DataTypes.createStructField("batch_date",   DataTypes.DateType,      false),
     });
 
-    // Silver 스키마: paper
+    // Silver 스키마: paper (embedding은 ai-server가 content_embeddings 테이블에 직접 저장)
     private static final StructType PAPER_SILVER_SCHEMA = DataTypes.createStructType(new StructField[]{
-        DataTypes.createStructField("paper_id",      DataTypes.StringType,   false),
-        DataTypes.createStructField("title",         DataTypes.StringType,   true),
-        DataTypes.createStructField("abstract",      DataTypes.StringType,   true),
-        DataTypes.createStructField("url",           DataTypes.StringType,   true),
-        DataTypes.createStructField("source",        DataTypes.StringType,   true),
-        DataTypes.createStructField("authors",       DataTypes.createArrayType(DataTypes.StringType), true),
-        DataTypes.createStructField("published_at",  DataTypes.StringType,   true),
-        DataTypes.createStructField("keywords",      DataTypes.createArrayType(DataTypes.StringType), true),
-        DataTypes.createStructField("summary",       DataTypes.StringType,   true),
-        DataTypes.createStructField("category",      DataTypes.StringType,   true),
-        DataTypes.createStructField("research_area", DataTypes.StringType,   true),
-        DataTypes.createStructField("error_log",     DataTypes.StringType,   true),
-        DataTypes.createStructField("batch_date",    DataTypes.DateType,     false),
+        DataTypes.createStructField("paper_id",     DataTypes.StringType,   false),
+        DataTypes.createStructField("title",        DataTypes.StringType,   true),
+        DataTypes.createStructField("abstract",     DataTypes.StringType,   true),
+        DataTypes.createStructField("url",          DataTypes.StringType,   true),
+        DataTypes.createStructField("source",       DataTypes.StringType,   true),
+        DataTypes.createStructField("authors",      DataTypes.createArrayType(DataTypes.StringType), true),
+        DataTypes.createStructField("published_at", DataTypes.StringType,   true),
+        DataTypes.createStructField("keywords",     DataTypes.createArrayType(DataTypes.StringType), true),
+        DataTypes.createStructField("summary",      DataTypes.StringType,   true),
+        DataTypes.createStructField("category",     DataTypes.StringType,   true),
+        DataTypes.createStructField("research_area",DataTypes.StringType,   true),
+        DataTypes.createStructField("error_log",    DataTypes.StringType,   true),
+        DataTypes.createStructField("batch_date",   DataTypes.DateType,     false),
     });
 
-    // Silver 스키마: github
+    // Silver 스키마: github (AI 분석 없음 — embedding 불포함)
     private static final StructType GITHUB_SILVER_SCHEMA = DataTypes.createStructType(new StructField[]{
         DataTypes.createStructField("repo_id",       DataTypes.StringType,   false),
         DataTypes.createStructField("repo_name",     DataTypes.StringType,   true),
@@ -172,20 +194,38 @@ public class SilverRefinementJob {
 
         return spark.createDataFrame(
             bronze.javaRDD().mapPartitions(rows -> {
+                List<Row> buffer = new ArrayList<>();
+                rows.forEachRemaining(buffer::add);
+
                 List<Row> result = new ArrayList<>();
-                while (rows.hasNext()) {
-                    Row row = rows.next();
-                    try {
-                        Row analyzed = switch (sourceType) {
-                            case "news"   -> mockAnalyzeNews(row, batchDate);
-                            case "paper"  -> mockAnalyzePaper(row, batchDate);
-                            case "github" -> cleanGithub(row, batchDate);
-                            default -> null;
-                        };
-                        if (analyzed != null) result.add(analyzed);
-                    } catch (Exception e) {
-                        // AI 호출 실패 시 error_log에 기록하고 skip — 파이프라인 중단 금지
-                        result.add(buildErrorRow(row, sourceType, batchDate, e.getMessage()));
+
+                if ("github".equals(sourceType)) {
+                    // GitHub: AI 호출 없이 정제만 수행
+                    for (Row row : buffer) {
+                        try {
+                            result.add(cleanGithub(row, batchDate));
+                        } catch (Exception e) {
+                            result.add(buildErrorRow(row, sourceType, batchDate, e.getMessage()));
+                        }
+                    }
+                } else {
+                    // news/paper: AI 서버 배치 호출
+                    for (int i = 0; i < buffer.size(); i += AI_BATCH_SIZE) {
+                        List<Row> batch = buffer.subList(i, Math.min(i + AI_BATCH_SIZE, buffer.size()));
+                        try {
+                            List<Row> analyzed = switch (sourceType) {
+                                case "news"  -> callAnalyzeNewsBatch(batch, batchDate);
+                                case "paper" -> callAnalyzePaperBatch(batch, batchDate);
+                                default -> throw new IllegalArgumentException("Unknown: " + sourceType);
+                            };
+                            result.addAll(analyzed);
+                        } catch (Exception e) {
+                            // 배치 전체 실패 → 각 레코드를 error_log에 기록하고 skip
+                            System.err.println("[Silver] 배치 분석 실패: " + e.getMessage());
+                            for (Row row : batch) {
+                                result.add(buildErrorRow(row, sourceType, batchDate, e.getMessage()));
+                            }
+                        }
                     }
                 }
                 return result.iterator();
@@ -195,51 +235,101 @@ public class SilverRefinementJob {
     }
 
     // -------------------------------------------------------------------------
-    // Mock 분석 함수 (TODO: 실제 AI 서버 HTTP 호출로 교체)
-    // 교체 시 AiClient.java 작성 후 아래 메서드만 대체
+    // 뉴스 배치 분석 — POST /analyze/news/batch
     // -------------------------------------------------------------------------
 
-    private static Row mockAnalyzeNews(Row row, Date batchDate) {
-        String articleId = safeGet(row, "article_id");
-        return RowFactory.create(
-            articleId,
-            safeGet(row, "title"),
-            safeGet(row, "content"),
-            safeGet(row, "url"),
-            safeGet(row, "source"),
-            safeGet(row, "published_at"),
-            "NEUTRAL",                          // sentiment (mock)
-            new String[]{"AI", "technology"},   // keywords (mock)
-            0.5,                                // score (mock)
-            "Mock summary for: " + articleId,  // summary (mock)
-            "ETC",                              // category (mock)
-            "GLOBAL",                           // region (mock)
-            null,                               // error_log
-            batchDate
-        );
+    private static List<Row> callAnalyzeNewsBatch(List<Row> rows, Date batchDate) throws Exception {
+        List<Map<String, Object>> payload = new ArrayList<>();
+        for (Row row : rows) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("article_id",   safeGet(row, "article_id"));
+            item.put("title",        safeGet(row, "title"));
+            item.put("content",      safeGet(row, "content"));
+            item.put("source",       safeGet(row, "source"));
+            String publishedAt = safeGet(row, "published_at");
+            item.put("published_at", publishedAt != null ? publishedAt : "2025-01-01T00:00:00");
+            payload.add(item);
+        }
+
+        JsonNode response = postJson("/analyze/news/batch", payload);
+
+        List<Row> result = new ArrayList<>();
+        for (int i = 0; i < response.size(); i++) {
+            JsonNode item = response.get(i);
+            Row original = rows.get(i);
+
+            String[] keywords = parseStringArray(item.get("keywords"));
+
+            result.add(RowFactory.create(
+                item.get("article_id").asText(),
+                safeGet(original, "title"),
+                safeGet(original, "content"),
+                safeGet(original, "url"),
+                safeGet(original, "source"),
+                safeGet(original, "published_at"),
+                item.get("sentiment").asText(),
+                keywords,
+                item.get("score").asDouble(),
+                item.get("summary").asText(),
+                item.get("category").asText(),
+                item.get("region").asText(),
+                null,           // error_log
+                batchDate
+            ));
+        }
+        return result;
     }
 
-    private static Row mockAnalyzePaper(Row row, Date batchDate) {
-        String paperId = safeGet(row, "paper_id");
-        return RowFactory.create(
-            paperId,
-            safeGet(row, "title"),
-            safeGet(row, "abstract"),
-            safeGet(row, "url"),
-            safeGet(row, "source"),
-            safeGetArray(row, "authors"),
-            safeGet(row, "published_at"),
-            new String[]{"machine learning"},   // keywords (mock)
-            "Mock summary for paper: " + paperId,
-            "ETC",                              // category (mock)
-            "cs.AI",                            // research_area (mock)
-            null,                               // error_log
-            batchDate
-        );
+    // -------------------------------------------------------------------------
+    // 논문 배치 분석 — POST /analyze/paper/batch
+    // -------------------------------------------------------------------------
+
+    private static List<Row> callAnalyzePaperBatch(List<Row> rows, Date batchDate) throws Exception {
+        List<Map<String, Object>> payload = new ArrayList<>();
+        for (Row row : rows) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("paper_id",     safeGet(row, "paper_id"));
+            item.put("title",        safeGet(row, "title"));
+            item.put("abstract",     safeGet(row, "abstract"));
+            item.put("authors",      safeGetArray(row, "authors"));
+            String publishedAt = safeGet(row, "published_at");
+            item.put("published_at", publishedAt != null ? publishedAt : "2025-01-01T00:00:00");
+            payload.add(item);
+        }
+
+        JsonNode response = postJson("/analyze/paper/batch", payload);
+
+        List<Row> result = new ArrayList<>();
+        for (int i = 0; i < response.size(); i++) {
+            JsonNode item = response.get(i);
+            Row original = rows.get(i);
+
+            String[] keywords = parseStringArray(item.get("keywords"));
+
+            result.add(RowFactory.create(
+                item.get("paper_id").asText(),
+                safeGet(original, "title"),
+                safeGet(original, "abstract"),
+                safeGet(original, "url"),
+                safeGet(original, "source"),
+                safeGetArray(original, "authors"),
+                safeGet(original, "published_at"),
+                keywords,
+                item.get("summary").asText(),
+                item.get("category").asText(),
+                item.get("research_area").asText(),
+                null,           // error_log
+                batchDate
+            ));
+        }
+        return result;
     }
+
+    // -------------------------------------------------------------------------
+    // GitHub 정제 — AI 호출 없이 description/topics 기반 정제
+    // -------------------------------------------------------------------------
 
     private static Row cleanGithub(Row row, Date batchDate) {
-        // GitHub 데이터는 AI 분석 없이 정제만 수행
         String repoId = safeGet(row, "repo_id");
         boolean aiRelevance = detectAiRelevance(
             safeGet(row, "description"),
@@ -269,6 +359,33 @@ public class SilverRefinementJob {
             + String.join(" ", topics != null ? topics : new String[]{})).toLowerCase();
         return text.contains("ai") || text.contains("ml") || text.contains("llm")
             || text.contains("machine learning") || text.contains("deep learning");
+    }
+
+    // -------------------------------------------------------------------------
+    // HTTP 유틸
+    // -------------------------------------------------------------------------
+
+    private static JsonNode postJson(String path, Object body) throws Exception {
+        String requestBody = MAPPER.writeValueAsString(body);
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(AI_SERVER_URL + path))
+            .header("Content-Type", "application/json")
+            .timeout(Duration.ofSeconds(120))   // 임베딩 생성 포함 넉넉하게
+            .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+            .build();
+
+        HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("AI 서버 오류 " + response.statusCode() + ": " + response.body());
+        }
+        return MAPPER.readTree(response.body());
+    }
+
+    private static String[] parseStringArray(JsonNode node) {
+        if (node == null || !node.isArray()) return new String[]{};
+        List<String> list = new ArrayList<>();
+        for (JsonNode v : node) list.add(v.asText());
+        return list.toArray(new String[0]);
     }
 
     // -------------------------------------------------------------------------
