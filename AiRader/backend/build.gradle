@@ -8,7 +8,8 @@ ext {
     // 버전 변수 관리
     sparkVersion = '3.5.0'
     scalaVersion = '2.12'
-    deltaVersion = '3.0.0'
+    deltaVersion = '3.1.0'   // Spark Dockerfile과 통일
+    hadoopVersion = '3.3.4'  // S3A (MinIO 연동)
 }
 
 configurations {
@@ -40,17 +41,21 @@ dependencies {
     implementation "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
     implementation "io.delta:delta-spark_${scalaVersion}:${deltaVersion}"
 
-    // 3. Database & Cache
+    // 3. S3A (MinIO 연동) — SparkSession 생성 시 클래스패스에 있어야 S3AFileSystem 로드 가능
+    implementation "org.apache.hadoop:hadoop-aws:${hadoopVersion}"
+    implementation "com.amazonaws:aws-java-sdk-bundle:1.12.262"
+
+    // 4. Database & Cache
     runtimeOnly 'org.postgresql:postgresql'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis' // 실시간 트렌드용
 
-    // 4. Utils & Client
+    // 5. Utils & Client
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
-    // 5. Test
+    // 6. Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
