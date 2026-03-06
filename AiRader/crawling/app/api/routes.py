@@ -26,11 +26,14 @@ def crawl_capabilities() -> dict:
         "providers": {
             "news": ["aitimes", "gdelt"],
             "paper": [],
-            "github_archive": [],
+            "github_archive": ["github_api"],
         },
         "news_targets": {
             "aitimes": ["ai_industry", "ai_company"],
             "gdelt": ["world_ai"],
+        },
+        "github_archive_targets": {
+            "github_api": ["ai_repositories"],
         },
     }
 

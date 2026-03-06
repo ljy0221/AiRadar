@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from app.schemas import CrawlDomain, CrawlJobRequest, CrawlJobResponse, CrawledArticle, RawSaveResult
+from app.sources.github_archive.github_api import GithubArchiveCrawler
 from app.sources.news.aitimes import AITimesCrawler
 from app.sources.news.gdelt import GDELTNewsCrawler
 
@@ -13,31 +14,48 @@ class CrawlService:
         started_at = datetime.now(timezone.utc)
         job_id = str(uuid4())
 
-        if req.domain != CrawlDomain.news:
-            raise ValueError("Only news domain is implemented for now")
-        if req.provider == "aitimes":
-            crawler = AITimesCrawler()
+        if req.domain == CrawlDomain.news:
+            if req.provider == "aitimes":
+                crawler = AITimesCrawler()
+                try:
+                    parsed, errors, duplicate_count, failed_count = crawler.crawl(
+                        targets=req.targets,
+                        max_pages_per_target=req.max_pages_per_target,
+                        max_articles=req.max_articles,
+                    )
+                finally:
+                    crawler.close()
+            elif req.provider == "gdelt":
+                crawler = GDELTNewsCrawler()
+                try:
+                    parsed, errors, duplicate_count, failed_count = crawler.crawl(
+                        max_articles=req.max_articles,
+                        window_minutes=req.window_minutes,
+                        query_override=req.query_override,
+                        languages=req.languages,
+                    )
+                finally:
+                    crawler.close()
+            else:
+                raise ValueError("news provider supports only aitimes|gdelt")
+        elif req.domain == CrawlDomain.github_archive:
+            if req.provider != "github_api":
+                raise ValueError("github_archive provider supports only github_api")
+            crawler = GithubArchiveCrawler()
             try:
                 parsed, errors, duplicate_count, failed_count = crawler.crawl(
-                    targets=req.targets,
-                    max_pages_per_target=req.max_pages_per_target,
                     max_articles=req.max_articles,
-                )
-            finally:
-                crawler.close()
-        elif req.provider == "gdelt":
-            crawler = GDELTNewsCrawler()
-            try:
-                parsed, errors, duplicate_count, failed_count = crawler.crawl(
-                    max_articles=req.max_articles,
-                    window_minutes=req.window_minutes,
                     query_override=req.query_override,
-                    languages=req.languages,
+                    min_stars=req.github_min_stars,
+                    created_since_days=req.github_created_since_days,
+                    sort=req.github_sort,
+                    order=req.github_order,
+                    include_readme=req.github_include_readme,
                 )
             finally:
                 crawler.close()
         else:
-            raise ValueError("Only provider=aitimes|gdelt is implemented for now")
+            raise ValueError("Only news|github_archive domains are implemented for now")
 
         items = [
             CrawledArticle(
@@ -53,6 +71,7 @@ class CrawlService:
                     key=row.raw_key,
                     reason=row.raw_reason,
                 ),
+                extra=getattr(row, "extra", {}) or {},
             )
             for row in parsed
         ]
@@ -72,7 +91,11 @@ class CrawlService:
             errors=errors,
             metadata={
                 "implemented_domains": ["news", "paper", "github_archive"],
-                "implemented_providers": ["aitimes", "gdelt"],
-                "note": "paper/github_archive providers are scaffold-only in this phase",
+                "implemented_providers": {
+                    "news": ["aitimes", "gdelt"],
+                    "github_archive": ["github_api"],
+                    "paper": [],
+                },
+                "note": "paper providers are scaffold-only in this phase",
             },
         )

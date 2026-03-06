@@ -18,6 +18,10 @@ class NewsProvider(str, Enum):
     gdelt = "gdelt"
 
 
+class GithubArchiveProvider(str, Enum):
+    github_api = "github_api"
+
+
 class AITimesTarget(str, Enum):
     ai_industry = "ai_industry"
     ai_company = "ai_company"
@@ -32,6 +36,11 @@ class CrawlJobRequest(BaseModel):
     window_minutes: int = Field(default=15, ge=15, le=1440)
     query_override: str | None = None
     languages: list[str] = Field(default_factory=list)
+    github_min_stars: int = Field(default=20, ge=0, le=10000000)
+    github_created_since_days: int = Field(default=30, ge=1, le=3650)
+    github_sort: str = Field(default="stars")
+    github_order: str = Field(default="desc")
+    github_include_readme: bool = True
 
 
 class RawSaveResult(BaseModel):
@@ -49,6 +58,7 @@ class CrawledArticle(BaseModel):
     published_at: str | None = None
     body: str
     raw: RawSaveResult | None = None
+    extra: dict[str, Any] = Field(default_factory=dict)
 
 
 class CrawlJobResponse(BaseModel):
