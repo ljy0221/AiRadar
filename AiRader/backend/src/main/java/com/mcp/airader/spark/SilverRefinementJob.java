@@ -47,6 +47,7 @@ public class SilverRefinementJob {
         DataTypes.createStructField("summary",      DataTypes.StringType,    true),
         DataTypes.createStructField("category",     DataTypes.StringType,    true),
         DataTypes.createStructField("region",       DataTypes.StringType,    true),
+        DataTypes.createStructField("companies",    DataTypes.createArrayType(DataTypes.StringType), true),
         DataTypes.createStructField("error_log",    DataTypes.StringType,    true),
         DataTypes.createStructField("batch_date",   DataTypes.DateType,      false),
     });
@@ -214,6 +215,7 @@ public class SilverRefinementJob {
             "Mock summary for: " + articleId,  // summary (mock)
             "ETC",                              // category (mock)
             "GLOBAL",                           // region (mock)
+            new String[]{},                     // companies (mock — 빈 배열, 실제 AI 호출 시 추출)
             null,                               // error_log
             batchDate
         );
@@ -281,6 +283,7 @@ public class SilverRefinementJob {
                 safeGet(row, "article_id"), safeGet(row, "title"),
                 null, null, null, null,
                 null, null, null, null, null, null,
+                null,       // companies (에러 시 null)
                 errorMsg, batchDate
             );
             case "paper" -> RowFactory.create(
