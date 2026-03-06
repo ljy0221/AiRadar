@@ -42,22 +42,14 @@ EXCLUDE_TOPIC_KEYWORDS = {
     "lecture",
     "awesome-list",
 }
-AI_NAME_DESC_STRONG = [
+MIN_AI_TEXT_KEYWORDS = [
     "artificial intelligence",
     "machine learning",
     "deep learning",
-    "large language model",
     "generative ai",
-    "computer vision",
-    "natural language processing",
-]
-AI_NAME_DESC_WEAK = [
     "llm",
     "gpt",
-    "rag",
-    "diffusion",
-    "ai agent",
-    "inference",
+    "ai",
 ]
 EXCLUDE_TEXT_KEYWORDS = [
     "homework",
@@ -172,7 +164,7 @@ class GithubArchiveCrawler:
                         excluded_count += 1
                         continue
 
-                    if not self._is_ai_repo_relevant(full_name=full_name, description=description, topics=topics):
+                    if not self._is_min_ai_match(full_name=full_name, description=description, topics=topics):
                         filtered_out_count += 1
                         continue
 
@@ -244,7 +236,7 @@ class GithubArchiveCrawler:
         if not results:
             errors.append("No repositories matched current filters. Try lowering github_min_stars or widening github_created_since_days.")
         if filtered_out_count > 0:
-            errors.append(f"Filtered out {filtered_out_count} repositories by name/description/topic AI filter.")
+            errors.append(f"Filtered out {filtered_out_count} repositories by minimal AI match filter.")
         if excluded_count > 0:
             errors.append(f"Excluded {excluded_count} repositories by learning-resource filters (homework/study/tutorial/course).")
         if include_readme and readme_remaining == 0:
@@ -320,20 +312,13 @@ class GithubArchiveCrawler:
         return rows, None
 
     @staticmethod
-    def _is_ai_repo_relevant(full_name: str, description: str, topics: list[str]) -> bool:
+    def _is_min_ai_match(full_name: str, description: str, topics: list[str]) -> bool:
         normalized_topics = {str(t).strip().lower() for t in topics if str(t).strip()}
         if normalized_topics & AI_TOPIC_KEYWORDS:
             return True
 
         text = f"{full_name} {description}".lower()
-        strong_hits = GithubArchiveCrawler._keyword_hit_count(text, AI_NAME_DESC_STRONG)
-        weak_hits = GithubArchiveCrawler._keyword_hit_count(text, AI_NAME_DESC_WEAK)
-
-        if strong_hits >= 1:
-            return True
-        if weak_hits >= 2:
-            return True
-        return False
+        return GithubArchiveCrawler._keyword_hit_count(text, MIN_AI_TEXT_KEYWORDS) >= 1
 
     @staticmethod
     def _is_excluded_repo(full_name: str, description: str, topics: list[str]) -> bool:
