@@ -22,6 +22,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.mcp.airader.spark.utils.SparkUtils.bronzePath;
+import static com.mcp.airader.spark.utils.SparkUtils.getArg;
+import static com.mcp.airader.spark.utils.SparkUtils.safeGet;
+import static com.mcp.airader.spark.utils.SparkUtils.safeGetArray;
+import static com.mcp.airader.spark.utils.SparkUtils.safeInt;
+import static com.mcp.airader.spark.utils.SparkUtils.safeLong;
+
+import static com.mcp.airader.spark.models.SilverSchemas.*;
+
 /**
  * Bronze → Silver 정제 Job
  *
@@ -69,6 +78,7 @@ public class SilverRefinementJob {
         DataTypes.createStructField("summary",      DataTypes.StringType,    true),
         DataTypes.createStructField("category",     DataTypes.StringType,    true),
         DataTypes.createStructField("region",       DataTypes.StringType,    true),
+        DataTypes.createStructField("companies",    DataTypes.createArrayType(DataTypes.StringType), true),
         DataTypes.createStructField("error_log",    DataTypes.StringType,    true),
         DataTypes.createStructField("batch_date",   DataTypes.DateType,      false),
     });
@@ -148,8 +158,7 @@ public class SilverRefinementJob {
     }
 
     private static void processBronzeToSilver(SparkSession spark, String date, String sourceType) {
-        String bronzePath = System.getenv().getOrDefault("BRONZE_BASE_PATH", "/tmp/bronze")
-            + "/" + sourceType + "/date=" + date;
+        String bronzePath = bronzePath(sourceType, date);
         String silverPath = System.getenv().getOrDefault("SILVER_BASE_PATH", "/tmp/silver")
             + "/" + sourceType;
 
@@ -168,6 +177,10 @@ public class SilverRefinementJob {
 
         Dataset<Row> silver = analyzePartitions(spark, repartitioned, sourceType, date);
 
+        // count와 write 양쪽에서 재계산하지 않도록 cache
+        silver.cache();
+        long count = silver.count();
+
         // Overwrite로 멱등성 보장 — Delta 트랜잭션으로 원자적 커밋
         silver.write()
             .format("delta")
@@ -176,7 +189,7 @@ public class SilverRefinementJob {
             .partitionBy("batch_date")
             .save(silverPath);
 
-        long count = silver.count();
+        silver.unpersist();
         System.out.println("[Silver] 완료: " + count + "건 → " + silverPath);
     }
 
@@ -398,6 +411,7 @@ public class SilverRefinementJob {
                 safeGet(row, "article_id"), safeGet(row, "title"),
                 null, null, null, null,
                 null, null, null, null, null, null,
+                null,       // companies (에러 시 null)
                 errorMsg, batchDate
             );
             case "paper" -> RowFactory.create(
@@ -415,36 +429,5 @@ public class SilverRefinementJob {
         };
     }
 
-    // -------------------------------------------------------------------------
-    // 유틸
-    // -------------------------------------------------------------------------
-
-    private static String safeGet(Row row, String field) {
-        try { return row.getAs(field); } catch (Exception e) { return null; }
-    }
-
-    private static String[] safeGetArray(Row row, String field) {
-        try {
-            scala.collection.Seq<?> seq = row.getAs(field);
-            if (seq == null) return new String[]{};
-            return scala.collection.JavaConverters.seqAsJavaList(seq)
-                .stream().map(Object::toString).toArray(String[]::new);
-        } catch (Exception e) { return new String[]{}; }
-    }
-
-    private static Long safeLong(Row row, String field) {
-        try { return row.getAs(field); } catch (Exception e) { return null; }
-    }
-
-    private static Integer safeInt(Row row, String field) {
-        try { return row.getAs(field); } catch (Exception e) { return null; }
-    }
-
-    /** CLI 인자 파싱: --key value 형식 */
-    private static String getArg(String[] args, String key) {
-        for (int i = 0; i < args.length - 1; i++) {
-            if (args[i].equals(key)) return args[i + 1];
-        }
-        return null;
-    }
+    
 }

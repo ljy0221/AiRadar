@@ -11,6 +11,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
+import static com.mcp.airader.spark.utils.SparkUtils.getArg;
+import static com.mcp.airader.spark.utils.SparkUtils.silverPath;
+
 /**
  * Silver → Gold Upsert Job
  *
@@ -41,7 +44,7 @@ public class GoldServingJob {
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
             .config("spark.sql.catalog.spark_catalog",
                     "org.apache.spark.sql.delta.catalog.DeltaCatalog")
-            // S3A (MinIO) 설정 — ⚠️ 기본값은 로컬 개발 전용, Staging 이상은 환경변수로만 주입
+            // S3A (MinIO) 설정 — 기본값은 로컬 개발 전용, Staging 이상은 환경변수로만 주입
             .config("spark.hadoop.fs.s3a.impl",
                     "org.apache.hadoop.fs.s3a.S3AFileSystem")
             .config("spark.hadoop.fs.s3a.endpoint",
@@ -72,6 +75,7 @@ public class GoldServingJob {
 
         try {
             upsertNews(spark, date, jdbcUrl, user, password);
+            upsertCompanyTimeline(jdbcUrl, user, password);
             upsertPapers(spark, date, jdbcUrl, user, password);
             upsertGithubRepos(spark, date, jdbcUrl, user, password);
         } finally {
@@ -85,8 +89,8 @@ public class GoldServingJob {
 
     private static void upsertNews(SparkSession spark, String date,
                                    String jdbcUrl, String user, String password) throws SQLException {
-        String silverPath = silverPath("news");
-        Dataset<Row> silver = spark.read().format("delta").load(silverPath)
+        String silverDeltaPath = silverPath("news");
+        Dataset<Row> silver = spark.read().format("delta").load(silverDeltaPath)
             .filter("batch_date = '" + date + "' AND error_log IS NULL");
 
         System.out.println("[Gold/news] Silver 읽기: " + silver.count() + "건");
@@ -123,13 +127,42 @@ public class GoldServingJob {
     }
 
     // -------------------------------------------------------------------------
+    // company_news_timeline Upsert (news_items_staging의 companies 배열 unnest)
+    // -------------------------------------------------------------------------
+
+    private static void upsertCompanyTimeline(String jdbcUrl, String user, String password)
+            throws SQLException {
+        String sql = """
+            INSERT INTO company_news_timeline (company_name, article_id, published_at)
+            SELECT
+                unnest(companies),
+                article_id,
+                published_at::TIMESTAMP
+            FROM news_items_staging
+            WHERE companies IS NOT NULL
+              AND array_length(companies, 1) > 0
+            ON CONFLICT (company_name, article_id) DO NOTHING;
+            """;
+
+        Properties props = new Properties();
+        props.put("user",     user);
+        props.put("password", password);
+
+        try (Connection conn = DriverManager.getConnection(jdbcUrl, props);
+             Statement stmt  = conn.createStatement()) {
+            int affected = stmt.executeUpdate(sql);
+            System.out.println("[Gold/company_timeline] Upsert " + affected + "건");
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // papers Upsert
     // -------------------------------------------------------------------------
 
     private static void upsertPapers(SparkSession spark, String date,
                                      String jdbcUrl, String user, String password) throws SQLException {
-        String silverPath = silverPath("paper");
-        Dataset<Row> silver = spark.read().format("delta").load(silverPath)
+        String silverDeltaPath = silverPath("paper");
+        Dataset<Row> silver = spark.read().format("delta").load(silverDeltaPath)
             .filter("batch_date = '" + date + "' AND error_log IS NULL");
 
         System.out.println("[Gold/paper] Silver 읽기: " + silver.count() + "건");
@@ -169,8 +202,8 @@ public class GoldServingJob {
 
     private static void upsertGithubRepos(SparkSession spark, String date,
                                           String jdbcUrl, String user, String password) throws SQLException {
-        String silverPath = silverPath("github");
-        Dataset<Row> silver = spark.read().format("delta").load(silverPath)
+        String silverDeltaPath = silverPath("github");
+        Dataset<Row> silver = spark.read().format("delta").load(silverDeltaPath)
             .filter("batch_date = '" + date + "' AND error_log IS NULL");
 
         System.out.println("[Gold/github] Silver 읽기: " + silver.count() + "건");
@@ -256,18 +289,5 @@ public class GoldServingJob {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // 유틸
-    // -------------------------------------------------------------------------
-
-    private static String silverPath(String sourceType) {
-        return System.getenv().getOrDefault("SILVER_BASE_PATH", "/tmp/silver") + "/" + sourceType;
-    }
-
-    private static String getArg(String[] args, String key) {
-        for (int i = 0; i < args.length - 1; i++) {
-            if (args[i].equals(key)) return args[i + 1];
-        }
-        return null;
-    }
+    
 }
