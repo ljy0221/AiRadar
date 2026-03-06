@@ -75,6 +75,7 @@ public class GoldServingJob {
 
         try {
             upsertNews(spark, date, jdbcUrl, user, password);
+            upsertCompanyTimeline(jdbcUrl, user, password);
             upsertPapers(spark, date, jdbcUrl, user, password);
             upsertGithubRepos(spark, date, jdbcUrl, user, password);
         } finally {
@@ -123,6 +124,35 @@ public class GoldServingJob {
 
         executeInTransaction(jdbcUrl, user, password, "news_items_staging", upsertSql);
         System.out.println("[Gold/news] Upsert 완료");
+    }
+
+    // -------------------------------------------------------------------------
+    // company_news_timeline Upsert (news_items_staging의 companies 배열 unnest)
+    // -------------------------------------------------------------------------
+
+    private static void upsertCompanyTimeline(String jdbcUrl, String user, String password)
+            throws SQLException {
+        String sql = """
+            INSERT INTO company_news_timeline (company_name, article_id, published_at)
+            SELECT
+                unnest(companies),
+                article_id,
+                published_at::TIMESTAMP
+            FROM news_items_staging
+            WHERE companies IS NOT NULL
+              AND array_length(companies, 1) > 0
+            ON CONFLICT (company_name, article_id) DO NOTHING;
+            """;
+
+        Properties props = new Properties();
+        props.put("user",     user);
+        props.put("password", password);
+
+        try (Connection conn = DriverManager.getConnection(jdbcUrl, props);
+             Statement stmt  = conn.createStatement()) {
+            int affected = stmt.executeUpdate(sql);
+            System.out.println("[Gold/company_timeline] Upsert " + affected + "건");
+        }
     }
 
     // -------------------------------------------------------------------------

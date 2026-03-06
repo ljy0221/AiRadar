@@ -41,6 +41,60 @@ import static com.mcp.airader.spark.models.SilverSchemas.*;
  */
 public class SilverRefinementJob {
 
+    // Silver 스키마: news
+    private static final StructType NEWS_SILVER_SCHEMA = DataTypes.createStructType(new StructField[]{
+        DataTypes.createStructField("article_id",   DataTypes.StringType,    false),
+        DataTypes.createStructField("title",        DataTypes.StringType,    true),
+        DataTypes.createStructField("content",      DataTypes.StringType,    true),
+        DataTypes.createStructField("url",          DataTypes.StringType,    true),
+        DataTypes.createStructField("source",       DataTypes.StringType,    true),
+        DataTypes.createStructField("published_at", DataTypes.StringType,    true),
+        DataTypes.createStructField("sentiment",    DataTypes.StringType,    true),
+        DataTypes.createStructField("keywords",     DataTypes.createArrayType(DataTypes.StringType), true),
+        DataTypes.createStructField("score",        DataTypes.DoubleType,    true),
+        DataTypes.createStructField("summary",      DataTypes.StringType,    true),
+        DataTypes.createStructField("category",     DataTypes.StringType,    true),
+        DataTypes.createStructField("region",       DataTypes.StringType,    true),
+        DataTypes.createStructField("companies",    DataTypes.createArrayType(DataTypes.StringType), true),
+        DataTypes.createStructField("error_log",    DataTypes.StringType,    true),
+        DataTypes.createStructField("batch_date",   DataTypes.DateType,      false),
+    });
+
+    // Silver 스키마: paper
+    private static final StructType PAPER_SILVER_SCHEMA = DataTypes.createStructType(new StructField[]{
+        DataTypes.createStructField("paper_id",      DataTypes.StringType,   false),
+        DataTypes.createStructField("title",         DataTypes.StringType,   true),
+        DataTypes.createStructField("abstract",      DataTypes.StringType,   true),
+        DataTypes.createStructField("url",           DataTypes.StringType,   true),
+        DataTypes.createStructField("source",        DataTypes.StringType,   true),
+        DataTypes.createStructField("authors",       DataTypes.createArrayType(DataTypes.StringType), true),
+        DataTypes.createStructField("published_at",  DataTypes.StringType,   true),
+        DataTypes.createStructField("keywords",      DataTypes.createArrayType(DataTypes.StringType), true),
+        DataTypes.createStructField("summary",       DataTypes.StringType,   true),
+        DataTypes.createStructField("category",      DataTypes.StringType,   true),
+        DataTypes.createStructField("research_area", DataTypes.StringType,   true),
+        DataTypes.createStructField("error_log",     DataTypes.StringType,   true),
+        DataTypes.createStructField("batch_date",    DataTypes.DateType,     false),
+    });
+
+    // Silver 스키마: github
+    private static final StructType GITHUB_SILVER_SCHEMA = DataTypes.createStructType(new StructField[]{
+        DataTypes.createStructField("repo_id",       DataTypes.StringType,   false),
+        DataTypes.createStructField("repo_name",     DataTypes.StringType,   true),
+        DataTypes.createStructField("description",   DataTypes.StringType,   true),
+        DataTypes.createStructField("language",      DataTypes.StringType,   true),
+        DataTypes.createStructField("topics",        DataTypes.createArrayType(DataTypes.StringType), true),
+        DataTypes.createStructField("stars",         DataTypes.LongType,     true),
+        DataTypes.createStructField("forks",         DataTypes.LongType,     true),
+        DataTypes.createStructField("open_issues",   DataTypes.IntegerType,  true),
+        DataTypes.createStructField("weekly_commits",DataTypes.IntegerType,  true),
+        DataTypes.createStructField("star_delta_7d", DataTypes.IntegerType,  true),
+        DataTypes.createStructField("ai_relevance",  DataTypes.BooleanType,  true),
+        DataTypes.createStructField("keywords",      DataTypes.createArrayType(DataTypes.StringType), true),
+        DataTypes.createStructField("error_log",     DataTypes.StringType,   true),
+        DataTypes.createStructField("batch_date",    DataTypes.DateType,     false),
+    });
+
     public static void main(String[] args) {
         String date = getArg(args, "--date");
         String sourceType = getArg(args, "--source-type");
@@ -172,6 +226,7 @@ public class SilverRefinementJob {
             "Mock summary for: " + articleId,  // summary (mock)
             "ETC",                              // category (mock)
             "GLOBAL",                           // region (mock)
+            new String[]{},                     // companies (mock — 빈 배열, 실제 AI 호출 시 추출)
             null,                               // error_log
             batchDate
         );
@@ -239,6 +294,7 @@ public class SilverRefinementJob {
                 safeGet(row, "article_id"), safeGet(row, "title"),
                 null, null, null, null,
                 null, null, null, null, null, null,
+                null,       // companies (에러 시 null)
                 errorMsg, batchDate
             );
             case "paper" -> RowFactory.create(
