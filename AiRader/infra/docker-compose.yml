@@ -67,10 +67,10 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD:-airader_secret}
     entrypoint: >
       /bin/sh -c "
-        psql -c \"CREATE SCHEMA IF NOT EXISTS airflow;\";
-        psql -c \"DO \$\$BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${AIRFLOW_DB_USER:-airflow_user}') THEN CREATE USER ${AIRFLOW_DB_USER:-airflow_user} WITH PASSWORD '${AIRFLOW_DB_PASSWORD:-airflow_secret}'; END IF; END\$\$;\";
-        psql -c \"GRANT ALL ON SCHEMA airflow TO ${AIRFLOW_DB_USER:-airflow_user};\";
-        psql -c \"ALTER USER ${AIRFLOW_DB_USER:-airflow_user} SET search_path = airflow;\";
+        psql -c \"CREATE SCHEMA IF NOT EXISTS airflow;\" || true;
+        psql -c \"CREATE USER ${AIRFLOW_DB_USER:-airflow_user} WITH PASSWORD '${AIRFLOW_DB_PASSWORD:-airflow_secret}';\" || true;
+        psql -c \"GRANT ALL ON SCHEMA airflow TO ${AIRFLOW_DB_USER:-airflow_user};\" || true;
+        psql -c \"ALTER USER ${AIRFLOW_DB_USER:-airflow_user} SET search_path = airflow;\" || true;
         echo 'Airflow 스키마 초기화 완료';
       "
     restart: "no"
