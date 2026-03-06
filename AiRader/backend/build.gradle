@@ -48,6 +48,8 @@ dependencies {
 
     // 4. Database & Cache
     runtimeOnly 'org.postgresql:postgresql'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis' // 실시간 트렌드용
 
     // 5. Utils & Client
