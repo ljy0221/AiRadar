@@ -48,3 +48,43 @@ AI 트렌드를 분석하고 예측한 결과를 보여주는 웹사이트 프�
     *   프로젝트 전반에서 쓰이는 공통 TypeScript 타입(interface, type alias)을 정의합니다.
 
 ---
+
+## 📝 파일 및 폴더 네이밍 규칙 (중요!)
+
+협업을 위해 다음과 같은 폴더 및 파일 네이밍 룰을 따릅니다.
+
+*   **폴더명:** **모두 소문자 (kebab-case 권장)** 로 작성합니다.
+    *   ✅ `components/common`, `components/features`, `app/dashboard`
+    *   ❌ `components/Common`, `App/Dashboard`
+*   **파일명 (React 컴포넌트):** **PascalCase** 로 작성합니다.
+    *   ✅ `Button.tsx`, `TrendChart.tsx`, `LoginForm.tsx`
+    *   ❌ `button.tsx`, `trend-chart.tsx`
+*   **기타 파일명 (유틸, 훅스 등):** **camelCase** 로 작성합니다.
+    *   ✅ `useFetch.ts`, `formatters.ts`, `index.ts`
+    *   ❌ `use_fetch.ts`, `Formatters.ts`
+
+---
+
+## 상태관리 및 캐싱 
+
+*   **TanStack Query (React Query)**
+    *   **도입 목적:** 서버 상태(Server State) 관리와 클라이언트 상태(Client State)를 명확히 분리하고, API 데이터 페칭, 캐싱, 동기화 및 업데이트 로직을 단순화하기 위해 사용합니다.
+    *   **주요 장점:**
+        *   자동 캐싱 및 만료(Stale)에 따른 백그라운드 데이터 갱신(Refetching)
+        *   Loading, Error 등 비동기 상태의 선언적 처리 용이
+        *   불필요한 API 중복 호출 방지 및 성능 최적화
+    *   **사용 권장 패턴 (커스텀 훅):** API 호출 로직은 컴포넌트 내부에 직접 작성하지 않고, `hooks/queries/`와 같은 폴더에 커스텀 훅(Custom Hook) 형태로 분리하여 재사용성을 높이는 것을 권장합니다.
+        ```typescript
+        // 예시: hooks/queries/useNewsQuery.ts
+        import { useQuery } from '@tanstack/react-query';
+        import { fetchNews } from '@/services/newsApi';
+
+        export const useNewsQuery = (keyword: string) => {
+          return useQuery({
+            queryKey: ['news', keyword],
+            queryFn: () => fetchNews(keyword),
+            staleTime: 1000 * 60 * 5, // 5분
+          });
+        };
+        ```
+    *   **Mutation 처리:** 데이터 생성, 수정, 삭제 요청은 `useMutation`을 활용하며, 성공 시 `queryClient.invalidateQueries`를 통해 연관된 캐시 데이터를 효과적으로 업데이트합니다.
