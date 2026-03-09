@@ -20,6 +20,7 @@ class NewsProvider(str, Enum):
 
 class GithubArchiveProvider(str, Enum):
     github_api = "github_api"
+    github_trending_archive = "github_trending_archive"
 
 
 class AITimesTarget(str, Enum):
@@ -41,6 +42,9 @@ class CrawlJobRequest(BaseModel):
     github_sort: str = Field(default="stars")
     github_order: str = Field(default="desc")
     github_include_readme: bool = True
+    github_window_hours: int = Field(default=3, ge=1, le=24)
+    github_top_n: int = Field(default=20, ge=1, le=200)
+    github_pr_per_repo: int = Field(default=3, ge=1, le=10)
 
 
 class RawSaveResult(BaseModel):
