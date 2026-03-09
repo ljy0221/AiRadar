@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.utils.task_group import TaskGroup
 
 default_args = {
@@ -30,6 +31,16 @@ with DAG(
     tags=['silver', 'batch'],
 ) as dag:
 
+    # Bronze 적재 완료 후 Silver 정제 실행
+    wait_for_bronze = ExternalTaskSensor(
+        task_id='wait_for_bronze_ingestion',
+        external_dag_id='bronze_ingestion',
+        external_task_id=None,   # DAG 전체 완료 대기
+        timeout=3600,
+        poke_interval=60,
+        mode='reschedule',       # slot을 점유하지 않고 대기
+    )
+
     # news / paper / github 를 TaskGroup으로 병렬 실행
     # 장애 격리: 하나 실패해도 나머지는 계속 실행
     with TaskGroup('silver_refinement_tasks') as refinement_group:
@@ -54,4 +65,4 @@ with DAG(
         execution_timeout=timedelta(minutes=10),
     )
 
-    refinement_group >> refresh_view
+    wait_for_bronze >> refinement_group >> refresh_view
