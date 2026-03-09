@@ -3,10 +3,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from app.messaging.kafka_publisher import CrawlKafkaPublisher
 from app.schemas import CrawlDomain, CrawlJobRequest, CrawlJobResponse, CrawledArticle, RawSaveResult
 from app.sources.github_archive.github_api import GithubArchiveCrawler
+from app.sources.github_archive.github_trending_archive import GithubTrendingArchiveCrawler
 from app.sources.news.aitimes import AITimesCrawler
 from app.sources.news.gdelt import GDELTNewsCrawler
+from app.sources.paper.arxiv_api import ArxivApiCrawler
 
 
 class CrawlService:
@@ -39,23 +42,46 @@ class CrawlService:
             else:
                 raise ValueError("news provider supports only aitimes|gdelt")
         elif req.domain == CrawlDomain.github_archive:
-            if req.provider != "github_api":
-                raise ValueError("github_archive provider supports only github_api")
-            crawler = GithubArchiveCrawler()
+            if req.provider == "github_api":
+                crawler = GithubArchiveCrawler()
+                try:
+                    parsed, errors, duplicate_count, failed_count = crawler.crawl(
+                        max_articles=req.max_articles,
+                        query_override=req.query_override,
+                        min_stars=req.github_min_stars,
+                        created_since_days=req.github_created_since_days,
+                        sort=req.github_sort,
+                        order=req.github_order,
+                        include_readme=req.github_include_readme,
+                    )
+                finally:
+                    crawler.close()
+            elif req.provider == "github_trending_archive":
+                crawler = GithubTrendingArchiveCrawler()
+                try:
+                    parsed, errors, duplicate_count, failed_count = crawler.crawl(
+                        max_articles=req.max_articles,
+                        window_hours=req.github_window_hours,
+                        top_n=req.github_top_n,
+                        pr_per_repo=req.github_pr_per_repo,
+                    )
+                finally:
+                    crawler.close()
+            else:
+                raise ValueError("github_archive provider supports only github_api|github_trending_archive")
+        elif req.domain == CrawlDomain.paper:
+            if req.provider != "arxiv_api":
+                raise ValueError("paper provider supports only arxiv_api")
+            crawler = ArxivApiCrawler()
             try:
                 parsed, errors, duplicate_count, failed_count = crawler.crawl(
                     max_articles=req.max_articles,
                     query_override=req.query_override,
-                    min_stars=req.github_min_stars,
-                    created_since_days=req.github_created_since_days,
-                    sort=req.github_sort,
-                    order=req.github_order,
-                    include_readme=req.github_include_readme,
                 )
             finally:
                 crawler.close()
         else:
-            raise ValueError("Only news|github_archive domains are implemented for now")
+            raise ValueError("Only news|paper|github_archive domains are implemented for now")
 
         items = [
             CrawledArticle(
@@ -76,6 +102,15 @@ class CrawlService:
             for row in parsed
         ]
 
+        kafka_result = CrawlKafkaPublisher().publish_items(
+            job_id=job_id,
+            domain=req.domain.value,
+            provider=req.provider,
+            items=items,
+        )
+        if kafka_result.failed > 0:
+            errors.append(f"Kafka publish failed for {kafka_result.failed} items")
+
         finished_at = datetime.now(timezone.utc)
         return CrawlJobResponse(
             job_id=job_id,
@@ -93,9 +128,18 @@ class CrawlService:
                 "implemented_domains": ["news", "paper", "github_archive"],
                 "implemented_providers": {
                     "news": ["aitimes", "gdelt"],
-                    "github_archive": ["github_api"],
-                    "paper": [],
+                    "github_archive": ["github_api", "github_trending_archive"],
+                    "paper": ["arxiv_api"],
                 },
-                "note": "paper providers are scaffold-only in this phase",
+                "note": "raw storage is skipped for crawler providers in this phase",
+                "kafka": {
+                    "enabled": kafka_result.enabled,
+                    "topic": kafka_result.topic,
+                    "topic_stats": kafka_result.topic_stats,
+                    "attempted": kafka_result.attempted,
+                    "published": kafka_result.published,
+                    "failed": kafka_result.failed,
+                    "errors": kafka_result.errors[:20],
+                },
             },
         )
