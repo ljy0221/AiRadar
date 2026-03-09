@@ -204,7 +204,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GMS_KEY: ${GMS_KEY}
       EMBEDDING_MODEL: paraphrase-multilingual-mpnet-base-v2
       AI_BATCH_SIZE: "10"
       POSTGRES_HOST: postgres
