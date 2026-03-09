@@ -1,0 +1,96 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.5'
+    id 'io.spring.dependency-management' version '1.1.6'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'  // Spark용 Fat JAR 생성
+}
+
+ext {
+    // 버전 변수 관리
+    sparkVersion = '3.5.0'
+    scalaVersion = '2.12'
+    deltaVersion = '3.1.0'   // Spark Dockerfile과 통일
+    hadoopVersion = '3.3.4'  // S3A (MinIO 연동)
+}
+
+configurations {
+    all {
+        // Logback 제거 후 Log4j2로 통합 (Spark와의 호환성)
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+
+        resolutionStrategy {
+            // [중요] Spark 3.5와 JPA 간의 ANTLR 버전 충돌 해결
+            force 'org.antlr:antlr4-runtime:4.9.3'
+            // [중요] 모든 모듈의 Jackson 버전을 통일하여 Serialization 에러 방지
+            force 'com.fasterxml.jackson.core:jackson-databind:2.15.3'
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // 1. Spring Boot Core
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // 2. Data Lake (Delta Lake & Spark)
+    implementation "org.apache.spark:spark-sql_${scalaVersion}:${sparkVersion}"
+    implementation "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
+    implementation "io.delta:delta-spark_${scalaVersion}:${deltaVersion}"
+
+    // 3. S3A (MinIO 연동) — SparkSession 생성 시 클래스패스에 있어야 S3AFileSystem 로드 가능
+    implementation "org.apache.hadoop:hadoop-aws:${hadoopVersion}"
+    implementation "com.amazonaws:aws-java-sdk-bundle:1.12.262"
+
+    // 4. Database & Cache
+    runtimeOnly 'org.postgresql:postgresql'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis' // 실시간 트렌드용
+
+    // 5. Utils & Client
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    // 6. Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+// -----------------------------------------------------------------------------
+// Airflow SparkSubmitOperator용 Fat JAR
+// Spring Boot nested JAR 포맷은 Spark와 호환 안 됨 → Shadow JAR 필수
+// 출력: build/libs/airadar-spark.jar
+// -----------------------------------------------------------------------------
+shadowJar {
+    archiveBaseName = 'airadar-spark'
+    archiveClassifier = ''
+    archiveVersion = ''
+    mergeServiceFiles()  // META-INF/services 병합 (Delta Lake 카탈로그 등록에 필요)
+}
+
+// -----------------------------------------------------------------------------
+// Spark Job 로컬 실행 태스크
+// 사용: ./gradlew runSparkJob -Pjob=SilverRefinementJob -PbronzePath=/data/bronze
+// -----------------------------------------------------------------------------
+tasks.register('runSparkJob', JavaExec) {
+    def jobName = project.findProperty('job') ?: 'SilverRefinementJob'
+    mainClass = "com.mcp.airadar.spark.${jobName}"
+    classpath = sourceSets.main.runtimeClasspath
+    jvmArgs = [
+        '--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.util=ALL-UNNAMED',
+    ]
+    environment 'BRONZE_BASE_PATH', project.findProperty('bronzePath') ?: '/tmp/bronze'
+    environment 'SILVER_BASE_PATH', project.findProperty('silverPath') ?: '/tmp/silver'
+}
