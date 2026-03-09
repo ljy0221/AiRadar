@@ -99,6 +99,8 @@ public class BronzeIngestionJob {
 
         SparkSession spark = SparkSession.builder()
             .appName("BronzeIngestionJob-" + sourceType + "-" + date)
+            .master("local[*]")  // 로컬 모드 (개발용) — 배포 시 클러스터 설정에 맞게 변경
+            .config("spark.ui.enabled", "false")  // Spark UI 비활성화 (선택 사항)
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
             .config("spark.sql.catalog.spark_catalog",
                     "org.apache.spark.sql.delta.catalog.DeltaCatalog")
