@@ -1,0 +1,228 @@
+version: "3.8"
+
+services:
+
+  # ── 메시지 브로커 ─────────────────────────────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    hostname: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    hostname: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+  # ── 데이터베이스 ──────────────────────────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: postgres
+    hostname: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-airadar}
+      POSTGRES_USER: ${POSTGRES_USER:-airadar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/01_init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-airadar}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Airflow 전용 스키마/유저 생성 (1회성 init, postgres healthy 이후 실행)
+  postgres-init:
+    image: postgres:16
+    container_name: postgres-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGDATABASE: ${POSTGRES_DB:-airadar}
+      PGUSER: ${POSTGRES_USER:-airadar}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
+    entrypoint: >
+      /bin/sh -c "
+        set -eu;
+        psql -v ON_ERROR_STOP=1 -c \"CREATE SCHEMA IF NOT EXISTS airflow;\";
+        if [ \"$(psql -tAc \\\"SELECT 1 FROM pg_roles WHERE rolname='${AIRFLOW_DB_USER:-airflow_user}'\\\")\" != \"1\" ]; then
+          psql -v ON_ERROR_STOP=1 -c \"CREATE USER ${AIRFLOW_DB_USER:-airflow_user} WITH PASSWORD '${AIRFLOW_DB_PASSWORD:-airflow_secret}';\";
+        fi;
+        psql -v ON_ERROR_STOP=1 -c \"GRANT ALL ON SCHEMA airflow TO ${AIRFLOW_DB_USER:-airflow_user};\";
+        psql -v ON_ERROR_STOP=1 -c \"ALTER USER ${AIRFLOW_DB_USER:-airflow_user} SET search_path = airflow;\";
+        echo 'Airflow 스키마 초기화 완료';
+      "
+    restart: "no"
+
+  # ── 캐시 ──────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    hostname: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  # ── Delta Lake 스토리지 (MinIO = 로컬 S3-compatible) ─────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    hostname: minio
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # MinIO Console UI
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # Bronze / Silver 버킷 초기화 (MinIO healthy 이후 실행, 멱등성 보장)
+  minio-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+        mc mb --ignore-existing local/airadar;
+        mc mb --ignore-existing local/airadar/bronze;
+        mc mb --ignore-existing local/airadar/silver;
+        echo 'MinIO 버킷 초기화 완료';
+      "
+    restart: "no"
+
+  # ── Spark ─────────────────────────────────────────────────────────────────────
+  spark:
+    build: ./spark
+    container_name: spark
+    hostname: spark
+    depends_on:
+      minio:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    ports:
+      - "4040:4040" # Spark UI
+      - "8080:8080" # Spark Master Web UI
+      - "7077:7077" # Spark Master
+    environment:
+      # Delta Lake 경로 (s3a://airadar/bronze, s3a://airadar/silver)
+      BRONZE_BASE_PATH: s3a://airadar/bronze
+      SILVER_BASE_PATH: s3a://airadar/silver
+      # S3A → MinIO 접속 정보
+      MINIO_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      # PostgreSQL (Gold 레이어 Upsert)
+      POSTGRES_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-airadar}
+      POSTGRES_USER: ${POSTGRES_USER:-airadar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
+      # AI Server
+      AI_SERVER_URL: http://ai-server:8000
+      AI_SERVER_CONCURRENCY: "10"
+    volumes:
+      - ../backend/build/libs/airadar-spark.jar:/opt/spark-jobs/airadar-spark.jar
+    command: >
+      /bin/sh -c "
+        /opt/spark/sbin/start-master.sh &&
+        /opt/spark/sbin/start-worker.sh spark://spark:7077 &&
+        tail -f /dev/null
+      "
+
+  # ── Airflow ───────────────────────────────────────────────────────────────────
+  airflow:
+    build: ./airflow
+    container_name: airflow
+    hostname: airflow
+    ports:
+      - "8081:8080"
+    command: >
+      bash -c "
+        airflow db migrate &&
+        airflow users create --username \"$${_AIRFLOW_WWW_USER_USERNAME:-admin}\" --password \"$${_AIRFLOW_WWW_USER_PASSWORD:-admin}\" --firstname admin --lastname admin --role Admin --email admin@example.com || true;
+        exec airflow standalone
+      "
+    volumes:
+      - ../airflow/dags:/opt/airflow/dags
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      redis:
+        condition: service_started
+    env_file:
+      - ./airflow/airflow.env
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
+        postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow_user}:${AIRFLOW_DB_PASSWORD:-airflow_secret}@postgres:5432/${POSTGRES_DB:-airadar}?options=-csearch_path%3Dairflow
+      AIRFLOW__CELERY__RESULT_BACKEND: redis://redis:6379/0
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+
+  # ── AI 분석 서버 ──────────────────────────────────────────────────────────────
+  ai-server:
+    build: ../ai-server
+    container_name: ai-server
+    hostname: ai-server
+    ports:
+      - "8000:8000"
+    environment:
+      GMS_KEY: ${GMS_KEY}
+      EMBEDDING_MODEL: paraphrase-multilingual-mpnet-base-v2
+      AI_BATCH_SIZE: "10"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB:-airadar}
+      POSTGRES_USER: ${POSTGRES_USER:-airadar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s   # 모델 로딩 시간 확보
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
