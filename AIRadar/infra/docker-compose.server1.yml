@@ -18,6 +18,7 @@ services:
     depends_on:
       - zookeeper
     ports:
+      - "9092:9092"
       - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
@@ -42,6 +43,7 @@ services:
       - kafka
     ports:
       - "7077:7077"
+      - "8080:8080"
       - "4040:4040"
     environment:
       SPARK_MODE: master
