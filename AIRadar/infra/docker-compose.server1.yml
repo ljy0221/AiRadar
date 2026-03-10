@@ -1,0 +1,113 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: server1-zookeeper
+    hostname: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-log:/var/lib/zookeeper/log
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: server1-kafka
+    hostname: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://${SERVER1_PUBLIC_HOST:-localhost}:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    restart: unless-stopped
+
+  spark-master:
+    build:
+      context: ./spark
+    container_name: server1-spark-master
+    hostname: spark-master
+    depends_on:
+      - kafka
+    ports:
+      - "7077:7077"
+      - "4040:4040"
+    environment:
+      SPARK_MODE: master
+      SPARK_MASTER_HOST: spark-master
+      SPARK_MASTER_PORT: 7077
+      SPARK_MASTER_WEBUI_PORT: 8080
+      SPARK_NO_DAEMONIZE: "true"
+      BRONZE_BASE_PATH: ${BRONZE_BASE_PATH:-}
+      SILVER_BASE_PATH: ${SILVER_BASE_PATH:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    volumes:
+      - ../backend/build/libs:/opt/spark-jobs
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    restart: unless-stopped
+
+  spark-worker:
+    build:
+      context: ./spark
+    container_name: server1-spark-worker
+    hostname: spark-worker
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_WEBUI_PORT: 8081
+      SPARK_WORKER_CORES: ${SPARK_WORKER_CORES:-2}
+      SPARK_WORKER_MEMORY: ${SPARK_WORKER_MEMORY:-4g}
+      SPARK_NO_DAEMONIZE: "true"
+      BRONZE_BASE_PATH: ${BRONZE_BASE_PATH:-}
+      SILVER_BASE_PATH: ${SILVER_BASE_PATH:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    volumes:
+      - ../backend/build/libs:/opt/spark-jobs
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    restart: unless-stopped
+
+  crawler:
+    build:
+      context: ../crawling
+    container_name: server1-crawler
+    hostname: crawler
+    depends_on:
+      - kafka
+    ports:
+      - "8002:8002"
+    environment:
+      CRAWLER_TIMEOUT_SEC: ${CRAWLER_TIMEOUT_SEC:-15}
+      CRAWLER_DELAY_SEC: ${CRAWLER_DELAY_SEC:-1.0}
+      CRAWLER_KAFKA_ENABLED: "true"
+      CRAWLER_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      CRAWLER_KAFKA_TOPIC_PREFIX: ${CRAWLER_KAFKA_TOPIC_PREFIX:-airader.raw}
+      CRAWLER_KAFKA_CLIENT_ID: ${CRAWLER_KAFKA_CLIENT_ID:-airader-crawler}
+      CRAWLER_KAFKA_ACKS: ${CRAWLER_KAFKA_ACKS:-all}
+      CRAWLER_KAFKA_RETRIES: ${CRAWLER_KAFKA_RETRIES:-3}
+      CRAWLER_KAFKA_LINGER_MS: ${CRAWLER_KAFKA_LINGER_MS:-50}
+      CRAWLER_KAFKA_REQUEST_TIMEOUT_MS: ${CRAWLER_KAFKA_REQUEST_TIMEOUT_MS:-15000}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      RAW_S3_BUCKET: ${RAW_S3_BUCKET:-}
+    restart: unless-stopped
+
+volumes:
+  zookeeper-data:
+  zookeeper-log:
+  kafka-data:
