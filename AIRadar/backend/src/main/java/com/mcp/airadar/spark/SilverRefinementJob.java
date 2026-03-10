@@ -2,6 +2,14 @@ package com.mcp.airadar.spark;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.util.Timeout;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
@@ -11,12 +19,7 @@ import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.sql.Date;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,10 +53,6 @@ import static com.mcp.airadar.spark.models.SilverSchemas.*;
  *   - 같은 --date로 재실행 시 Silver Overwrite → 멱등성 보장
  */
 public class SilverRefinementJob {
-
-    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(5))
-        .build();
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -128,6 +127,8 @@ public class SilverRefinementJob {
 
         SparkSession spark = SparkSession.builder()
             .appName("SilverRefinementJob-" + sourceType + "-" + date)
+            .master(System.getenv().getOrDefault("SPARK_MASTER", "local[*]"))
+            .config("spark.ui.enabled", "false")
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
             .config("spark.sql.catalog.spark_catalog",
                     "org.apache.spark.sql.delta.catalog.DeltaCatalog")
@@ -286,6 +287,7 @@ public class SilverRefinementJob {
                 item.get("summary").asText(),
                 item.get("category").asText(),
                 item.get("region").asText(),
+                null,           // companies
                 null,           // error_log
                 batchDate
             ));
@@ -380,18 +382,27 @@ public class SilverRefinementJob {
 
     private static JsonNode postJson(String path, Object body) throws Exception {
         String requestBody = MAPPER.writeValueAsString(body);
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(AI_SERVER_URL + path))
-            .header("Content-Type", "application/json")
-            .timeout(Duration.ofSeconds(120))   // 임베딩 생성 포함 넉넉하게
-            .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+
+        RequestConfig config = RequestConfig.custom()
+            .setConnectionRequestTimeout(Timeout.ofSeconds(5))
+            .setResponseTimeout(Timeout.ofSeconds(120))
             .build();
 
-        HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) {
-            throw new RuntimeException("AI 서버 오류 " + response.statusCode() + ": " + response.body());
+        try (CloseableHttpClient client = HttpClients.custom()
+                .setDefaultRequestConfig(config)
+                .build()) {
+            HttpPost post = new HttpPost(AI_SERVER_URL + path);
+            post.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
+
+            return client.execute(post, response -> {
+                int status = response.getCode();
+                String responseBody = EntityUtils.toString(response.getEntity());
+                if (status != 200) {
+                    throw new RuntimeException("AI 서버 오류 " + status + ": " + responseBody);
+                }
+                return MAPPER.readTree(responseBody);
+            });
         }
-        return MAPPER.readTree(response.body());
     }
 
     private static String[] parseStringArray(JsonNode node) {

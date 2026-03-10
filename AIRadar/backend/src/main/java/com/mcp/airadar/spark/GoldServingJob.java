@@ -41,6 +41,8 @@ public class GoldServingJob {
 
         SparkSession spark = SparkSession.builder()
             .appName("GoldServingJob-" + date)
+            .master(System.getenv().getOrDefault("SPARK_MASTER", "local[*]"))
+            .config("spark.ui.enabled", "false")
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
             .config("spark.sql.catalog.spark_catalog",
                     "org.apache.spark.sql.delta.catalog.DeltaCatalog")
@@ -91,7 +93,8 @@ public class GoldServingJob {
                                    String jdbcUrl, String user, String password) throws SQLException {
         String silverDeltaPath = silverPath("news");
         Dataset<Row> silver = spark.read().format("delta").load(silverDeltaPath)
-            .filter("batch_date = '" + date + "' AND error_log IS NULL");
+            .filter("batch_date = '" + date + "' AND error_log IS NULL")
+            .dropDuplicates("article_id");
 
         System.out.println("[Gold/news] Silver 읽기: " + silver.count() + "건");
 
@@ -163,7 +166,8 @@ public class GoldServingJob {
                                      String jdbcUrl, String user, String password) throws SQLException {
         String silverDeltaPath = silverPath("paper");
         Dataset<Row> silver = spark.read().format("delta").load(silverDeltaPath)
-            .filter("batch_date = '" + date + "' AND error_log IS NULL");
+            .filter("batch_date = '" + date + "' AND error_log IS NULL")
+            .dropDuplicates("paper_id");
 
         System.out.println("[Gold/paper] Silver 읽기: " + silver.count() + "건");
 
@@ -204,7 +208,8 @@ public class GoldServingJob {
                                           String jdbcUrl, String user, String password) throws SQLException {
         String silverDeltaPath = silverPath("github");
         Dataset<Row> silver = spark.read().format("delta").load(silverDeltaPath)
-            .filter("batch_date = '" + date + "' AND error_log IS NULL");
+            .filter("batch_date = '" + date + "' AND error_log IS NULL")
+            .dropDuplicates("repo_id");
 
         System.out.println("[Gold/github] Silver 읽기: " + silver.count() + "건");
 
@@ -274,10 +279,7 @@ public class GoldServingJob {
         try (Connection conn = DriverManager.getConnection(jdbcUrl, props)) {
             conn.setAutoCommit(false);
             try (Statement stmt = conn.createStatement()) {
-                // Staging TRUNCATE (writeToStaging에서 Overwrite로 이미 처리됐으나 명시적 보장)
-                stmt.execute("TRUNCATE TABLE " + stagingTable);
-
-                // Staging → Gold Upsert
+                // Staging → Gold Upsert (writeToStaging의 Overwrite가 이미 교체 완료)
                 int affected = stmt.executeUpdate(upsertSql);
                 System.out.println("[Gold] " + stagingTable + " → Upsert " + affected + "건");
 
