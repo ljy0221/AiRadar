@@ -15,6 +15,14 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8002
 ```
 
+Kafka publish env (optional):
+
+```powershell
+$env:CRAWLER_KAFKA_ENABLED="true"
+$env:CRAWLER_KAFKA_BOOTSTRAP_SERVERS="localhost:29092"
+$env:CRAWLER_KAFKA_TOPIC_PREFIX="airader.raw"
+```
+
 ## 3) Check
 
 - API: `http://localhost:8002`
@@ -23,7 +31,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8002
 
 ## 4) Crawl Job (AITIMES)
 
-`paper`/`github_archive`는 구조만 열어두고, 현재 동작 구현은 `news + aitimes`입니다.
+`paper`/`github_archive`??구조�??�어?�고, ?�재 ?�작 구현?� `news + aitimes`?�니??
 
 ```powershell
 curl -X POST "http://localhost:8002/crawl/jobs" `
@@ -50,9 +58,9 @@ Optional fields:
 
 Notes:
 - GDELT may reject very short windows; crawler currently applies a minimum 60-minute query window when needed.
-- You can still schedule the job every 15 minutes. URL-level dedupe should be handled in downstream storage/pipeline.
+- Recommended schedule: every 3 hours. URL-level dedupe should be handled in downstream storage/pipeline.
 
-## 4-2) Crawl Job (GitHub Archive via API)
+## 4-2) Crawl Job (GitHub Search API, legacy)
 
 Uses GitHub Search Repositories API (no HTML crawling).
 
@@ -69,7 +77,58 @@ Returned `items[].extra` includes:
 - `readme_excerpt`, `readme_truncated`, `readme_error`
 - `recent_commit_messages` (all paged commits: sha/message/date), `commit_messages_error`
 
+## 4-3) Crawl Job (arXiv Paper via API, cs.AI default)
+
+Uses arXiv API (`https://export.arxiv.org/api/query`) and defaults to `cat:cs.AI`.
+
+```powershell
+curl -X POST "http://localhost:8002/crawl/jobs" `
+  -H "Content-Type: application/json" `
+  -d "{\"domain\":\"paper\",\"provider\":\"arxiv_api\",\"max_articles\":50}"
+```
+
+Optional field:
+- `query_override`: replace default query (example: `cat:cs.AI AND all:llm`)
+
+Notes:
+- Storage is intentionally skipped for this provider (`raw.saved=false`), so you can hand off to Kafka next.
+- Returned `items[].extra` includes `pdf_url`, `categories`, `primary_category`, `search_query`.
+
+## 4-4) Kafka message envelope
+
+When `CRAWLER_KAFKA_ENABLED=true`, each crawled item is published to:
+- `airader.raw.news`
+- `airader.raw.paper`
+- `airader.raw.github_archive` (legacy provider)`r`n- `airader.raw.github.trending_repo``r``n- `airader.raw.github.repo_pr_document`
+
+Envelope fields:
+- `schema_version`, `event_type`, `event_time`
+- `job_id`, `domain`, `provider`, `source`, `target`
+- `payload` (original `CrawledArticle`)
+
+In API response, publish result is visible at `metadata.kafka`.
+
 ## 5) RAW S3 Scaffold
 
-- 환경변수 `RAW_S3_BUCKET`이 없으면 업로드는 스킵되고, 저장 예정 key만 생성됩니다.
-- 실제 S3 업로드는 주소/버킷 정책 확정 후 `app/storage/raw_archive.py`에서 구현하면 됩니다.
+- ?�경변??`RAW_S3_BUCKET`???�으�??�로?�는 ?�킵?�고, ?�???�정 key�??�성?�니??
+- ?�제 S3 ?�로?�는 주소/버킷 ?�책 ?�정 ??`app/storage/raw_archive.py`?�서 구현?�면 ?�니??
+
+
+
+## 4-2b) Crawl Job (GitHub Trending via GH Archive, recommended)
+
+Uses GH Archive events within a time window to compute trend score and then fetches repo metadata + PR docs.
+
+```powershell
+curl -X POST "http://localhost:8002/crawl/jobs" `
+  -H "Content-Type: application/json" `
+  -d "{\"domain\":\"github_archive\",\"provider\":\"github_trending_archive\",\"github_window_hours\":3,\"github_top_n\":20,\"github_pr_per_repo\":3,\"max_articles\":120}"
+```
+
+Trend score formula:
+- `trend_score = watch_delta * 3 + fork_delta * 4`
+- PR event weight is not used.
+
+Output targets:
+- `trending_repo` (ranking/display)
+- `repo_pr_document` (keyword extraction)

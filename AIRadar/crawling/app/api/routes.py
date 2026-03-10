@@ -25,15 +25,19 @@ def crawl_capabilities() -> dict:
         "domains": ["news", "paper", "github_archive"],
         "providers": {
             "news": ["aitimes", "gdelt"],
-            "paper": [],
-            "github_archive": ["github_api"],
+            "paper": ["arxiv_api"],
+            "github_archive": ["github_api", "github_trending_archive"],
         },
         "news_targets": {
             "aitimes": ["ai_industry", "ai_company"],
             "gdelt": ["world_ai"],
         },
+        "paper_targets": {
+            "arxiv_api": ["cs_ai"],
+        },
         "github_archive_targets": {
             "github_api": ["ai_repositories"],
+            "github_trending_archive": ["trending_repo", "repo_pr_document"],
         },
     }
 

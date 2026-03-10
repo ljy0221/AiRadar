@@ -59,6 +59,10 @@ bin/
 # =========================
 
 *.env
+.env.server1
+.env.server2
+**/.env.server1
+**/.env.server2
 
 # =========================
 # OS

@@ -53,6 +53,9 @@ dependencies {
     implementation 'org.flywaydb:flyway-database-postgresql'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis' // 실시간 트렌드용
 
+    // 4-1. Spark 로컬 실행 — javax.servlet (Spark UI 클래스 로딩에 필요, jakarta와 별개)
+    runtimeOnly 'javax.servlet:javax.servlet-api:3.1.0'
+
     // 5. Utils & Client
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -93,21 +96,19 @@ tasks.register('runSparkJob', JavaExec) {
         '--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED',
         '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
         '--add-opens', 'java.base/java.util=ALL-UNNAMED',
+        '--add-opens', 'java.base/sun.util.calendar=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.nio=ALL-UNNAMED',
     ]
-
-    // --- 인자(Arguments) 전달 로직
-    def jobArgs = []
-    if (project.hasProperty('date')) {
-        jobArgs << "--date"
-        jobArgs << project.property('date')
-    }
-    if (project.hasProperty('sourceType')) {
-        jobArgs << "--source-type"
-        jobArgs << project.property('sourceType')
-    }
-    args = jobArgs // 수집된 인자들을 Java 프로그램으로 전달
-    // --- 인자(Arguments) 전달 로직
-
+    // Windows에서 Hadoop winutils 경로 설정 (HADOOP_HOME 미설정 시 기본값)
+    systemProperty 'hadoop.home.dir', System.getenv('HADOOP_HOME') ?: 'C:/hadoop'
     environment 'BRONZE_BASE_PATH', project.findProperty('bronzePath') ?: '/tmp/bronze'
     environment 'SILVER_BASE_PATH', project.findProperty('silverPath') ?: '/tmp/silver'
+
+    // CLI args 전달 (-Pfile, -PsourceType, -Pdate)
+    def cliArgs = []
+    if (project.hasProperty('file'))       cliArgs += ['--file',        project.findProperty('file')]
+    if (project.hasProperty('sourceType')) cliArgs += ['--source-type', project.findProperty('sourceType')]
+    if (project.hasProperty('date'))       cliArgs += ['--date',        project.findProperty('date')]
+    args = cliArgs
 }
