@@ -196,6 +196,20 @@ services:
       AIRFLOW__CELERY__RESULT_BACKEND: redis://redis:6379/0
       AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
 
+  # ── 크롤링 서버 ───────────────────────────────────────────────────────────────
+  crawling-server:
+    build: ../crawling
+    container_name: crawling-server
+    hostname: crawling-server
+    ports:
+      - "8002:8002"
+    environment:
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      CRAWLER_TIMEOUT_SEC: "30"
+      CRAWLER_DELAY_SEC: "1"
+    depends_on:
+      - kafka
+
   # ── AI 분석 서버 ──────────────────────────────────────────────────────────────
   ai-server:
     build: ../ai-server
