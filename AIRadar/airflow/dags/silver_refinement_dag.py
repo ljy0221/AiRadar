@@ -18,6 +18,8 @@ default_args = {
 SPARK_CONF = {
     'spark.executor.memory': '2g',
     'spark.executor.cores': '2',
+    'spark.executor.instances': '4',   # Worker 2대 × executor 2개
+    'spark.driver.memory': '1g',
     'spark.sql.extensions': 'io.delta.sql.DeltaSparkSessionExtension',
     'spark.sql.catalog.spark_catalog': 'org.apache.spark.sql.delta.catalog.DeltaCatalog',
 }

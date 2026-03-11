@@ -80,6 +80,13 @@ services:
       S3_ENDPOINT: ${S3_ENDPOINT:-}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      MINIO_ENDPOINT: http://minio:9000
+      AI_SERVER_URL: http://${SERVER2_PRIVATE_HOST:-localhost}:8000
+      AI_SERVER_CONCURRENCY: ${AI_SERVER_CONCURRENCY:-20}
+      AI_BATCH_SIZE: ${AI_BATCH_SIZE:-10}
+      POSTGRES_JDBC_URL: jdbc:postgresql://${SERVER2_PRIVATE_HOST:-localhost}:5432/${POSTGRES_DB:-airadar}
+      POSTGRES_USER: ${POSTGRES_USER:-airadar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
     volumes:
       - ../backend/build/libs:/opt/spark-jobs
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
