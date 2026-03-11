@@ -260,7 +260,7 @@ public class GoldServingJob {
             .option("password",     password)
             .option("driver",       "org.postgresql.Driver")
             .option("batchsize",    1000)   // PostgreSQL JDBC 배치 크기
-            .option("numPartitions", 4)     // 동시 JDBC 연결 수
+            .option("numPartitions", 8)     // 동시 JDBC 연결 수 (Worker 2대 × executor 2 × 2)
             .mode(SaveMode.Overwrite)       // Staging은 매번 교체
             .save();
     }
