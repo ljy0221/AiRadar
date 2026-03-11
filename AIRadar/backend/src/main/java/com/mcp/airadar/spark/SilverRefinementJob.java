@@ -223,21 +223,23 @@ public class SilverRefinementJob {
                         }
                     }
                 } else {
-                    // news/paper: AI 서버 배치 호출
-                    for (int i = 0; i < buffer.size(); i += AI_BATCH_SIZE) {
-                        List<Row> batch = buffer.subList(i, Math.min(i + AI_BATCH_SIZE, buffer.size()));
-                        try {
-                            List<Row> analyzed = switch (sourceType) {
-                                case "news"  -> callAnalyzeNewsBatch(batch, batchDate);
-                                case "paper" -> callAnalyzePaperBatch(batch, batchDate);
-                                default -> throw new IllegalArgumentException("Unknown: " + sourceType);
-                            };
-                            result.addAll(analyzed);
-                        } catch (Exception e) {
-                            // 배치 전체 실패 → 각 레코드를 error_log에 기록하고 skip
-                            System.err.println("[Silver] 배치 분석 실패: " + e.getMessage());
-                            for (Row row : batch) {
-                                result.add(buildErrorRow(row, sourceType, batchDate, e.getMessage()));
+                    // news/paper: 파티션당 HttpClient를 1회만 생성해 재사용
+                    try (CloseableHttpClient client = buildHttpClient()) {
+                        for (int i = 0; i < buffer.size(); i += AI_BATCH_SIZE) {
+                            List<Row> batch = buffer.subList(i, Math.min(i + AI_BATCH_SIZE, buffer.size()));
+                            try {
+                                List<Row> analyzed = switch (sourceType) {
+                                    case "news"  -> callAnalyzeNewsBatch(client, batch, batchDate);
+                                    case "paper" -> callAnalyzePaperBatch(client, batch, batchDate);
+                                    default -> throw new IllegalArgumentException("Unknown: " + sourceType);
+                                };
+                                result.addAll(analyzed);
+                            } catch (Exception e) {
+                                // 배치 전체 실패 → 각 레코드를 error_log에 기록하고 skip
+                                System.err.println("[Silver] 배치 분석 실패: " + e.getMessage());
+                                for (Row row : batch) {
+                                    result.add(buildErrorRow(row, sourceType, batchDate, e.getMessage()));
+                                }
                             }
                         }
                     }
@@ -252,7 +254,7 @@ public class SilverRefinementJob {
     // 뉴스 배치 분석 — POST /analyze/news/batch
     // -------------------------------------------------------------------------
 
-    private static List<Row> callAnalyzeNewsBatch(List<Row> rows, Date batchDate) throws Exception {
+    private static List<Row> callAnalyzeNewsBatch(CloseableHttpClient client, List<Row> rows, Date batchDate) throws Exception {
         List<Map<String, Object>> payload = new ArrayList<>();
         for (Row row : rows) {
             Map<String, Object> item = new LinkedHashMap<>();
@@ -265,7 +267,7 @@ public class SilverRefinementJob {
             payload.add(item);
         }
 
-        JsonNode response = postJson("/analyze/news/batch", payload);
+        JsonNode response = postJson(client, "/analyze/news/batch", payload);
 
         List<Row> result = new ArrayList<>();
         for (int i = 0; i < response.size(); i++) {
@@ -299,7 +301,7 @@ public class SilverRefinementJob {
     // 논문 배치 분석 — POST /analyze/paper/batch
     // -------------------------------------------------------------------------
 
-    private static List<Row> callAnalyzePaperBatch(List<Row> rows, Date batchDate) throws Exception {
+    private static List<Row> callAnalyzePaperBatch(CloseableHttpClient client, List<Row> rows, Date batchDate) throws Exception {
         List<Map<String, Object>> payload = new ArrayList<>();
         for (Row row : rows) {
             Map<String, Object> item = new LinkedHashMap<>();
@@ -312,7 +314,7 @@ public class SilverRefinementJob {
             payload.add(item);
         }
 
-        JsonNode response = postJson("/analyze/paper/batch", payload);
+        JsonNode response = postJson(client, "/analyze/paper/batch", payload);
 
         List<Row> result = new ArrayList<>();
         for (int i = 0; i < response.size(); i++) {
@@ -380,29 +382,29 @@ public class SilverRefinementJob {
     // HTTP 유틸
     // -------------------------------------------------------------------------
 
-    private static JsonNode postJson(String path, Object body) throws Exception {
-        String requestBody = MAPPER.writeValueAsString(body);
-
+    private static CloseableHttpClient buildHttpClient() {
         RequestConfig config = RequestConfig.custom()
             .setConnectionRequestTimeout(Timeout.ofSeconds(5))
             .setResponseTimeout(Timeout.ofSeconds(120))
             .build();
+        return HttpClients.custom()
+            .setDefaultRequestConfig(config)
+            .build();
+    }
 
-        try (CloseableHttpClient client = HttpClients.custom()
-                .setDefaultRequestConfig(config)
-                .build()) {
-            HttpPost post = new HttpPost(AI_SERVER_URL + path);
-            post.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
+    private static JsonNode postJson(CloseableHttpClient client, String path, Object body) throws Exception {
+        String requestBody = MAPPER.writeValueAsString(body);
+        HttpPost post = new HttpPost(AI_SERVER_URL + path);
+        post.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
 
-            return client.execute(post, response -> {
-                int status = response.getCode();
-                String responseBody = EntityUtils.toString(response.getEntity());
-                if (status != 200) {
-                    throw new RuntimeException("AI 서버 오류 " + status + ": " + responseBody);
-                }
-                return MAPPER.readTree(responseBody);
-            });
-        }
+        return client.execute(post, response -> {
+            int status = response.getCode();
+            String responseBody = EntityUtils.toString(response.getEntity());
+            if (status != 200) {
+                throw new RuntimeException("AI 서버 오류 " + status + ": " + responseBody);
+            }
+            return MAPPER.readTree(responseBody);
+        });
     }
 
     private static String[] parseStringArray(JsonNode node) {

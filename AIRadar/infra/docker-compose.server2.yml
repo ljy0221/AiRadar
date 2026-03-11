@@ -5,6 +5,13 @@ services:
     hostname: postgres
     ports:
       - "5432:5432"
+    command: >
+      postgres
+      -c shared_buffers=512MB
+      -c work_mem=16MB
+      -c maintenance_work_mem=256MB
+      -c max_connections=200
+      -c effective_cache_size=1536MB
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-airadar}
       POSTGRES_USER: ${POSTGRES_USER:-airadar}
@@ -153,6 +160,41 @@ services:
     environment:
       PORT: "3000"
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8888}
+    restart: unless-stopped
+
+  spark-worker2:
+    build:
+      context: ./spark
+    container_name: server2-spark-worker2
+    hostname: spark-worker2
+    ports:
+      - "8082:8082"
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://${SERVER1_PRIVATE_HOST:-localhost}:7077
+      SPARK_WORKER_WEBUI_PORT: "8082"
+      SPARK_WORKER_CORES: ${SPARK_WORKER2_CORES:-2}
+      SPARK_WORKER_MEMORY: ${SPARK_WORKER2_MEMORY:-4g}
+      SPARK_NO_DAEMONIZE: "true"
+      MINIO_ENDPOINT: http://${SERVER1_PRIVATE_HOST:-localhost}:9000
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-minioadmin123}
+      BRONZE_BASE_PATH: ${BRONZE_BASE_PATH:-s3a://airader/bronze}
+      SILVER_BASE_PATH: ${SILVER_BASE_PATH:-s3a://airader/silver}
+      AI_SERVER_URL: http://ai-server:8000
+      AI_SERVER_CONCURRENCY: ${AI_SERVER_CONCURRENCY:-20}
+      AI_BATCH_SIZE: ${AI_BATCH_SIZE:-10}
+      POSTGRES_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-airadar}
+      POSTGRES_USER: ${POSTGRES_USER:-airadar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
+    volumes:
+      - ../backend/build/libs:/opt/spark-jobs
+    command: >
+      /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
+      spark://${SERVER1_PRIVATE_HOST:-localhost}:7077
+    depends_on:
+      ai-server:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

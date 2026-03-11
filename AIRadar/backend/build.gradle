@@ -62,7 +62,10 @@ dependencies {
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
-    // 6. Test
+    // 6. Kafka (Spring Boot 이벤트 Consumer/Producer)
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // 7. Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 

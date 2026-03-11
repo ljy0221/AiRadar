@@ -18,6 +18,8 @@ default_args = {
 SPARK_CONF = {
     'spark.executor.memory': '2g',
     'spark.executor.cores': '2',
+    'spark.executor.instances': '4',   # Worker 2대 × executor 2개
+    'spark.driver.memory': '1g',
     'spark.sql.extensions': 'io.delta.sql.DeltaSparkSessionExtension',
     'spark.sql.catalog.spark_catalog': 'org.apache.spark.sql.delta.catalog.DeltaCatalog',
 }
@@ -34,7 +36,7 @@ with DAG(
     # Bronze 적재 완료 후 Silver 정제 실행
     wait_for_bronze = ExternalTaskSensor(
         task_id='wait_for_bronze_ingestion',
-        external_dag_id='bronze_ingestion',
+        external_dag_id='bronze_kafka_ingestion',
         external_task_id=None,   # DAG 전체 완료 대기
         timeout=3600,
         poke_interval=60,
