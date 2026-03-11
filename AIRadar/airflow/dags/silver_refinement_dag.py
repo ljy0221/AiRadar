@@ -36,7 +36,7 @@ with DAG(
     # Bronze 적재 완료 후 Silver 정제 실행
     wait_for_bronze = ExternalTaskSensor(
         task_id='wait_for_bronze_ingestion',
-        external_dag_id='bronze_ingestion',
+        external_dag_id='bronze_kafka_ingestion',
         external_task_id=None,   # DAG 전체 완료 대기
         timeout=3600,
         poke_interval=60,

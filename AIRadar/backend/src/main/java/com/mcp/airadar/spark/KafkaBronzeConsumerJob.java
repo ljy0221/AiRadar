@@ -1,5 +1,9 @@
 package com.mcp.airadar.spark;
 
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
@@ -10,6 +14,9 @@ import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
+import java.time.Instant;
+import java.util.Properties;
+
 import static com.mcp.airadar.spark.utils.SparkUtils.getArg;
 import static org.apache.spark.sql.functions.*;
 
@@ -19,10 +26,10 @@ import static org.apache.spark.sql.functions.*;
  * 크롤링 서버가 Kafka에 메시지를 발행할 준비가 되면 이 Job으로 전환한다.
  * 현재는 BronzeIngestionJob(HTTP 직접 호출)이 임시 대역이다.
  *
- * Kafka 토픽 규칙:
- *   bronze.news   — 뉴스 기사 (aitimes, gdelt 공통)
- *   bronze.github — GitHub 레포지터리
- *   bronze.paper  — 논문 (향후)
+ * Kafka 토픽 규칙 (KAFKA_TOPIC_PREFIX 환경변수로 제어, 기본: airader.raw):
+ *   airader.raw.news   — 뉴스 기사 (aitimes, gdelt 공통)
+ *   airader.raw.github — GitHub 레포지터리
+ *   airader.raw.paper  — 논문 (향후)
  *
  * Kafka 메시지 형식 (CrawledArticle JSON):
  *   key   : article_id / repo_id (String, nullable)
@@ -34,6 +41,7 @@ import static org.apache.spark.sql.functions.*;
  *
  * 환경변수:
  *   KAFKA_BOOTSTRAP_SERVERS : Kafka 브로커 (기본: localhost:9092)
+ *   KAFKA_TOPIC_PREFIX      : Kafka 토픽 prefix (기본: airader.raw)
  *   KAFKA_CHECKPOINT_PATH   : Spark Streaming 체크포인트 루트 (기본: /tmp/kafka-checkpoint)
  *   KAFKA_STARTING_OFFSETS  : earliest | latest (기본: latest)
  *   BRONZE_BASE_PATH        : Bronze Delta Lake 루트 (기본: /tmp/bronze)
@@ -51,6 +59,9 @@ public class KafkaBronzeConsumerJob {
 
     private static final String KAFKA_CHECKPOINT_PATH =
         System.getenv().getOrDefault("KAFKA_CHECKPOINT_PATH", "/tmp/kafka-checkpoint");
+
+    private static final String KAFKA_TOPIC_PREFIX =
+        System.getenv().getOrDefault("KAFKA_TOPIC_PREFIX", "airader.raw");
 
     private static final String KAFKA_STARTING_OFFSETS =
         System.getenv().getOrDefault("KAFKA_STARTING_OFFSETS", "latest");
@@ -123,7 +134,7 @@ public class KafkaBronzeConsumerJob {
 
         spark.sparkContext().setLogLevel("WARN");
 
-        String topic = "bronze." + sourceType;
+        String topic = KAFKA_TOPIC_PREFIX + "." + sourceType;
         String checkpointPath = KAFKA_CHECKPOINT_PATH + "/" + sourceType;
         String bronzeOutputPath = System.getenv().getOrDefault("BRONZE_BASE_PATH", "/tmp/bronze")
             + "/" + sourceType;
@@ -187,6 +198,31 @@ public class KafkaBronzeConsumerJob {
         query.awaitTermination();
 
         System.out.println("[Bronze Kafka] 처리 완료: " + bronzeOutputPath);
+        publishDoneEvent(sourceType);
+    }
+
+    // -------------------------------------------------------------------------
+    // 파이프라인 완료 이벤트 발행
+    // -------------------------------------------------------------------------
+
+    private static void publishDoneEvent(String sourceType) {
+        String eventTopic = "airader.pipeline.bronze.done";
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_BOOTSTRAP_SERVERS);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+
+        String payload = String.format(
+            "{\"event_type\":\"pipeline.bronze.done\",\"source_type\":\"%s\",\"timestamp\":\"%s\"}",
+            sourceType, Instant.now().toString()
+        );
+
+        try (KafkaProducer<String, String> producer = new KafkaProducer<>(props)) {
+            producer.send(new ProducerRecord<>(eventTopic, sourceType, payload)).get();
+            System.out.println("[Bronze Kafka] 완료 이벤트 발행 → " + eventTopic);
+        } catch (Exception e) {
+            System.err.println("[Bronze Kafka] 완료 이벤트 발행 실패 (무시): " + e.getMessage());
+        }
     }
 
     // -------------------------------------------------------------------------

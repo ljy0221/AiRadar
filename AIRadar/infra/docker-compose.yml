@@ -157,6 +157,9 @@ services:
       # AI Server
       AI_SERVER_URL: http://ai-server:8000
       AI_SERVER_CONCURRENCY: "10"
+      # Kafka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC_PREFIX: "airader.raw"
     volumes:
       - ../backend/build/libs/airadar-spark.jar:/opt/spark-jobs/airadar-spark.jar
     command: >
@@ -207,6 +210,9 @@ services:
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       CRAWLER_TIMEOUT_SEC: "30"
       CRAWLER_DELAY_SEC: "1"
+      CRAWLER_KAFKA_ENABLED: "true"
+      CRAWLER_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      CRAWLER_KAFKA_TOPIC_PREFIX: "airader.raw"
     depends_on:
       - kafka
 

@@ -1,5 +1,9 @@
 package com.mcp.airadar.spark;
 
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
@@ -9,6 +13,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
 import java.util.Properties;
 
 import static com.mcp.airadar.spark.utils.SparkUtils.getArg;
@@ -80,8 +85,35 @@ public class GoldServingJob {
             upsertCompanyTimeline(jdbcUrl, user, password);
             upsertPapers(spark, date, jdbcUrl, user, password);
             upsertGithubRepos(spark, date, jdbcUrl, user, password);
+            publishDoneEvent(date);
         } finally {
             spark.stop();
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // 파이프라인 완료 이벤트 발행
+    // -------------------------------------------------------------------------
+
+    private static void publishDoneEvent(String date) {
+        String kafkaBootstrapServers = System.getenv().getOrDefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092");
+        String eventTopic = "airader.pipeline.gold.done";
+
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+
+        String payload = String.format(
+            "{\"event_type\":\"pipeline.gold.done\",\"batch_date\":\"%s\",\"timestamp\":\"%s\"}",
+            date, Instant.now().toString()
+        );
+
+        try (KafkaProducer<String, String> producer = new KafkaProducer<>(props)) {
+            producer.send(new ProducerRecord<>(eventTopic, date, payload)).get();
+            System.out.println("[Gold] 완료 이벤트 발행 → " + eventTopic);
+        } catch (Exception e) {
+            System.err.println("[Gold] 완료 이벤트 발행 실패 (무시): " + e.getMessage());
         }
     }
 

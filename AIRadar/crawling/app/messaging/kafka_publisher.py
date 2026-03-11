@@ -117,10 +117,10 @@ class CrawlKafkaPublisher:
 
     @staticmethod
     def _topic_for_item(domain: str, target: str) -> str:
-        if domain == "github_archive" and target == "trending_repo":
-            return f"{settings.kafka_topic_prefix}.github.trending_repo"
-        if domain == "github_archive" and target == "repo_pr_document":
-            return f"{settings.kafka_topic_prefix}.github.repo_pr_document"
+        # github_archive 도메인은 airader.raw.github 단일 토픽으로 통합
+        # (KafkaBronzeConsumerJob이 단순 subscribe로 처리 가능)
+        if domain == "github_archive":
+            return f"{settings.kafka_topic_prefix}.github"
         return f"{settings.kafka_topic_prefix}.{domain}"
 
     @staticmethod
