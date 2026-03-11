@@ -36,6 +36,7 @@ with DAG(
     schedule_interval='@hourly',
     start_date=datetime(2025, 1, 1),
     catchup=False,
+    is_paused_upon_creation=True,   # Phase 2(Kafka) 전환으로 비활성화
     tags=['bronze', 'batch'],
 ) as dag:
 
@@ -65,7 +66,7 @@ with DAG(
     schedule_interval='@hourly',
     start_date=datetime(2025, 1, 1),
     catchup=False,
-    is_paused_upon_creation=True,   # Kafka 준비 전까지 비활성화
+    is_paused_upon_creation=False,  # Phase 2 활성화
     tags=['bronze', 'kafka', 'streaming'],
 ) as kafka_dag:
 
