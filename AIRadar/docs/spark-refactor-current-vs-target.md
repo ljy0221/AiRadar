@@ -15,8 +15,8 @@
 - `Bronze`는 크롤링 원본 데이터이며 `Kafka -> S3`로 적재된다.
 - `Silver`는 Spark Worker가 Bronze를 읽어 1차 가공 후 다시 `S3`에 저장한다.
 - `Gold`는 Silver를 AI 모델까지 거쳐 사용자용 데이터로 만든 결과이며 `PostgreSQL`에 저장된다.
-- `Server1`은 수집, 스케줄링, 메인 애플리케이션, Spark 클러스터 진입점 역할을 맡는다.
-- `Server2`는 `Spark Worker2`를 통해 분산 처리 자원을 추가 제공한다.
+- `Server1`은 수집, 스케줄링, Spark 클러스터 진입점 역할을 맡는다.
+- `Server2`는 `Spark Worker2`, AI, DB, API, UI를 포함한 서비스 계층 역할을 맡는다.
 
 즉 이번 리팩토링은 **수집/저장/분산처리/서빙 역할을 명확히 분리한 목표 구조를 기준으로 인프라를 재정렬하는 작업**이다.
 
@@ -30,17 +30,22 @@
 
 - Crawler
 - Kafka
+- Zookeeper
 - Airflow
 - Spark Master
 - Spark Worker1
-- PostgreSQL
-- Redis
-- Spring Boot
-- Frontend
 
 `Server2`
 
 - Spark Worker2
+- PostgreSQL
+- Redis
+- AI Server
+- Spring Boot
+- Frontend
+- Kafka UI
+- pgAdmin
+- RedisInsight
 
 외부
 
@@ -56,7 +61,7 @@
 
 리팩토링 목표는 아래 한 줄로 정리할 수 있다.
 
-`Server1이 수집·스케줄링·서빙의 중심이 되고, Server2는 Spark Worker2로 분산 처리 자원을 제공하며, 중간 데이터는 S3에 저장한다.`
+`Server1이 수집·스케줄링·Spark 제어의 중심이 되고, Server2는 서비스 계층, 운영 GUI, Spark Worker2를 맡으며, 중간 데이터는 S3에 저장한다.`
 
 ### 2.4 중요한 기술적 의미
 
@@ -102,7 +107,8 @@ Spark Standalone에서는 다음 방식으로 동작한다.
 ### 5.1 성능 측면
 
 - `news`, `paper`, `github` 처리 시 두 Worker 자원을 사용할 수 있다.
-- Airflow가 Server1에 있으므로 스케줄링과 Spark 제출 경로가 단순해진다.
+- Airflow가 Server1에 있으므로 스케줄링과 Spark 제출 경로가 단순하다.
+- PostgreSQL, Redis, AI, Backend, Frontend가 Server2에 모여 서비스 계층 관리가 쉬워진다.
 - 배치 시간이 줄어들면 Airflow 스케줄 중첩 위험도 줄어든다.
 
 ### 5.2 안정성 측면
@@ -145,7 +151,8 @@ Bronze 적재와 Silver 처리 결과 저장, Gold 이전 중간 데이터 사�
 분산 운영 시 최소한 아래 통신이 안정적으로 열려 있어야 한다.
 
 - Server1 내부: Airflow -> Spark Master
-- Server2 -> Server1: `7077` (Spark Master)
+- Server1 -> Server2: Airflow -> PostgreSQL / Redis
+- Server2 -> Server1: `17077` (Spark Master)
 - Server1/Server2 -> S3 endpoint
 - Spark Worker -> PostgreSQL `5432`
 
@@ -154,10 +161,15 @@ Bronze 적재와 Silver 처리 결과 저장, Gold 이전 중간 데이터 사�
 ```text
 [Server1]
 Crawler -> Kafka
+Zookeeper
 Airflow
 Spark Master
 Spark Worker1
-PostgreSQL / Redis / Spring Boot / Frontend
+
+[Server2]
+Spark Worker2
+PostgreSQL / Redis / AI Server / Spring Boot / Frontend
+Kafka UI / pgAdmin / RedisInsight
 
                 spark-submit
                     |
@@ -172,7 +184,7 @@ PostgreSQL / Redis / Spring Boot / Frontend
       Bronze(S3) -> Silver(S3)
                      |
                      v
-             Spark + AI -> PostgreSQL(Gold)
+             Spark -> AI Server(Server2) -> PostgreSQL(Gold)
 ```
 
 핵심은 아래다.
@@ -192,6 +204,7 @@ PostgreSQL / Redis / Spring Boot / Frontend
 3. `BRONZE_BASE_PATH`, `SILVER_BASE_PATH`, `S3_ENDPOINT`를 두 서버에서 동일 기준으로 맞춤
 4. S3 인증 방식을 access key 또는 IAM role 중 하나로 확정
 5. Server1/Server2 간 방화벽 포트 확인
+6. Server1 -> Server2 PostgreSQL / Redis / AI Server 접근 확인
 
 ### 권장
 
@@ -213,10 +226,6 @@ PostgreSQL / Redis / Spring Boot / Frontend
 | `airflow` | 배치 스케줄링 및 Spark Job 제출 |
 | `spark-master` | Spark 클러스터 마스터 |
 | `spark-worker1` | 1차 분산 처리 자원 |
-| `postgres` | Gold 데이터 최종 저장소 |
-| `redis` | 캐시 |
-| `backend` | Spring Boot API |
-| `frontend` | 사용자 UI |
 
 권장 외부 포트:
 
@@ -224,30 +233,41 @@ PostgreSQL / Redis / Spring Boot / Frontend
 |--------|-------------|---------------|
 | `kafka` internal | `19092` | `9092` |
 | `kafka` external | `29092` | `29092` |
-| `postgres` | `15432` | `5432` |
-| `redis` | `16379` | `6379` |
 | `spark-master` | `17077` | `7077` |
 | `spark-master-ui` | `18080` | `8080` |
 | `spark-app-ui` | `14040` | `4040` |
 | `crawler` | `18002` | `8002` |
-| `ai-server` | `18000` | `8000` |
 | `airflow` | `18081` | `8080` |
-| `backend` | `18888` | `8888` |
-| `frontend` | `13000` | `3000` |
 
 ### 8.2 `docker-compose.server2.yml`
 
-`Server2`는 Spark 분산 처리 확장 노드 역할을 맡는다.
+`Server2`는 Spark 분산 처리 확장 노드이자 서비스 계층 역할을 맡는다.
 
 | 서비스 | 역할 |
 |--------|------|
 | `spark-worker2` | 2차 분산 처리 자원 |
+| `postgres` | Gold 데이터 최종 저장소 |
+| `redis` | 캐시 |
+| `ai-server` | AI 분석 / embedding 저장 |
+| `backend` | Spring Boot API |
+| `frontend` | 사용자 UI |
+| `kafka-ui` | Kafka 토픽 / consumer 상태 확인 |
+| `pgadmin` | PostgreSQL 관리 GUI |
+| `redis-insight` | Redis 관리 GUI |
 
 권장 외부 포트:
 
 | 서비스 | 호스트 포트 | 컨테이너 포트 |
 |--------|-------------|---------------|
 | `spark-worker2-ui` | `18082` | `8082` |
+| `postgres` | `15432` | `5432` |
+| `redis` | `16379` | `6379` |
+| `ai-server` | `18000` | `8000` |
+| `backend` | `18888` | `8888` |
+| `frontend` | `13000` | `3000` |
+| `kafka-ui` | `18090` | `8080` |
+| `pgadmin` | `18050` | `80` |
+| `redis-insight` | `18001` | `5540` |
 
 ### 8.3 외부 서비스
 
@@ -264,18 +284,20 @@ PostgreSQL / Redis / Spring Boot / Frontend
 | 스케줄링 | `airflow` | - | - |
 | Spark 제어 | `spark-master` | - | - |
 | Spark 실행 | `spark-worker1` | `spark-worker2` | - |
+| AI | - | `ai-server` | - |
+| 운영 GUI | - | `kafka-ui`, `pgadmin`, `redis-insight` | - |
 | 중간 저장 | - | - | `S3` |
-| 최종 저장 | `postgres` | - | - |
-| 캐시 | `redis` | - | - |
-| API | `backend` | - | - |
-| UI | `frontend` | - | - |
+| 최종 저장 | - | `postgres` | - |
+| 캐시 | - | `redis` | - |
+| API | - | `backend` | - |
+| UI | - | `frontend` | - |
 
 ## 9. 결론
 
 목표 구조의 핵심은 다음과 같다.
 
-1. `Server1`은 크롤링, Kafka, Airflow, Spark Master/Worker1, 애플리케이션 서빙을 담당한다.
-2. `Server2`는 `Spark Worker2`를 통해 분산 처리 자원을 제공한다.
+1. `Server1`은 크롤링, Kafka, Airflow, Spark Master/Worker1을 담당한다.
+2. `Server2`는 `Spark Worker2`, AI Server, PostgreSQL, Redis, Spring Boot, Frontend, 운영 GUI를 담당한다.
 3. `Bronze/Silver`는 `S3`, `Gold`는 `PostgreSQL`에 저장한다.
 
 따라서 이번 리팩토링은

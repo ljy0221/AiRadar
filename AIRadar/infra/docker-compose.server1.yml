@@ -34,67 +34,6 @@ services:
       - kafka-data:/var/lib/kafka/data
     restart: unless-stopped
 
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: server1-postgres
-    hostname: postgres
-    ports:
-      - "${POSTGRES_PUBLISHED_PORT:-15432}:5432"
-    command: >
-      postgres
-      -c shared_buffers=512MB
-      -c work_mem=16MB
-      -c maintenance_work_mem=256MB
-      -c max_connections=200
-      -c effective_cache_size=1536MB
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-airadar}
-      POSTGRES_USER: ${POSTGRES_USER:-airadar}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/01_init.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-airadar}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  postgres-init:
-    image: postgres:16
-    container_name: server1-postgres-init
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      PGHOST: postgres
-      PGPORT: "5432"
-      PGDATABASE: ${POSTGRES_DB:-airadar}
-      PGUSER: ${POSTGRES_USER:-airadar}
-      PGPASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
-    entrypoint: >
-      /bin/sh -c "
-        set -eu;
-        psql -v ON_ERROR_STOP=1 -c \"CREATE SCHEMA IF NOT EXISTS airflow;\";
-        if [ \"$(psql -tAc \\\"SELECT 1 FROM pg_roles WHERE rolname='${AIRFLOW_DB_USER:-airflow_user}'\\\")\" != \"1\" ]; then
-          psql -v ON_ERROR_STOP=1 -c \"CREATE USER ${AIRFLOW_DB_USER:-airflow_user} WITH PASSWORD '${AIRFLOW_DB_PASSWORD:-airflow_secret}';\";
-        fi;
-        psql -v ON_ERROR_STOP=1 -c \"GRANT ALL ON SCHEMA airflow TO ${AIRFLOW_DB_USER:-airflow_user};\";
-        psql -v ON_ERROR_STOP=1 -c \"ALTER USER ${AIRFLOW_DB_USER:-airflow_user} SET search_path = airflow;\";
-      "
-    restart: "no"
-
-  redis:
-    image: redis:7-alpine
-    container_name: server1-redis
-    hostname: redis
-    ports:
-      - "${REDIS_PUBLISHED_PORT:-16379}:6379"
-    volumes:
-      - redis-data:/data
-    restart: unless-stopped
-
   spark-master:
     build:
       context: ./spark
@@ -129,8 +68,6 @@ services:
     hostname: spark-worker1
     depends_on:
       - spark-master
-      - ai-server
-      - postgres
     environment:
       SPARK_MODE: worker
       SPARK_MASTER_URL: spark://spark-master:7077
@@ -143,10 +80,10 @@ services:
       S3_ENDPOINT: ${S3_ENDPOINT:-}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      AI_SERVER_URL: http://ai-server:8000
+      AI_SERVER_URL: http://${SERVER2_PRIVATE_HOST:-localhost}:${SERVER2_AI_SERVER_PORT:-18000}
       AI_SERVER_CONCURRENCY: ${AI_SERVER_CONCURRENCY:-20}
       AI_BATCH_SIZE: ${AI_BATCH_SIZE:-10}
-      POSTGRES_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-airadar}
+      POSTGRES_JDBC_URL: jdbc:postgresql://${SERVER2_PRIVATE_HOST:-localhost}:${SERVER2_POSTGRES_PORT:-15432}/${POSTGRES_DB:-airadar}
       POSTGRES_USER: ${POSTGRES_USER:-airadar}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
     volumes:
@@ -178,45 +115,12 @@ services:
       RAW_S3_BUCKET: ${RAW_S3_BUCKET:-}
     restart: unless-stopped
 
-  ai-server:
-    build:
-      context: ../ai-server
-    container_name: server1-ai-server
-    hostname: ai-server
-    depends_on:
-      postgres:
-        condition: service_healthy
-    ports:
-      - "${AI_SERVER_PORT:-18000}:8000"
-    environment:
-      GMS_KEY: ${GMS_KEY:-}
-      EMBEDDING_MODEL: paraphrase-multilingual-mpnet-base-v2
-      AI_BATCH_SIZE: ${AI_BATCH_SIZE:-10}
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: "5432"
-      POSTGRES_DB: ${POSTGRES_DB:-airadar}
-      POSTGRES_USER: ${POSTGRES_USER:-airadar}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    restart: unless-stopped
-
   airflow:
     build:
       context: ./airflow
     container_name: server1-airflow
     hostname: airflow
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      postgres-init:
-        condition: service_completed_successfully
       spark-master:
         condition: service_started
     ports:
@@ -236,55 +140,17 @@ services:
       AIRFLOW__CORE__EXECUTOR: ${AIRFLOW_EXECUTOR:-LocalExecutor}
       AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW_LOAD_EXAMPLES:-False}
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
-        postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow_user}:${AIRFLOW_DB_PASSWORD:-airflow_secret}@postgres:5432/${POSTGRES_DB:-airadar}?options=-csearch_path%3Dairflow
-      AIRFLOW__CELERY__RESULT_BACKEND: redis://redis:6379/0
-      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+        postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow_user}:${AIRFLOW_DB_PASSWORD:-airflow_secret}@${SERVER2_PRIVATE_HOST:-localhost}:${SERVER2_POSTGRES_PORT:-15432}/${POSTGRES_DB:-airadar}?options=-csearch_path%3Dairflow
+      AIRFLOW__CELERY__RESULT_BACKEND: redis://${SERVER2_PRIVATE_HOST:-localhost}:${SERVER2_REDIS_PORT:-16379}/0
+      AIRFLOW__CELERY__BROKER_URL: redis://${SERVER2_PRIVATE_HOST:-localhost}:${SERVER2_REDIS_PORT:-16379}/0
       _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USERNAME:-admin}
       _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-change-me}
       AIRFLOW_CONN_SPARK_DEFAULT: spark://spark-master:7077
       CRAWLING_API_BASE_URL: http://crawler:8002
-      POSTGRES_URL: postgresql://${POSTGRES_USER:-airadar}:${POSTGRES_PASSWORD:-airadar_secret}@postgres:5432/${POSTGRES_DB:-airadar}
-    restart: unless-stopped
-
-  backend:
-    build:
-      context: ../backend
-    container_name: server1-backend
-    hostname: backend
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    ports:
-      - "${BACKEND_PORT:-18888}:8888"
-    environment:
-      POSTGRES_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-airadar}
-      POSTGRES_USER: ${POSTGRES_USER:-airadar}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ../frontend
-    container_name: server1-frontend
-    hostname: frontend
-    depends_on:
-      backend:
-        condition: service_started
-    ports:
-      - "${FRONTEND_PORT:-13000}:3000"
-    environment:
-      PORT: "3000"
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8888}
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-airadar}:${POSTGRES_PASSWORD:-airadar_secret}@${SERVER2_PRIVATE_HOST:-localhost}:${SERVER2_POSTGRES_PORT:-15432}/${POSTGRES_DB:-airadar}
     restart: unless-stopped
 
 volumes:
   zookeeper-data:
   zookeeper-log:
   kafka-data:
-  postgres-data:
-  redis-data:
