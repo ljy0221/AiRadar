@@ -70,6 +70,15 @@ public class KafkaBronzeConsumerJob {
     // Kafka 메시지 파싱 스키마 (크롤링 서버 CrawledArticle 구조)
     // -------------------------------------------------------------------------
 
+    /** 논문 extra 필드 (크롤링 서버 arxiv_api.py 기준) */
+    private static final StructType PAPER_EXTRA_SCHEMA = DataTypes.createStructType(new StructField[]{
+        DataTypes.createStructField("updated_at",        DataTypes.StringType, true),
+        DataTypes.createStructField("pdf_url",           DataTypes.StringType, true),
+        DataTypes.createStructField("categories",        DataTypes.createArrayType(DataTypes.StringType), true),
+        DataTypes.createStructField("primary_category",  DataTypes.StringType, true),
+        DataTypes.createStructField("search_query",      DataTypes.StringType, true),
+    });
+
     /** GitHub extra 필드 (크롤링 서버 github_api.py 기준) */
     private static final StructType GITHUB_EXTRA_SCHEMA = DataTypes.createStructType(new StructField[]{
         DataTypes.createStructField("full_name",      DataTypes.StringType,    true),
@@ -78,6 +87,17 @@ public class KafkaBronzeConsumerJob {
         DataTypes.createStructField("forks",          DataTypes.LongType,      true),
         DataTypes.createStructField("topics",         DataTypes.createArrayType(DataTypes.StringType), true),
         DataTypes.createStructField("readme_excerpt", DataTypes.StringType,    true),
+    });
+
+    /** 논문 메시지 스키마 (크롤링 서버 CrawledArticle 기준) */
+    private static final StructType PAPER_MESSAGE_SCHEMA = DataTypes.createStructType(new StructField[]{
+        DataTypes.createStructField("source",       DataTypes.StringType, true),
+        DataTypes.createStructField("url",          DataTypes.StringType, true),
+        DataTypes.createStructField("title",        DataTypes.StringType, true),
+        DataTypes.createStructField("author",       DataTypes.StringType, true),
+        DataTypes.createStructField("published_at", DataTypes.StringType, true),
+        DataTypes.createStructField("body",         DataTypes.StringType, true),
+        DataTypes.createStructField("extra",        PAPER_EXTRA_SCHEMA,   true),
     });
 
     /** 뉴스 메시지 스키마 */
@@ -181,8 +201,9 @@ public class KafkaBronzeConsumerJob {
         Dataset<Row> bronzeStream = switch (sourceType) {
             case "news"   -> parseNews(valueStream);
             case "github" -> parseGithub(valueStream);
+            case "paper"  -> parsePaper(valueStream);
             default -> throw new IllegalArgumentException("지원하지 않는 source-type: " + sourceType
-                + " (지원: news, github)");
+                + " (지원: news, github, paper)");
         };
 
         // foreachBatch: 각 마이크로배치를 Delta Lake에 Append
@@ -248,6 +269,33 @@ public class KafkaBronzeConsumerJob {
             when(col("msg.published_at").isNotNull(), to_date(col("msg.published_at")))
                 .otherwise(current_date()).as("batch_date")
         ).filter(col("article_id").isNotNull());
+    }
+
+    // -------------------------------------------------------------------------
+    // 논문 파싱 → Bronze 스키마 변환
+    // -------------------------------------------------------------------------
+
+    private static Dataset<Row> parsePaper(Dataset<Row> valueStream) {
+        Dataset<Row> parsed = valueStream.select(
+            from_json(col("raw_json"), PAPER_MESSAGE_SCHEMA).as("msg"),
+            col("kafka_timestamp")
+        );
+
+        // SilverRefinementJob이 Bronze에서 읽는 컬럼과 일치:
+        // paper_id, title, abstract, url, source, authors, published_at, batch_date
+        return parsed.select(
+            sha1(col("msg.url")).as("paper_id"),
+            col("msg.title").as("title"),
+            col("msg.body").as("abstract"),        // body → abstract
+            col("msg.url").as("url"),
+            col("msg.source").as("source"),
+            col("msg.author").as("author"),        // 대표 저자 (단일)
+            array(col("msg.author")).as("authors"), // SilverRefinementJob이 배열로 읽음
+            col("msg.published_at").as("published_at"),
+            col("kafka_timestamp").as("crawled_at"),
+            when(col("msg.published_at").isNotNull(), to_date(col("msg.published_at")))
+                .otherwise(current_date()).as("batch_date")
+        ).filter(col("paper_id").isNotNull());
     }
 
     // -------------------------------------------------------------------------

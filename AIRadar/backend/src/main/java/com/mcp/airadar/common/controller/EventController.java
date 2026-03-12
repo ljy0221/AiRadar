@@ -1,4 +1,4 @@
-package com.mcp.airadar.controller;
+package com.mcp.airadar.common.controller;
 
 import com.mcp.airadar.kafka.UserEventProducer;
 import com.mcp.airadar.kafka.dto.UserEvent;

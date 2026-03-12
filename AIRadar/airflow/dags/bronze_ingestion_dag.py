@@ -73,7 +73,7 @@ with DAG(
     # Trigger.AvailableNow() 사용 — 현재 Kafka 메시지 모두 처리 후 종료
     # 체크포인트가 오프셋을 관리하므로 재실행 시 중복 처리 없음
     with TaskGroup('bronze_kafka_tasks') as kafka_group:
-        for source in ['news', 'github']:
+        for source in ['news', 'github', 'paper']:
             SparkSubmitOperator(
                 task_id=f'consume_{source}',
                 application='/opt/spark-jobs/airadar-spark.jar',

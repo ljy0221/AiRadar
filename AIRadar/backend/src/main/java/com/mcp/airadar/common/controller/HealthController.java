@@ -1,4 +1,4 @@
-package com.mcp.airadar.controller;
+package com.mcp.airadar.common.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
