@@ -1,1 +1,36 @@
 @import "tailwindcss";
+
+@theme {
+  --color-bg-primary: var(--bg-primary);
+  --color-text-primary: var(--text-primary);
+  --color-accent: var(--accent);
+}
+
+@layer base {
+  :root {
+    --bg-primary: #FFFFFF;
+    --text-primary: #2C3E50;
+    --accent: #D16D6D;
+  }
+
+  /* 다크 모드*/
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #0A0B1A;
+      --text-primary: #E6EDF3;
+      --accent: #00F0FF;
+    }
+  }
+
+  /* 수동 테마 토글 */
+  .dark {
+    --bg-primary: #0A0B1A;
+    --text-primary: #E6EDF3;
+    --accent: #00F0FF;
+  }
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
