@@ -21,6 +21,8 @@ pipeline {
   }
 
   environment {
+    REPO_URL = 'https://lab.ssafy.com/s14-bigdata-dist-sub1/S14P21B104.git'
+    GIT_CREDENTIAL = 'gitlab-http-token'
     REPO_DIR = '~/S14P21B104'
     REPO_URL = 'https://lab.ssafy.com/s14-bigdata-dist-sub1/S14P21B104.git'
     GIT_CREDENTIAL = 'gitlab-http-token'
@@ -57,7 +59,7 @@ pipeline {
             'AIRadar/infra/docker-compose.server2.yml',
             'AIRadar/infra/scripts/deploy-server1.sh',
             'AIRadar/infra/scripts/deploy-server2.sh',
-            'AIRadar/backend/build/libs',
+            'AIRadar/backend/build/libs'
           ]
           for (file in files) {
             if (!fileExists(file)) {
@@ -81,6 +83,7 @@ pipeline {
             tar --exclude=.git -czf - . | ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} '
               set -e
               mkdir -p ${REPO_DIR}
+              rm -rf ${REPO_DIR}/AIRadar/backend/build
               tar -xzf - -C ${REPO_DIR}
               cd ${REPO_DIR}
               bash AIRadar/infra/scripts/deploy-server2.sh
@@ -103,6 +106,7 @@ pipeline {
             tar --exclude=.git -czf - . | ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} '
               set -e
               mkdir -p ${REPO_DIR}
+              rm -rf ${REPO_DIR}/AIRadar/backend/build
               tar -xzf - -C ${REPO_DIR}
               cd ${REPO_DIR}
               bash AIRadar/infra/scripts/deploy-server1.sh
