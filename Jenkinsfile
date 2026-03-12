@@ -21,6 +21,8 @@ pipeline {
   }
 
   environment {
+    REPO_URL = 'https://lab.ssafy.com/s14-bigdata-dist-sub1/S14P21B104.git'
+    GIT_CREDENTIAL = 'gitlab-http-token'
     REPO_DIR = '~/S14P21B104'
     SERVER1_HOST = 'ubuntu@j14b104.p.ssafy.io'
     SERVER2_HOST = 'ubuntu@j14b104a.p.ssafy.io'
@@ -31,7 +33,8 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        checkout scm
+        deleteDir()
+        git branch: params.DEPLOY_BRANCH, credentialsId: env.GIT_CREDENTIAL, url: env.REPO_URL
       }
     }
 
@@ -54,7 +57,7 @@ pipeline {
             'AIRadar/infra/docker-compose.server2.yml',
             'AIRadar/infra/scripts/deploy-server1.sh',
             'AIRadar/infra/scripts/deploy-server2.sh',
-            'AIRadar/backend/build/libs',
+            'AIRadar/backend/build/libs'
           ]
           for (file in files) {
             if (!fileExists(file)) {
@@ -75,12 +78,12 @@ pipeline {
       steps {
         sshagent(credentials: [env.SERVER2_SSH_CREDENTIAL]) {
           sh """
-            ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} '
+            tar --exclude=.git -czf - . | ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} '
               set -e
+              mkdir -p ${REPO_DIR}
+              rm -rf ${REPO_DIR}/AIRadar/backend/build
+              tar -xzf - -C ${REPO_DIR}
               cd ${REPO_DIR}
-              git fetch origin
-              git checkout ${DEPLOY_BRANCH}
-              git pull --ff-only origin ${DEPLOY_BRANCH}
               bash AIRadar/infra/scripts/deploy-server2.sh
             '
           """
@@ -98,12 +101,12 @@ pipeline {
       steps {
         sshagent(credentials: [env.SERVER1_SSH_CREDENTIAL]) {
           sh """
-            ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} '
+            tar --exclude=.git -czf - . | ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} '
               set -e
+              mkdir -p ${REPO_DIR}
+              rm -rf ${REPO_DIR}/AIRadar/backend/build
+              tar -xzf - -C ${REPO_DIR}
               cd ${REPO_DIR}
-              git fetch origin
-              git checkout ${DEPLOY_BRANCH}
-              git pull --ff-only origin ${DEPLOY_BRANCH}
               bash AIRadar/infra/scripts/deploy-server1.sh
             '
           """
