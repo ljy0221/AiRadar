@@ -81,7 +81,7 @@ pipeline {
             tar --exclude=.git -czf - . | ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} '
               set -e
               mkdir -p ${REPO_DIR}
-              rm -rf ${REPO_DIR}/AIRadar/backend/build
+              sudo rm -rf ${REPO_DIR}/AIRadar/backend/build
               tar -xzf - -C ${REPO_DIR}
               cd ${REPO_DIR}
               bash AIRadar/infra/scripts/deploy-server2.sh
@@ -104,7 +104,7 @@ pipeline {
             tar --exclude=.git -czf - . | ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} '
               set -e
               mkdir -p ${REPO_DIR}
-              rm -rf ${REPO_DIR}/AIRadar/backend/build
+              sudo rm -rf ${REPO_DIR}/AIRadar/backend/build
               tar -xzf - -C ${REPO_DIR}
               cd ${REPO_DIR}
               bash AIRadar/infra/scripts/deploy-server1.sh
