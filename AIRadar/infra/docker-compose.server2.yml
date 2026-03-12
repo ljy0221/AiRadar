@@ -4,7 +4,7 @@ services:
     container_name: server2-postgres
     hostname: postgres
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PUBLISHED_PORT:-15432}:5432"
     command: >
       postgres
       -c shared_buffers=512MB
@@ -55,30 +55,9 @@ services:
     container_name: server2-redis
     hostname: redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PUBLISHED_PORT:-16379}:6379"
     volumes:
       - redis-data:/data
-    restart: unless-stopped
-
-  backend:
-    build:
-      context: ../backend
-    container_name: server2-backend
-    hostname: backend
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    ports:
-      - "${BACKEND_PORT:-8888}:8888"
-    environment:
-      POSTGRES_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-airadar}
-      POSTGRES_USER: ${POSTGRES_USER:-airadar}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
-      REDIS_HOST: redis
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
     restart: unless-stopped
 
   ai-server:
@@ -90,7 +69,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "${AI_SERVER_PORT:-18000}:8000"
     environment:
       GMS_KEY: ${GMS_KEY:-}
       EMBEDDING_MODEL: paraphrase-multilingual-mpnet-base-v2
@@ -108,43 +87,25 @@ services:
       start_period: 60s
     restart: unless-stopped
 
-  airflow:
+  backend:
     build:
-      context: ./airflow
-    container_name: server2-airflow
-    hostname: airflow
+      context: ../backend
+    container_name: server2-backend
+    hostname: backend
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
-      postgres-init:
-        condition: service_completed_successfully
     ports:
-      - "8081:8080"
-    command: >
-      bash -c "
-        airflow db migrate &&
-        airflow users create --username \"$${_AIRFLOW_WWW_USER_USERNAME:-admin}\" --password \"$${_AIRFLOW_WWW_USER_PASSWORD:-admin}\" --firstname admin --lastname admin --role Admin --email admin@example.com || true;
-        exec airflow standalone
-      "
-    volumes:
-      - ../airflow/dags:/opt/airflow/dags
-      - ../backend/build/libs:/opt/spark-jobs
+      - "${BACKEND_PORT:-18888}:8888"
     environment:
-      AIRFLOW_UID: ${AIRFLOW_UID:-50000}
-      AIRFLOW_GID: ${AIRFLOW_GID:-0}
-      AIRFLOW__CORE__EXECUTOR: ${AIRFLOW_EXECUTOR:-LocalExecutor}
-      AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW_LOAD_EXAMPLES:-False}
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
-        postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow_user}:${AIRFLOW_DB_PASSWORD:-airflow_secret}@postgres:5432/${POSTGRES_DB:-airadar}?options=-csearch_path%3Dairflow
-      AIRFLOW__CELERY__RESULT_BACKEND: redis://redis:6379/0
-      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
-      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USERNAME:-admin}
-      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-change-me}
-      AIRFLOW_CONN_SPARK_DEFAULT: spark://${SERVER1_PRIVATE_HOST:-localhost}:7077
-      CRAWLING_API_BASE_URL: http://${SERVER1_PRIVATE_HOST:-localhost}:8002
-      POSTGRES_URL: postgresql://${POSTGRES_USER:-airadar}:${POSTGRES_PASSWORD:-airadar_secret}@postgres:5432/${POSTGRES_DB:-airadar}
+      POSTGRES_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-airadar}
+      POSTGRES_USER: ${POSTGRES_USER:-airadar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
     restart: unless-stopped
 
   frontend:
@@ -156,10 +117,49 @@ services:
       backend:
         condition: service_started
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${FRONTEND_PORT:-13000}:3000"
     environment:
       PORT: "3000"
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8888}
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:18888}
+    restart: unless-stopped
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: server2-kafka-ui
+    hostname: kafka-ui
+    ports:
+      - "${KAFKA_UI_PORT:-18090}:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: airadar
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: ${SERVER1_PRIVATE_HOST:-localhost}:${SERVER1_KAFKA_EXTERNAL_PORT:-29092}
+      DYNAMIC_CONFIG_ENABLED: "true"
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: server2-pgadmin
+    hostname: pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${PGADMIN_PORT:-18050}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-change-me}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    restart: unless-stopped
+
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: server2-redis-insight
+    hostname: redis-insight
+    ports:
+      - "${REDIS_INSIGHT_PORT:-18001}:5540"
+    volumes:
+      - redisinsight-data:/data
     restart: unless-stopped
 
   spark-worker2:
@@ -168,19 +168,19 @@ services:
     container_name: server2-spark-worker2
     hostname: spark-worker2
     ports:
-      - "8082:8082"
+      - "${SPARK_WORKER2_UI_PORT:-18082}:8082"
     environment:
       SPARK_MODE: worker
-      SPARK_MASTER_URL: spark://${SERVER1_PRIVATE_HOST:-localhost}:7077
+      SPARK_MASTER_URL: spark://${SERVER1_PRIVATE_HOST:-localhost}:${SERVER1_SPARK_MASTER_PORT:-17077}
       SPARK_WORKER_WEBUI_PORT: "8082"
       SPARK_WORKER_CORES: ${SPARK_WORKER2_CORES:-2}
       SPARK_WORKER_MEMORY: ${SPARK_WORKER2_MEMORY:-4g}
       SPARK_NO_DAEMONIZE: "true"
-      MINIO_ENDPOINT: http://${SERVER1_PRIVATE_HOST:-localhost}:9000
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-minioadmin}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-minioadmin123}
-      BRONZE_BASE_PATH: ${BRONZE_BASE_PATH:-s3a://airader/bronze}
-      SILVER_BASE_PATH: ${SILVER_BASE_PATH:-s3a://airader/silver}
+      BRONZE_BASE_PATH: ${BRONZE_BASE_PATH:-}
+      SILVER_BASE_PATH: ${SILVER_BASE_PATH:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AI_SERVER_URL: http://ai-server:8000
       AI_SERVER_CONCURRENCY: ${AI_SERVER_CONCURRENCY:-20}
       AI_BATCH_SIZE: ${AI_BATCH_SIZE:-10}
@@ -191,7 +191,7 @@ services:
       - ../backend/build/libs:/opt/spark-jobs
     command: >
       /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
-      spark://${SERVER1_PRIVATE_HOST:-localhost}:7077
+      spark://${SERVER1_PRIVATE_HOST:-localhost}:${SERVER1_SPARK_MASTER_PORT:-17077}
     depends_on:
       ai-server:
         condition: service_healthy
@@ -200,3 +200,5 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  pgadmin-data:
+  redisinsight-data:
