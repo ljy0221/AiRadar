@@ -12,7 +12,7 @@ export const CompanyActivityCard = ({ company }: { company: CompanyActivity }) =
     <div className="w-full flex flex-col mb-8 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden bg-white dark:bg-[#1a1c2e] shadow-sm">
       
       {/* 상단 띠/헤더 영역 */}
-      <div className="flex items-center gap-4 px-6 py-4 bg-gray-50/50 dark:bg-gray-800/30">
+      <div className="flex items-center gap-4 px-6 py-4 bg-gray-50 dark:bg-gray-800/50/50 dark:bg-gray-800/30">
         <div 
           className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-inner"
           style={{ backgroundColor: company.color }}
@@ -21,7 +21,7 @@ export const CompanyActivityCard = ({ company }: { company: CompanyActivity }) =
         </div>
         
         <div className="flex-1">
-          <h3 className="text-sm font-bold text-gray-500 mb-1.5">{company.name}</h3>
+          <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-1.5">{company.name}</h3>
           
           {/* Progress Bar */}
           <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">

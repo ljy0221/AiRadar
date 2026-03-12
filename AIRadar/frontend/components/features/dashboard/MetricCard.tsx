@@ -17,7 +17,7 @@ export const MetricCard = ({ title, value, subtitle, icon, trend }: MetricCardPr
       <div>
         <h4 className="text-3xl font-bold mb-1">{value}</h4>
         <h5 className="text-base font-semibold text-[color:var(--color-text-primary)]">{title}</h5>
-        <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>
       </div>
     </div>
   );

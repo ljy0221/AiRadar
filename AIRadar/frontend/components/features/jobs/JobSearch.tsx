@@ -25,7 +25,7 @@ export const JobSearch = () => {
         <input
           type="text"
           placeholder="직업을 검색해보세요.. (예: 프론트엔드 개발자)"
-          className="w-full pl-16 pr-6 py-5 rounded-full text-lg shadow-md border border-gray-100 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all dark:bg-[#1a1c2e] dark:border-gray-800"
+          className="w-full pl-16 pr-6 py-5 rounded-full text-lg shadow-md border border-gray-100 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all dark:bg-[#1a1c2e] dark:border-gray-800"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />

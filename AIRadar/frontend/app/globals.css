@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* 수동 다크모드(.dark) 토글을 위한 커스텀 variant (Tailwind v4) */
+@custom-variant dark (&:is(.dark *));
+
 @theme {
   --color-bg-primary: var(--bg-primary);
   --color-text-primary: var(--text-primary);

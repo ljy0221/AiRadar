@@ -59,7 +59,7 @@ export const CorporateActivityTab = () => {
         
         {/* 설명 (옵셔널) */}
         <div className="mb-8 flex justify-between items-end">
-          <p className="text-gray-500 text-sm">주요 AI 선도 기업들의 핵심 활동 및 오픈소스 타임라인</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">주요 AI 선도 기업들의 핵심 활동 및 오픈소스 타임라인</p>
         </div>
 
         {/* 기업 목록 렌더링 */}

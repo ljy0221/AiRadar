@@ -27,7 +27,7 @@ export const CoreTaskCard = ({ number, title, description, sources, onOpenScenar
         <p className="text-gray-600 dark:text-gray-400">{description}</p>
       </div>
 
-      <div className="flex flex-col gap-1.5 text-xs text-gray-500 mt-2">
+      <div className="flex flex-col gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-2">
         {sources.map((src, i) => (
           <div key={i} className="flex items-center gap-1.5">
              {src.type === 'paper' ? <FileText className="w-3.5 h-3.5" /> : <Newspaper className="w-3.5 h-3.5" />}

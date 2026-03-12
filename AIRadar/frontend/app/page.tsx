@@ -5,7 +5,7 @@ export default function Home() {
     <div className="w-full flex flex-col items-center">
       <HeroSection />
       <FeatureSection />
-      {/* <NewsletterSection /> */}
+      <NewsletterSection />
       <FaqSection />
     </div>
   );

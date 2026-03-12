@@ -23,7 +23,7 @@ export const TimelineFilter = ({ currentCategory, setCategory }: TimelineFilterP
               className={`px-6 py-1.5 rounded-full text-sm font-semibold transition-colors ${
                 currentCategory === type.id
                   ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:bg-gray-700'
               }`}
             >
               {type.label}
@@ -34,17 +34,17 @@ export const TimelineFilter = ({ currentCategory, setCategory }: TimelineFilterP
         {/* 하단 서브 필터 (디자인 목업 요소) */}
         <div className="flex gap-2">
           <button className="px-5 py-1.5 rounded-full bg-[var(--color-accent)] text-white text-sm font-semibold">전체</button>
-          <button className="px-5 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-500 text-sm font-semibold">필터</button>
-          <button className="px-5 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-500 text-sm font-semibold">필터</button>
-          <button className="px-5 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-500 text-sm font-semibold">필터</button>
+          <button className="px-5 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-sm font-semibold">필터</button>
+          <button className="px-5 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-sm font-semibold">필터</button>
+          <button className="px-5 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-sm font-semibold">필터</button>
         </div>
       </div>
 
       {/* 달력 모양 버튼 */}
       <div className="w-fit">
-        <button className="flex items-center gap-2 px-5 py-2.5 border-2 border-gray-200 dark:border-gray-800 rounded-lg text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+        <button className="flex items-center gap-2 px-5 py-2.5 border-2 border-gray-200 dark:border-gray-800 rounded-lg text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-50 dark:bg-gray-800/50 dark:hover:bg-gray-800 transition-colors">
           달력
-          <CalendarDays className="w-5 h-5 ml-1 text-gray-500" />
+          <CalendarDays className="w-5 h-5 ml-1 text-gray-500 dark:text-gray-400" />
         </button>
       </div>
     </div>

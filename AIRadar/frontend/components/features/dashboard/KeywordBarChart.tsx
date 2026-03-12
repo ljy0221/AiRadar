@@ -12,7 +12,7 @@ export const KeywordBarChart = ({ data }: { data: BarData[] }) => {
   return (
     <div className="w-full bg-white dark:bg-[#1a1c2e] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col h-[400px]">
       <h3 className="text-xl font-bold mb-2">키워드 분석</h3>
-      <p className="text-sm text-gray-500 mb-6">트렌드 점수 비교</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">트렌드 점수 비교</p>
       <div className="flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>

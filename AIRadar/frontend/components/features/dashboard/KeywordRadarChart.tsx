@@ -6,7 +6,7 @@ export const KeywordRadarChart = ({ data }: { data: any[] }) => {
   return (
     <div className="w-full bg-white dark:bg-[#1a1c2e] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col h-[400px]">
       <h3 className="text-xl font-bold mb-2">키워드 종합 분석</h3>
-      <p className="text-sm text-gray-500 mb-6">상위 3개 키워드</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">상위 3개 키워드</p>
       <div className="flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>

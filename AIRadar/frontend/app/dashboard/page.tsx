@@ -6,7 +6,7 @@ const metricsData = [
   { title: "Agentic Workflow", value: "2", subtitle: "이번 주 떠오르는 기술", icon: <TrendingUp className="w-6 h-6" />, trend: 'up' as const },
   { title: "Prompt Engineering", value: "1", subtitle: "이번 주 사라지는 기술", icon: <TrendingDown className="w-6 h-6 text-yellow-500" />, trend: 'down' as const },
   { title: "평균 90.2점", value: "2", subtitle: "피크 상태 기술", icon: <Activity className="w-6 h-6 text-red-500" /> },
-  { title: "6개 카테고리", value: "6", subtitle: "추적 중인 키워드", icon: <ListOrdered className="w-6 h-6 text-gray-500" /> },
+  { title: "6개 카테고리", value: "6", subtitle: "추적 중인 키워드", icon: <ListOrdered className="w-6 h-6 text-gray-500 dark:text-gray-400" /> },
 ];
 
 const keywordListData = [
@@ -55,7 +55,7 @@ export default function DashboardPage() {
     <div className="w-full max-w-7xl px-4 md:px-8 py-8 flex flex-col gap-8">
       <div>
         <h1 className="text-3xl font-bold mb-2">대시보드</h1>
-        <p className="text-gray-500">실시간 AI 기술 동향 및 키워드 분석</p>
+        <p className="text-gray-500 dark:text-gray-400">실시간 AI 기술 동향 및 키워드 분석</p>
       </div>
 
       {/* Top Metrics Row */}
@@ -68,7 +68,7 @@ export default function DashboardPage() {
       {/* Technical Analysis List */}
       <div className="bg-white dark:bg-[#1a1c2e] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
         <h2 className="text-2xl font-bold mb-6">기술 분석</h2>
-        <p className="text-sm text-gray-500 mb-6 -mt-4">각 AI 키워드의 라이프사이클 현황 및 트렌드 점수</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 -mt-4">각 AI 키워드의 라이프사이클 현황 및 트렌드 점수</p>
         <KeywordTrendList data={keywordListData} />
       </div>
 
