@@ -40,6 +40,8 @@ public class TechLifecycle {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    public TechLifecycle() {}
+
     public String getKeyword() { return keyword; }
     public String getStatus() { return status; }
     public LocalDate getPeakDate() { return peakDate; }

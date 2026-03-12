@@ -66,6 +66,8 @@ public class NewsItem {
     @Column(name = "is_active")
     private Boolean isActive = true;
 
+    public NewsItem() {}
+
     public String getArticleId() { return articleId; }
     public String getTitle() { return title; }
     public String getContent() { return content; }

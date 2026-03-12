@@ -44,6 +44,8 @@ public class JobAiRisk {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    public JobAiRisk() {}
+
     public String getJobType() { return jobType; }
     public String getJobCategory() { return jobCategory; }
     public String getRiskLevel() { return riskLevel; }

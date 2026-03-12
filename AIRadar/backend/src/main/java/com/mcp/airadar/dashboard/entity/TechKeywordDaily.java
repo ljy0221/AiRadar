@@ -39,6 +39,8 @@ public class TechKeywordDaily {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    public TechKeywordDaily() {}
+
     public Long getId() { return id; }
     public String getKeyword() { return keyword; }
     public LocalDate getStatDate() { return statDate; }

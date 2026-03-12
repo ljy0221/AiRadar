@@ -57,6 +57,8 @@ public class Paper {
     @Column(name = "is_active")
     private Boolean isActive = true;
 
+    public Paper() {}
+
     public String getPaperId() { return paperId; }
     public String getTitle() { return title; }
     public String getAbstractText() { return abstractText; }
