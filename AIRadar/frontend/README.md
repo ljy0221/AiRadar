@@ -100,3 +100,5 @@ AI 트렌드를 분석하고 예측한 결과를 보여주는 웹사이트 프�
         };
         ```
     *   **Mutation 처리:** 데이터 생성, 수정, 삭제 요청은 `useMutation`을 활용하며, 성공 시 `queryClient.invalidateQueries`를 통해 연관된 캐시 데이터를 효과적으로 업데이트합니다.
+
+### TEST
