@@ -4,7 +4,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 INFRA_DIR="${REPO_ROOT}/infra"
-BACKEND_DIR="${REPO_ROOT}/backend"
 
 if sudo -n true >/dev/null 2>&1; then
   SUDO="sudo -n"
@@ -13,10 +12,6 @@ elif [ "$(id -u)" -eq 0 ]; then
 else
   SUDO="sudo"
 fi
-
-cd "${BACKEND_DIR}"
-chmod +x ./gradlew
-./gradlew shadowJar --no-daemon
 
 cd "${INFRA_DIR}"
 ${SUDO} docker-compose --env-file .env.server1 -f docker-compose.server1.yml config >/dev/null
