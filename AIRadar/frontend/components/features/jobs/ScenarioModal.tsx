@@ -13,12 +13,12 @@ export const ScenarioModal = ({ isOpen, onClose, title, description, steps }: Sc
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
       <div className="flex flex-col gap-6 pt-2">
         <div>
-           <h4 className="text-sm font-bold text-gray-500 mb-2">업무 내용</h4>
+           <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-2">업무 내용</h4>
            <p className="font-semibold text-lg">{description}</p>
         </div>
 
         <div>
-           <h4 className="text-sm font-bold text-gray-500 mb-4">수행 단계</h4>
+           <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-4">수행 단계</h4>
            <div className="flex flex-col gap-4">
               {steps.map((step, index) => (
                 <div key={index} className="flex gap-4">

@@ -81,7 +81,7 @@ export default function JobDetailPage() {
       
       {/* 백 버튼 */}
       <div className="mb-4">
-        <Link href="/jobs" className="inline-flex items-center text-sm font-semibold text-gray-500 hover:text-[var(--color-accent)] transition-colors">
+        <Link href="/jobs" className="inline-flex items-center text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-[var(--color-accent)] transition-colors">
           <ArrowLeft className="w-4 h-4 mr-1" /> 직업 검색으로 돌아가기
         </Link>
       </div>

@@ -29,7 +29,7 @@ export const InterestAnalysisChart = ({ data }: { data: Record<string, ChartData
       <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
         <div>
           <h3 className="text-xl font-bold mb-1">관심도 분석</h3>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             '{activeTab}' 주간 트렌드 - 날짜별 언급 수, 검색량, 감성 점수
           </p>
         </div>
@@ -54,7 +54,7 @@ export const InterestAnalysisChart = ({ data }: { data: Record<string, ChartData
                 className={`px-3 py-1.5 whitespace-nowrap text-sm rounded-full transition-colors ${
                   activeTab === kw 
                     ? 'bg-[var(--color-accent)] text-white' 
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:bg-gray-700'
                 }`}
               >
                 {kw}
@@ -94,19 +94,19 @@ export const InterestAnalysisChart = ({ data }: { data: Record<string, ChartData
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
          <div className="flex flex-col">
-            <span className="text-xs text-gray-500 mb-1">총 언급 수</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">총 언급 수</span>
             <span className="text-xl font-bold">290</span>
          </div>
          <div className="flex flex-col">
-            <span className="text-xs text-gray-500 mb-1">총 검색량</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">총 검색량</span>
             <span className="text-xl font-bold">19.8k</span>
          </div>
          <div className="flex flex-col">
-            <span className="text-xs text-gray-500 mb-1">평균 감성 점수</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">평균 감성 점수</span>
             <span className="text-xl font-bold text-green-500">81.3%</span>
          </div>
          <div className="flex flex-col">
-            <span className="text-xs text-gray-500 mb-1">주간 증가율</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">주간 증가율</span>
             <span className="text-xl font-bold text-red-500">📈 40.6%</span>
          </div>
       </div>

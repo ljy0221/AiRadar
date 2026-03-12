@@ -11,7 +11,7 @@ interface KeywordData {
 const statusConfig = {
   '떠오르는 중': { color: 'text-green-500', bg: 'bg-green-100 dark:bg-green-500/10' },
   '최고조': { color: 'text-red-500', bg: 'bg-red-100 dark:bg-red-500/10' },
-  '안정기': { color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-500/10' },
+  '안정기': { color: 'text-gray-500 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-500/10' },
   '하락세': { color: 'text-yellow-500', bg: 'bg-yellow-100 dark:bg-yellow-500/10' },
 };
 
@@ -39,14 +39,14 @@ export const KeywordTrendList = ({ data }: { data: KeywordData[] }) => {
               </div>
               <div className="flex flex-col items-center">
                 <span className="text-xs text-gray-400">변화 속도</span>
-                <div className={`flex items-center gap-1 font-bold ${isUp ? 'text-green-500' : isDown ? 'text-red-500' : 'text-gray-500'}`}>
+                <div className={`flex items-center gap-1 font-bold ${isUp ? 'text-green-500' : isDown ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
                   {isUp ? <TrendingUp className="w-4 h-4" /> : isDown ? <TrendingDown className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
                   {Math.abs(item.changeRate)}
                 </div>
               </div>
               <div className="flex flex-col items-center">
                 <span className="text-xs text-gray-400">주간 증가율</span>
-                <span className={`font-bold ${isUp ? 'text-green-500' : isDown ? 'text-red-500' : 'text-gray-500'}`}>
+                <span className={`font-bold ${isUp ? 'text-green-500' : isDown ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
                   {isUp ? '+' : ''}{item.weeklyGrowth}%
                 </span>
               </div>
@@ -54,7 +54,7 @@ export const KeywordTrendList = ({ data }: { data: KeywordData[] }) => {
               <div className="hidden md:flex flex-1 items-center gap-2">
                 <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                   <div 
-                    className={`h-full rounded-full ${isUp ? 'bg-green-500' : isDown ? 'bg-red-500' : 'bg-gray-500'}`} 
+                    className={`h-full rounded-full ${isUp ? 'bg-green-500' : isDown ? 'bg-red-500' : 'bg-gray-50 dark:bg-gray-800/500'}`} 
                     style={{ width: `${Math.min(Math.max((item.trendScore / 100) * 100, 0), 100)}%` }} 
                   />
                 </div>

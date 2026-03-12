@@ -15,7 +15,7 @@ export const JobHeader = ({ jobTitle, category, aiRiskScore }: JobHeaderProps) =
       </div>
       
       <div className="flex items-center gap-4 mt-2">
-        <span className="text-sm font-semibold text-gray-500 whitespace-nowrap">AI 대체 위험도:</span>
+        <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">AI 대체 위험도:</span>
         <div className="flex-1 max-w-sm h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
           <div 
             className="h-full bg-[var(--color-accent)] rounded-full transition-all duration-500"
