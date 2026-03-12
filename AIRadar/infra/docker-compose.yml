@@ -198,6 +198,7 @@ services:
         postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow_user}:${AIRFLOW_DB_PASSWORD:-airflow_secret}@postgres:5432/${POSTGRES_DB:-airadar}?options=-csearch_path%3Dairflow
       AIRFLOW__CELERY__RESULT_BACKEND: redis://redis:6379/0
       AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      POSTGRES_URL: "postgresql://${POSTGRES_USER:-airadar}:${POSTGRES_PASSWORD:-airadar_secret}@postgres:5432/${POSTGRES_DB:-airadar}"
 
   # ── 크롤링 서버 ───────────────────────────────────────────────────────────────
   crawling-server:
