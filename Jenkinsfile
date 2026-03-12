@@ -24,8 +24,6 @@ pipeline {
     REPO_URL = 'https://lab.ssafy.com/s14-bigdata-dist-sub1/S14P21B104.git'
     GIT_CREDENTIAL = 'gitlab-http-token'
     REPO_DIR = '~/S14P21B104'
-    REPO_URL = 'https://lab.ssafy.com/s14-bigdata-dist-sub1/S14P21B104.git'
-    GIT_CREDENTIAL = 'gitlab-http-token'
     SERVER1_HOST = 'ubuntu@j14b104.p.ssafy.io'
     SERVER2_HOST = 'ubuntu@j14b104a.p.ssafy.io'
     SERVER1_SSH_CREDENTIAL = 'airadar-server1-ssh'
