@@ -35,6 +35,17 @@ pipeline {
       }
     }
 
+    stage('Build Backend') {
+      steps {
+        dir('AIRadar/backend') {
+          sh '''
+            chmod +x ./gradlew
+            ./gradlew shadowJar --no-daemon
+          '''
+        }
+      }
+    }
+
     stage('Validate Files') {
       steps {
         script {
@@ -43,6 +54,7 @@ pipeline {
             'AIRadar/infra/docker-compose.server2.yml',
             'AIRadar/infra/scripts/deploy-server1.sh',
             'AIRadar/infra/scripts/deploy-server2.sh',
+            'AIRadar/backend/build/libs',
           ]
           for (file in files) {
             if (!fileExists(file)) {
