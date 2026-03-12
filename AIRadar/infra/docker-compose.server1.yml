@@ -150,7 +150,23 @@ services:
       POSTGRES_URL: postgresql://${POSTGRES_USER:-airadar}:${POSTGRES_PASSWORD:-airadar_secret}@${SERVER2_PRIVATE_HOST:-localhost}:${SERVER2_POSTGRES_PORT:-15432}/${POSTGRES_DB:-airadar}
     restart: unless-stopped
 
+  jenkins:
+    build:
+      context: ./jenkins
+    container_name: server1-jenkins
+    hostname: jenkins
+    ports:
+      - "${JENKINS_PORT:-18083}:8080"
+      - "${JENKINS_AGENT_PORT:-15000}:50000"
+    volumes:
+      - jenkins-home:/var/jenkins_home
+      - ../..:/workspace
+    environment:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=true"
+    restart: unless-stopped
+
 volumes:
   zookeeper-data:
   zookeeper-log:
   kafka-data:
+  jenkins-home:

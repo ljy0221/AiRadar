@@ -32,6 +32,7 @@
 - Kafka
 - Zookeeper
 - Airflow
+- Jenkins
 - Spark Master
 - Spark Worker1
 
@@ -61,7 +62,7 @@
 
 리팩토링 목표는 아래 한 줄로 정리할 수 있다.
 
-`Server1이 수집·스케줄링·Spark 제어의 중심이 되고, Server2는 서비스 계층, 운영 GUI, Spark Worker2를 맡으며, 중간 데이터는 S3에 저장한다.`
+`Server1이 수집·스케줄링·배포 제어·Spark 제어의 중심이 되고, Server2는 서비스 계층, 운영 GUI, Spark Worker2를 맡으며, 중간 데이터는 S3에 저장한다.`
 
 ### 2.4 중요한 기술적 의미
 
@@ -163,6 +164,7 @@ Bronze 적재와 Silver 처리 결과 저장, Gold 이전 중간 데이터 사�
 Crawler -> Kafka
 Zookeeper
 Airflow
+Jenkins
 Spark Master
 Spark Worker1
 
@@ -224,6 +226,7 @@ Kafka UI / pgAdmin / RedisInsight
 | `kafka` | 크롤링 원본 메시지 버퍼/이벤트 허브 |
 | `zookeeper` | Kafka 의존 서비스 |
 | `airflow` | 배치 스케줄링 및 Spark Job 제출 |
+| `jenkins` | CI/CD 배포 자동화 |
 | `spark-master` | Spark 클러스터 마스터 |
 | `spark-worker1` | 1차 분산 처리 자원 |
 
@@ -238,6 +241,7 @@ Kafka UI / pgAdmin / RedisInsight
 | `spark-app-ui` | `14040` | `4040` |
 | `crawler` | `18002` | `8002` |
 | `airflow` | `18081` | `8080` |
+| `jenkins` | `18083` | `8080` |
 
 ### 8.2 `docker-compose.server2.yml`
 
@@ -282,6 +286,7 @@ Kafka UI / pgAdmin / RedisInsight
 | 수집 | `crawler` | - | - |
 | 메시지 허브 | `kafka`, `zookeeper` | - | - |
 | 스케줄링 | `airflow` | - | - |
+| 배포 자동화 | `jenkins` | - | - |
 | Spark 제어 | `spark-master` | - | - |
 | Spark 실행 | `spark-worker1` | `spark-worker2` | - |
 | AI | - | `ai-server` | - |
@@ -296,7 +301,7 @@ Kafka UI / pgAdmin / RedisInsight
 
 목표 구조의 핵심은 다음과 같다.
 
-1. `Server1`은 크롤링, Kafka, Airflow, Spark Master/Worker1을 담당한다.
+1. `Server1`은 크롤링, Kafka, Airflow, Jenkins, Spark Master/Worker1을 담당한다.
 2. `Server2`는 `Spark Worker2`, AI Server, PostgreSQL, Redis, Spring Boot, Frontend, 운영 GUI를 담당한다.
 3. `Bronze/Silver`는 `S3`, `Gold`는 `PostgreSQL`에 저장한다.
 
