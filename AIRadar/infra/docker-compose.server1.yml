@@ -57,7 +57,7 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
     volumes:
-      - ../backend/build/libs:/opt/spark-jobs
+      - ../backend/build/libs/airadar-spark.jar:/opt/spark-jobs/airadar-spark.jar
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     restart: unless-stopped
 
@@ -87,7 +87,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-airadar}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
     volumes:
-      - ../backend/build/libs:/opt/spark-jobs
+      - ../backend/build/libs/airadar-spark.jar:/opt/spark-jobs/airadar-spark.jar
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     restart: unless-stopped
 
@@ -133,7 +133,7 @@ services:
       "
     volumes:
       - ../airflow/dags:/opt/airflow/dags
-      - ../backend/build/libs:/opt/spark-jobs
+      - ../backend/build/libs/airadar-spark.jar:/opt/spark-jobs/airadar-spark.jar
     environment:
       AIRFLOW_UID: ${AIRFLOW_UID:-50000}
       AIRFLOW_GID: ${AIRFLOW_GID:-0}
