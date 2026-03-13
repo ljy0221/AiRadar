@@ -14,6 +14,7 @@ default_args = {
 }
 
 SPARK_CONF = {
+    'spark.master': 'spark://spark-master:7077',
     'spark.executor.memory': '2g',
     'spark.executor.cores': '2',
     'spark.sql.extensions': 'io.delta.sql.DeltaSparkSessionExtension',
