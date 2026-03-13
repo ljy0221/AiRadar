@@ -98,7 +98,7 @@ pipeline {
             'AIRadar/infra/docker-compose.server2.yml',
             'AIRadar/infra/scripts/deploy-server1.sh',
             'AIRadar/infra/scripts/deploy-server2.sh',
-            'AIRadar/backend/build/libs'
+            'AIRadar/backend/build/libs/airadar-spark.jar'
           ]
           for (file in files) {
             if (!fileExists(file)) {
