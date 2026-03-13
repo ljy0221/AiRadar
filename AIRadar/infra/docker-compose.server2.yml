@@ -188,7 +188,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-airadar}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
     volumes:
-      - ../backend/build/libs:/opt/spark-jobs
+      - ../backend/build/libs/airadar-spark.jar:/opt/spark-jobs/airadar-spark.jar
     command: >
       /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
       spark://${SERVER1_PRIVATE_HOST:-localhost}:${SERVER1_SPARK_MASTER_PORT:-17077}
