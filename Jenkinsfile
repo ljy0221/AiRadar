@@ -1,3 +1,42 @@
+import groovy.json.JsonOutput
+
+def sendDiscordNotification(scriptContext, String status, int color, String credentialId) {
+  try {
+    scriptContext.withCredentials([scriptContext.string(credentialsId: credentialId, variable: 'DISCORD_WEBHOOK_URL')]) {
+      def fields = [
+        [name: 'Job', value: scriptContext.env.JOB_NAME ?: '-', inline: true],
+        [name: 'Build', value: "#${scriptContext.env.BUILD_NUMBER ?: '-'}", inline: true],
+        [name: 'Branch', value: scriptContext.params.DEPLOY_BRANCH ?: '-', inline: true],
+        [name: 'Target', value: scriptContext.params.DEPLOY_TARGET ?: '-', inline: true],
+        [name: 'Result', value: status, inline: true],
+        [name: 'URL', value: scriptContext.env.BUILD_URL ?: '-', inline: false],
+      ]
+
+      def payload = JsonOutput.toJson([
+        username: 'Jenkins',
+        embeds: [[
+          title      : "AIRadar Deploy ${status}",
+          description: "Jenkins deployment pipeline ${status.toLowerCase()}.",
+          color      : color,
+          fields     : fields,
+          timestamp  : new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX", TimeZone.getTimeZone('Asia/Seoul')),
+        ]]
+      ])
+
+      scriptContext.writeFile file: 'discord-webhook-payload.json', text: payload
+
+      scriptContext.sh '''
+        curl -sS -H "Content-Type: application/json" \
+          -X POST \
+          --data @discord-webhook-payload.json \
+          "$DISCORD_WEBHOOK_URL" >/dev/null
+      '''
+    }
+  } catch (err) {
+    scriptContext.echo "Discord notification failed: ${err.getMessage()}"
+  }
+}
+
 pipeline {
   agent any
 
@@ -28,6 +67,8 @@ pipeline {
     SERVER2_HOST = 'ubuntu@j14b104a.p.ssafy.io'
     SERVER1_SSH_CREDENTIAL = 'airadar-server1-ssh'
     SERVER2_SSH_CREDENTIAL = 'airadar-server2-ssh'
+    DISCORD_SUCCESS_WEBHOOK_CREDENTIAL = 'airadar-discord-webhook-success'
+    DISCORD_FAILURE_WEBHOOK_CREDENTIAL = 'airadar-discord-webhook-failure'
   }
 
   stages {
@@ -116,9 +157,15 @@ pipeline {
   post {
     success {
       echo 'Jenkins deployment pipeline completed successfully.'
+      script {
+        sendDiscordNotification(this, 'SUCCESS', 5763719, env.DISCORD_SUCCESS_WEBHOOK_CREDENTIAL)
+      }
     }
     failure {
       echo 'Jenkins deployment pipeline failed. Check the stage logs.'
+      script {
+        sendDiscordNotification(this, 'FAILURE', 15548997, env.DISCORD_FAILURE_WEBHOOK_CREDENTIAL)
+      }
     }
   }
 }
