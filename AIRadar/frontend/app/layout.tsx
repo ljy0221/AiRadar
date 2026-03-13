@@ -4,7 +4,7 @@ import { MainLayout } from "../components/layout";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "AI Trend Radar",
+  title: "AI Radar",
   description: "AI 트렌드 분석 및 예측 시스템",
 };
 

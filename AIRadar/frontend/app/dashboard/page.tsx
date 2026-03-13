@@ -1,56 +1,40 @@
+'use client';
+
 import { MetricCard, KeywordTrendList, KeywordBarChart, KeywordRadarChart, InterestAnalysisChart } from '@/components/features/dashboard';
-import { TrendingUp, TrendingDown, Activity, ListOrdered } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, ListOrdered, Loader2 } from 'lucide-react';
+import { useDashboardSummary } from '@/hooks/queries/useDashboardData';
 
-// --- Dummy Data ---
-const metricsData = [
-  { title: "Agentic Workflow", value: "2", subtitle: "이번 주 떠오르는 기술", icon: <TrendingUp className="w-6 h-6" />, trend: 'up' as const },
-  { title: "Prompt Engineering", value: "1", subtitle: "이번 주 사라지는 기술", icon: <TrendingDown className="w-6 h-6 text-yellow-500" />, trend: 'down' as const },
-  { title: "평균 90.2점", value: "2", subtitle: "피크 상태 기술", icon: <Activity className="w-6 h-6 text-red-500" /> },
-  { title: "6개 카테고리", value: "6", subtitle: "추적 중인 키워드", icon: <ListOrdered className="w-6 h-6 text-gray-500 dark:text-gray-400" /> },
-];
-
-const keywordListData = [
-  { name: 'Agentic Workflow', status: '떠오르는 중' as const, trendScore: 78.5, changeRate: 15.2, weeklyGrowth: 42.5 },
-  { name: 'RAG', status: '최고조' as const, trendScore: 92.1, changeRate: 2.4, weeklyGrowth: 5.1 },
-  { name: 'Vision Transformers', status: '최고조' as const, trendScore: 88.3, changeRate: 3.8, weeklyGrowth: 12.3 },
-  { name: 'Mixture of Experts', status: '떠오르는 중' as const, trendScore: 71.2, changeRate: 18.5, weeklyGrowth: 55.2 },
-  { name: 'Fine-tuning', status: '안정기' as const, trendScore: 65.5, changeRate: 5.1, weeklyGrowth: -8.4 },
-  { name: 'Prompt Engineering', status: '하락세' as const, trendScore: 52.3, changeRate: 12.3, weeklyGrowth: -18.7 },
-];
-
-const barChartData = [
-  { name: 'Agentic Workflow', score: 78.5, color: '#10b981' },
-  { name: 'RAG', score: 92.1, color: '#ef4444' },
-  { name: 'Vision Transformers', score: 88.3, color: '#ef4444' },
-  { name: 'Mixture of Experts', score: 71.2, color: '#10b981' },
-  { name: 'Fine-tuning', score: 65.5, color: '#6b7280' },
-  { name: 'Prompt Engineering', score: 52.3, color: '#eab308' },
-];
-
-const radarData = [
-  { subject: 'Agentic Workflow', trendScore: 78, growth: 42, fullMark: 100 },
-  { subject: 'RAG', trendScore: 92, growth: 5, fullMark: 100 },
-  { subject: 'Vision Transformers', trendScore: 88, growth: 12, fullMark: 100 },
-];
-
-const generateInterestData = (baseVol: number, baseMentions: number, baseSentiment: number) => {
-  return Array.from({ length: 7 }).map((_, i) => ({
-    date: `03. 0${i + 1}.`,
-    mentionCount: baseMentions + Math.floor(Math.random() * 20),
-    searchVol: baseVol + Math.floor(Math.random() * 10),
-    sentimentScore: baseSentiment + Math.floor(Math.random() * 10) - 5,
-  }));
-};
-
-const interestData = {
-  'Agentic Workflow': generateInterestData(20, 40, 75),
-  'RAG': generateInterestData(50, 80, 85),
-  'Vision Transformers': generateInterestData(45, 60, 80),
-  'Mixture of Experts': generateInterestData(15, 30, 65),
-};
-
-// --- Page Component ---
 export default function DashboardPage() {
+  const { data, isLoading, isError } = useDashboardSummary();
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-screen flex flex-col items-center justify-center gap-4 text-gray-500">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent)]" />
+        <p>실시간 AI 트렌드 데이터를 불러오는 중입니다...</p>
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center">
+        <p className="text-red-500 font-medium">데이터를 불러오는 데 실패했습니다.</p>
+      </div>
+    );
+  }
+
+  // API 응답 데이터 매핑 로직 (아이콘 등 UI 전용 데이터 추가)
+  const metricsData = data.metrics.map((m, i) => {
+    let icon;
+    if (i === 0) icon = <TrendingUp className="w-6 h-6" />;
+    else if (i === 1) icon = <TrendingDown className="w-6 h-6 text-yellow-500" />;
+    else if (i === 2) icon = <Activity className="w-6 h-6 text-red-500" />;
+    else icon = <ListOrdered className="w-6 h-6 text-gray-500 dark:text-gray-400" />;
+    
+    return { ...m, icon };
+  });
+
   return (
     <div className="w-full max-w-7xl px-4 md:px-8 py-8 flex flex-col gap-8">
       <div>
@@ -69,18 +53,18 @@ export default function DashboardPage() {
       <div className="bg-white dark:bg-[#1a1c2e] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
         <h2 className="text-2xl font-bold mb-6">기술 분석</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 -mt-4">각 AI 키워드의 라이프사이클 현황 및 트렌드 점수</p>
-        <KeywordTrendList data={keywordListData} />
+        <KeywordTrendList data={data.keywords} />
       </div>
 
       {/* Chart Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <KeywordBarChart data={barChartData} />
-        <KeywordRadarChart data={radarData} />
+        <KeywordBarChart data={data.barData} />
+        <KeywordRadarChart data={data.radarData} />
       </div>
 
       {/* Interest Analysis (Bottom Full Width) */}
       <div className="w-full">
-        <InterestAnalysisChart data={interestData} />
+        <InterestAnalysisChart data={data.interestData} />
       </div>
 
     </div>
