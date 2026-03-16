@@ -43,6 +43,7 @@ class CrawlJobRequest(BaseModel):
     github_order: str = Field(default="desc")
     github_include_readme: bool = True
     github_window_hours: int = Field(default=3, ge=1, le=24)
+    github_window_minutes: int | None = Field(default=None, ge=30, le=1440)
     github_top_n: int = Field(default=20, ge=1, le=200)
     github_pr_per_repo: int = Field(default=3, ge=1, le=10)
 

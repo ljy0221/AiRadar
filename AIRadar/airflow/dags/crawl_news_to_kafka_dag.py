@@ -39,7 +39,7 @@ def _trigger_crawl(payload: dict) -> None:
 with DAG(
     dag_id="crawl_news_to_kafka",
     default_args=default_args,
-    schedule_interval="0 */3 * * *",
+    schedule_interval="*/30 * * * *",
     start_date=datetime(2025, 1, 1),
     catchup=False,
     tags=["crawl", "news", "kafka"],
@@ -65,7 +65,7 @@ with DAG(
             "payload": {
                 "domain": "news",
                 "provider": "gdelt",
-                "window_minutes": 180,
+                "window_minutes": 30,
                 "max_articles": 120,
             }
         },
