@@ -172,7 +172,8 @@ services:
       - jenkins-home:/var/jenkins_home
       - ../..:/workspace
     environment:
-      JAVA_OPTS: "-Djenkins.install.runSetupWizard=true"
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=true -Xmx768m"
+    mem_limit: 1g
     restart: unless-stopped
 
 volumes:
