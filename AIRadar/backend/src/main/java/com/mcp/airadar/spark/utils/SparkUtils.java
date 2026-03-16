@@ -45,9 +45,9 @@ public class SparkUtils {
     // 유틸
     // -------------------------------------------------------------------------
 
-    public static String bronzePath(String sourceType, String date) {
+    public static String bronzePath(String sourceType) {
         return System.getenv().getOrDefault("BRONZE_BASE_PATH", "/tmp/bronze")
-            + "/" + sourceType + "/date=" + date;
+            + "/" + sourceType;
     }
 
     public static String silverPath(String sourceType) {

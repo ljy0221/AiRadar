@@ -146,7 +146,7 @@ public class SilverRefinementJob {
     }
 
     private static void processBronzeToSilver(SparkSession spark, String date, String sourceType) {
-        String bronzePath = bronzePath(sourceType, date);
+        String bronzePath = bronzePath(sourceType);
         String silverPath = System.getenv().getOrDefault("SILVER_BASE_PATH", "/tmp/silver")
             + "/" + sourceType;
 
@@ -155,7 +155,8 @@ public class SilverRefinementJob {
 
         Dataset<Row> bronze = spark.read()
             .format("delta")
-            .load(bronzePath);
+            .load(bronzePath)
+            .where("batch_date = '" + date + "'");
 
         // Skew 방지: AI 서버 동시 처리 가능 수에 맞춰 파티션 균등 분산
         int aiConcurrency = Integer.parseInt(

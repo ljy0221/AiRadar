@@ -118,7 +118,7 @@ public class BronzeIngestionJob {
     }
 
     private static void ingestToBronze(SparkSession spark, String date, String sourceType) {
-        String outputPath = bronzePath(sourceType, date);
+        String outputPath = bronzePath(sourceType);
         System.out.println("[Bronze] 적재 시작: source=" + sourceType + ", date=" + date);
         System.out.println("[Bronze] 출력 경로: " + outputPath);
 
