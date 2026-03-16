@@ -204,19 +204,29 @@ public class KafkaBronzeConsumerJob {
                 + " (지원: news, github, paper)");
         };
 
-        // foreachBatch: 각 마이크로배치를 Delta Lake에 Append
+        // foreachBatch: 각 마이크로배치를 Delta Lake에 Append + 처리 건수 로그
         // batch_date 파티션 덕분에 SilverRefinementJob이 날짜별로 읽을 수 있다
+        final long[] totalRows = {0L};
         StreamingQuery query = bronzeStream.writeStream()
-            .format("delta")
-            .outputMode("append")
+            .foreachBatch((batchDf, batchId) -> {
+                long count = batchDf.count();
+                totalRows[0] += count;
+                System.out.println("[Bronze Kafka] 배치 #" + batchId + " 처리 건수: " + count);
+                if (count > 0) {
+                    batchDf.write()
+                        .format("delta")
+                        .mode("append")
+                        .partitionBy("batch_date")
+                        .save(bronzeOutputPath);
+                }
+            })
             .option("checkpointLocation", checkpointPath)
-            .partitionBy("batch_date")
             .trigger(Trigger.AvailableNow())   // 현재 메시지 모두 처리 후 종료 (배치 모드)
-            .start(bronzeOutputPath);
+            .start();
 
         query.awaitTermination();
 
-        System.out.println("[Bronze Kafka] 처리 완료: " + bronzeOutputPath);
+        System.out.println("[Bronze Kafka] 처리 완료: " + bronzeOutputPath + " | 총 처리 건수: " + totalRows[0]);
         publishDoneEvent(sourceType);
     }
 
