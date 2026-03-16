@@ -84,7 +84,7 @@ with DAG(
         task_id='refresh_tech_contents_view',
         bash_command=(
             'psql "$POSTGRES_URL" -c '
-            '"REFRESH MATERIALIZED VIEW CONCURRENTLY tech_contents_view;"'
+            '"REFRESH MATERIALIZED VIEW CONCURRENTLY public.tech_contents_view;"'
         ),
         execution_timeout=timedelta(minutes=10),
     )
