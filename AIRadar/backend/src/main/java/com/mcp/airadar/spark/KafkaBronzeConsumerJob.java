@@ -184,11 +184,22 @@ public class KafkaBronzeConsumerJob {
             col("timestamp").as("kafka_timestamp")
         );
 
+        // envelope 구조 언래핑: "payload" 키가 있으면 그 값 사용, 없으면 원본(flat 구조) 사용
+        // 구버전 크롤러 메시지: {"schema_version":"1.0","payload":{...flat...}}
+        // 신버전 크롤러 메시지: {flat fields directly}
+        Dataset<Row> unwrappedStream = valueStream.select(
+            when(
+                get_json_object(col("raw_json"), "$.payload").isNotNull(),
+                get_json_object(col("raw_json"), "$.payload")
+            ).otherwise(col("raw_json")).as("raw_json"),
+            col("kafka_timestamp")
+        );
+
         // source-type별 파싱 및 Bronze 스키마 변환
         Dataset<Row> bronzeStream = switch (sourceType) {
-            case "news"   -> parseNews(valueStream);
-            case "github" -> parseGithub(valueStream);
-            case "paper"  -> parsePaper(valueStream);
+            case "news"   -> parseNews(unwrappedStream);
+            case "github" -> parseGithub(unwrappedStream);
+            case "paper"  -> parsePaper(unwrappedStream);
             default -> throw new IllegalArgumentException("지원하지 않는 source-type: " + sourceType
                 + " (지원: news, github, paper)");
         };
