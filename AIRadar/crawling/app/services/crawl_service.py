@@ -59,9 +59,14 @@ class CrawlService:
             elif req.provider == "github_trending_archive":
                 crawler = GithubTrendingArchiveCrawler()
                 try:
+                    github_window_minutes = (
+                        req.github_window_minutes
+                        if req.github_window_minutes is not None
+                        else req.github_window_hours * 60
+                    )
                     parsed, errors, duplicate_count, failed_count = crawler.crawl(
                         max_articles=req.max_articles,
-                        window_hours=req.github_window_hours,
+                        window_minutes=github_window_minutes,
                         top_n=req.github_top_n,
                         pr_per_repo=req.github_pr_per_repo,
                     )
