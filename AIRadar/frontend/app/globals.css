@@ -7,11 +7,14 @@
   --color-bg-primary: var(--bg-primary);
   --color-text-primary: var(--text-primary);
   --color-accent: var(--accent);
+  /* 폰트 토큰: layout.tsx에서 next/font가 주입한 CSS 변수와 연결 */
+  --font-sans: var(--font-sans), var(--font-korean), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-serif), var(--font-korean), ui-serif, Georgia, serif;
 }
 
 @layer base {
   :root {
-    --bg-primary: #FFFFFF;
+    --bg-primary: #FAF9F5;
     --text-primary: #2C3E50;
     --accent: #D16D6D;
   }

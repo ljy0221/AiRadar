@@ -22,7 +22,7 @@ export const Header = () => {
   return (
     <Disclosure
       as="nav"
-      className="sticky top-0 z-50 w-full bg-[var(--color-bg-primary)] border-b border-gray-200 dark:border-gray-800 backdrop-blur-md bg-opacity-80 dark:bg-opacity-80 transition-colors"
+      className="sticky top-0 z-50 w-full bg-[var(--color-bg-primary)] backdrop-blur-md bg-opacity-80 dark:bg-opacity-80 transition-colors"
     >
       <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
         <div className="relative flex h-16 items-center justify-between">
@@ -37,8 +37,8 @@ export const Header = () => {
           </div>
           <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
             <div className="flex shrink-0 items-center">
-              <Link href="/" className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)] hover:opacity-80 transition-opacity">
-                로고
+              <Link href="/" className="font-serif text-2xl font-normal tracking-tight text-[var(--color-text-primary)] hover:opacity-80 transition-opacity">
+                AI Radar
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:block">
