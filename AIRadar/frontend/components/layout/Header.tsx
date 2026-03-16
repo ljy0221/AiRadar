@@ -22,7 +22,7 @@ export const Header = () => {
   return (
     <Disclosure
       as="nav"
-      className="sticky top-0 z-50 w-full bg-[var(--color-bg-primary)] backdrop-blur-md bg-opacity-80 dark:bg-opacity-80 transition-colors"
+      className="sticky top-0 z-50 w-full bg-[var(--color-bg-primary)] border-b border-gray-200 dark:border-gray-800 backdrop-blur-md bg-opacity-80 dark:bg-opacity-80 transition-colors"
     >
       <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
         <div className="relative flex h-16 items-center justify-between">
@@ -42,23 +42,29 @@ export const Header = () => {
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:block">
-              <div className="flex space-x-4">
+              <div className="flex space-x-4 h-16 items-center">
                 {navigation.map((item) => {
                   const isCurrent = pathname.startsWith(item.href);
                   return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      aria-current={isCurrent ? 'page' : undefined}
-                      className={classNames(
-                        isCurrent
-                          ? 'text-[var(--color-accent)] font-bold'
-                          : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]',
-                        'rounded-md px-3 py-2 text-base transition-colors',
+                    <div key={item.name} className="relative h-full flex items-center">
+                      <Link
+                        href={item.href}
+                        aria-current={isCurrent ? 'page' : undefined}
+                        className={classNames(
+                          isCurrent
+                            ? 'text-[var(--color-accent)] font-bold'
+                            : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]',
+                          'rounded-md px-3 py-2 text-base transition-colors',
+                        )}
+                      >
+                        {item.name}
+                      </Link>
+                      {/* Arrowhead / Caret Indicator (Prominent Style) */}
+                      {isCurrent && (
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[8px] border-b-[var(--color-accent)] z-50">
+                        </div>
                       )}
-                    >
-                      {item.name}
-                    </Link>
+                    </div>
                   );
                 })}
               </div>
