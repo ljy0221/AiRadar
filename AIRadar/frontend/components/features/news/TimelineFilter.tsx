@@ -1,52 +1,78 @@
-import { CalendarDays } from 'lucide-react';
+import { useState } from 'react';
+import { CalendarDays, X } from 'lucide-react';
+import { CalendarModal } from '@/components/common';
 
 interface TimelineFilterProps {
   currentCategory: 'all' | 'domestic' | 'international';
   setCategory: (cat: 'all' | 'domestic' | 'international') => void;
+  availableDates: string[];
+  selectedDate: string | null;
+  onDateSelect: (date: string | null) => void;
 }
 
-export const TimelineFilter = ({ currentCategory, setCategory }: TimelineFilterProps) => {
+export const TimelineFilter = ({ 
+  currentCategory, 
+  setCategory,
+  availableDates,
+  selectedDate,
+  onDateSelect
+}: TimelineFilterProps) => {
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
   return (
     <div className="flex flex-col gap-4 mb-8">
-      {/* 검색 필터 라운드 박스 구역 */}
-      <div className="flex flex-col gap-3 p-4 bg-white dark:bg-[#1a1c2e] border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm w-fit min-w-[320px]">
-        {/* 상단 라디오 타입: 전체 / 국내 / 해외 */}
-        <div className="flex gap-2">
-          {[
-            { id: 'all', label: '전체' },
-            { id: 'domestic', label: '국내' },
-            { id: 'international', label: '해외' }
-          ].map((type) => (
-            <button
-              key={type.id}
-              onClick={() => setCategory(type.id as typeof currentCategory)}
-              className={`px-6 py-1.5 rounded-full text-sm font-semibold transition-colors ${
-                currentCategory === type.id
-                  ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:bg-gray-700'
+      {/* 검색 필터 구역 */}
+      <div className="flex w-fit bg-gray-100/80 dark:bg-[#1a1c2e]/80 p-1 rounded-xl shadow-inner border border-gray-200/50 dark:border-gray-800/50">
+        {[
+          { id: 'all', label: '전체' },
+          { id: 'domestic', label: '국내' },
+          { id: 'international', label: '해외' }
+        ].map((type) => (
+          <button
+            key={type.id}
+            onClick={() => setCategory(type.id as typeof currentCategory)}
+            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${currentCategory === type.id
+                ? 'bg-white dark:bg-[#2a2d42] text-[var(--color-accent)] shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-800/50'
               }`}
-            >
-              {type.label}
-            </button>
-          ))}
-        </div>
-        
-        {/* 하단 서브 필터 (디자인 목업 요소) */}
-        <div className="flex gap-2">
-          <button className="px-5 py-1.5 rounded-full bg-[var(--color-accent)] text-white text-sm font-semibold">전체</button>
-          <button className="px-5 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-sm font-semibold">필터</button>
-          <button className="px-5 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-sm font-semibold">필터</button>
-          <button className="px-5 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-sm font-semibold">필터</button>
-        </div>
+          >
+            {type.label}
+          </button>
+        ))}
       </div>
 
       {/* 달력 모양 버튼 */}
-      <div className="w-fit">
-        <button className="flex items-center gap-2 px-5 py-2.5 border-2 border-gray-200 dark:border-gray-800 rounded-lg text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-50 dark:bg-gray-800/50 dark:hover:bg-gray-800 transition-colors">
-          달력
-          <CalendarDays className="w-5 h-5 ml-1 text-gray-500 dark:text-gray-400" />
+      <div className="w-fit flex items-center gap-2">
+        <button 
+          onClick={() => setIsCalendarOpen(true)}
+          className={`flex items-center gap-2 px-5 py-2.5 border-2 rounded-lg font-bold transition-colors ${
+            selectedDate 
+              ? 'border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--color-accent)]/10 dark:bg-[var(--color-accent)]/20' 
+              : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-800/50 dark:hover:bg-gray-800'
+          }`}
+        >
+          {selectedDate ? selectedDate : '달력'}
+          <CalendarDays className={`w-5 h-5 ml-1 ${selectedDate ? 'text-[var(--color-accent)]' : 'text-gray-500 dark:text-gray-400'}`} />
         </button>
+        
+        {selectedDate && (
+          <button 
+            onClick={() => onDateSelect(null)}
+            className="p-2.5 rounded-lg border-2 border-gray-200 dark:border-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            title="필터 초기화"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
+
+      <CalendarModal 
+        isOpen={isCalendarOpen} 
+        onClose={() => setIsCalendarOpen(false)}
+        availableDates={availableDates}
+        selectedDate={selectedDate}
+        onDateSelect={onDateSelect}
+      />
     </div>
   );
 };
