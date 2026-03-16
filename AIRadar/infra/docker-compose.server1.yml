@@ -150,6 +150,11 @@ services:
       POSTGRES_URL: postgresql://${POSTGRES_USER:-airadar}:${POSTGRES_PASSWORD:-airadar_secret}@${SERVER2_PRIVATE_HOST:-localhost}:${SERVER2_POSTGRES_PORT:-15432}/${POSTGRES_DB:-airadar}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TOPIC_PREFIX: ${CRAWLER_KAFKA_TOPIC_PREFIX:-airader.raw}
+      BRONZE_BASE_PATH: ${BRONZE_BASE_PATH:-}
+      SILVER_BASE_PATH: ${SILVER_BASE_PATH:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
     restart: unless-stopped
 
   jenkins:
