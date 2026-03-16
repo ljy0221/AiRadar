@@ -1,6 +1,4 @@
-'use client';
-
-import { TrendingUp, TrendingDown, Star, GitFork } from 'lucide-react';
+import { TrendingUp, TrendingDown, Star, GitFork, Flame } from 'lucide-react';
 import { useTrendingReposQuery } from '@/hooks/queries/useGithubQuery';
 
 export const GithubTrendingCard = () => {
@@ -23,7 +21,10 @@ export const GithubTrendingCard = () => {
   return (
     <div className="bg-white dark:bg-[#1a1c2e] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">🔥 급상승 GitHub 레포</h2>
+        <div className="flex items-center gap-2">
+          <Flame className="w-5 h-5 text-orange-500" />
+          <h2 className="text-xl font-bold">급상승 GitHub 레포</h2>
+        </div>
         <span className="text-xs text-gray-400 dark:text-gray-500">7일 스타 증감 기준</span>
       </div>
 
