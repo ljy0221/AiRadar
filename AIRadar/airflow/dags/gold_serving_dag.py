@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.sensors.external_task import ExternalTaskSensor
+from airflow.models import DagRun
+from airflow.utils.state import State
 
 default_args = {
     'owner': 'ai-radar',
@@ -23,6 +25,24 @@ SPARK_CONF = {
     'spark.sql.catalog.spark_catalog': 'org.apache.spark.sql.delta.catalog.DeltaCatalog',
 }
 
+def get_latest_silver_execution_date(execution_date, **kwargs):
+    """가장 최근 성공한 silver_refinement run의 execution_date 반환"""
+    from airflow.utils.session import create_session
+    with create_session() as session:
+        last_run = (
+            session.query(DagRun)
+            .filter(
+                DagRun.dag_id == 'silver_refinement',
+                DagRun.state == State.SUCCESS,
+            )
+            .order_by(DagRun.execution_date.desc())
+            .first()
+        )
+    if last_run:
+        return last_run.execution_date
+    return execution_date
+
+
 with DAG(
     dag_id='gold_serving',
     default_args=default_args,
@@ -37,6 +57,7 @@ with DAG(
         task_id='wait_for_silver_refinement',
         external_dag_id='silver_refinement',
         external_task_id='refresh_tech_contents_view',  # silver DAG 마지막 task
+        execution_date_fn=get_latest_silver_execution_date,
         timeout=3600,           # 최대 1시간 대기
         poke_interval=60,       # 60초마다 확인
         mode='reschedule',      # slot을 점유하지 않고 대기
