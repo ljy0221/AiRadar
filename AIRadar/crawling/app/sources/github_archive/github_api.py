@@ -203,6 +203,7 @@ class GithubArchiveCrawler:
                             raw_saved=False,
                             raw_reason="S3 save skipped for github_archive provider",
                             extra={
+                                "full_name": full_name,
                                 "stars": stars,
                                 "forks": forks,
                                 "watchers": watchers,

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from hashlib import sha1
 import json
 
@@ -130,14 +129,5 @@ class CrawlKafkaPublisher:
         provider: str,
         item: CrawledArticle,
     ) -> dict[str, object]:
-        return {
-            "schema_version": "1.0",
-            "event_type": "crawl.item.collected",
-            "event_time": datetime.now(timezone.utc).isoformat(),
-            "job_id": job_id,
-            "domain": domain,
-            "provider": provider,
-            "source": item.source,
-            "target": item.target,
-            "payload": item.model_dump(mode="json"),
-        }
+        # KafkaBronzeConsumerJob이 flat 구조를 기대하므로 CrawledArticle 직접 반환
+        return item.model_dump(mode="json")

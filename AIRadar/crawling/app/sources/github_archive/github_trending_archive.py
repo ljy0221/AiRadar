@@ -207,6 +207,8 @@ class GithubTrendingArchiveCrawler:
                 "open_issues": int(data.get("open_issues_count") or 0),
                 "language": data.get("language"),
                 "topics": topics,
+                "full_name": repo_name,
+                "readme_excerpt": None,
                 "license": ((data.get("license") or {}).get("spdx_id") or None),
                 "created_at": data.get("created_at"),
                 "updated_at": data.get("updated_at"),
