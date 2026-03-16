@@ -1,6 +1,6 @@
 'use client';
 
-import { MetricCard, KeywordTrendList, KeywordBarChart, KeywordRadarChart, InterestAnalysisChart } from '@/components/features/dashboard';
+import { MetricCard, KeywordTrendList, KeywordBarChart, KeywordRadarChart, InterestAnalysisChart, GithubTrendingCard, PaperListCard } from '@/components/features/dashboard';
 import { TrendingUp, TrendingDown, Activity, ListOrdered, Loader2 } from 'lucide-react';
 import { useDashboardSummary } from '@/hooks/queries/useDashboardData';
 
@@ -62,9 +62,15 @@ export default function DashboardPage() {
         <KeywordRadarChart data={data.radarData} />
       </div>
 
-      {/* Interest Analysis (Bottom Full Width) */}
+      {/* Interest Analysis (Full Width) */}
       <div className="w-full">
         <InterestAnalysisChart data={data.interestData} />
+      </div>
+
+      {/* GitHub Trending + Latest Papers Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <GithubTrendingCard />
+        <PaperListCard />
       </div>
 
     </div>
