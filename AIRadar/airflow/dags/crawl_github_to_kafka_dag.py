@@ -25,7 +25,7 @@ def _trigger_github_crawl() -> None:
         "domain": "github_archive",
         "provider": "github_trending_archive",
         "max_articles": 120,
-        "github_window_hours": 3,
+        "github_window_minutes": 30,
         "github_top_n": 20,
         "github_pr_per_repo": 3,
     }
@@ -47,7 +47,7 @@ def _trigger_github_crawl() -> None:
 with DAG(
     dag_id="crawl_github_to_kafka",
     default_args=default_args,
-    schedule_interval="0 */3 * * *",
+    schedule_interval="*/30 * * * *",
     start_date=datetime(2025, 1, 1),
     catchup=False,
     tags=["crawl", "github", "kafka"],

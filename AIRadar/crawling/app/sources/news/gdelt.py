@@ -98,7 +98,7 @@ class GDELTNewsCrawler:
     ) -> tuple[list[ParsedArticle], list[str], int, int]:
         query = query_override.strip() if query_override else build_default_ai_query()
         lang = (languages or [None])[0]
-        effective_window = max(window_minutes, 60)
+        effective_window = max(window_minutes, 30)
 
         errors: list[str] = []
         if effective_window != window_minutes:
