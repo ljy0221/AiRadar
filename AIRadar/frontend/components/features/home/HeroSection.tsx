@@ -24,8 +24,8 @@ export const HeroSection = () => {
         />
 
         {/* 1. 상단 텍스트 영역: 왼쪽 정렬 + 세리프 폰트 적용 */}
-        <div className="w-full relative z-20 shrink-0 bg-[var(--color-bg-primary)] flex flex-col items-start justify-center border-b border-gray-200/50 dark:border-gray-800/50 pt-10 pb-2 md:pt-12 md:pb-2">
-          <div className="max-w-5xl w-full flex flex-col items-start gap-1 px-8 md:px-16 translate-y-5 md:translate-y-5">
+        <div className="w-full relative z-20 shrink-0 bg-[var(--color-bg-primary)] flex flex-col items-start justify-center pt-7 pb-2 md:pt-9 md:pb-2">
+          <div className="max-w-5xl w-full flex flex-col items-start gap-1 px-8 md:px-16 translate-y-3 md:translate-y-3">
             <h1 className="font-serif text-7xl md:text-[7rem] lg:text-[8.5rem] font-normal tracking-tight text-slate-800 dark:text-white leading-none">
               AI Radar
             </h1>

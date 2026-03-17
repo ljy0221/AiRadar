@@ -34,16 +34,16 @@ export const CorrelationChart = () => {
           <AreaChart data={correlationMockData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorGithub" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
               </linearGradient>
               <linearGradient id="colorNews" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#D95F3B" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#D95F3B" stopOpacity={0}/>
               </linearGradient>
               <linearGradient id="colorArxiv" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#2D3A8C" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#2D3A8C" stopOpacity={0}/>
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(156, 163, 175, 0.2)" />
@@ -70,14 +70,35 @@ export const CorrelationChart = () => {
               labelStyle={{ color: 'inherit', fontWeight: 'bold', marginBottom: '4px' }}
             />
             <Legend 
-              iconType="circle" 
-              wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} 
+              content={(props) => {
+                const { payload } = props;
+                return (
+                  <ul className="flex items-center justify-start gap-6 md:gap-8 pt-4 pl-8 md:pl-12">
+                    {payload?.map((entry, index) => (
+                      <li key={`item-${index}`} className="flex items-center gap-2 text-xs md:text-sm text-gray-600 dark:text-gray-300">
+                        <svg className="w-2.5 h-2.5 md:w-3 md:h-3" viewBox="0 0 10 10">
+                          <circle cx="5" cy="5" r="5" fill={entry.color} />
+                        </svg>
+                        <span>{entry.value}</span>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              }}
+            />
+            <Area 
+              name="Arxiv 논문"
+              type="monotone" 
+              dataKey="arxiv" 
+              stroke="#2D3A8C" 
+              fillOpacity={1} 
+              fill="url(#colorArxiv)" 
             />
             <Area 
               name="GitHub 커밋"
               type="monotone" 
               dataKey="github" 
-              stroke="#3b82f6" 
+              stroke="#8B5CF6" 
               fillOpacity={1} 
               fill="url(#colorGithub)" 
             />
@@ -85,17 +106,9 @@ export const CorrelationChart = () => {
               name="News 언급량"
               type="monotone" 
               dataKey="news" 
-              stroke="#f59e0b" 
+              stroke="#D95F3B" 
               fillOpacity={1} 
               fill="url(#colorNews)" 
-            />
-            <Area 
-              name="Arxiv 논문"
-              type="monotone" 
-              dataKey="arxiv" 
-              stroke="#10b981" 
-              fillOpacity={1} 
-              fill="url(#colorArxiv)" 
             />
           </AreaChart>
         </ResponsiveContainer>

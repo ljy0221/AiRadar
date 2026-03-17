@@ -13,16 +13,16 @@ export const NewsletterSection = () => {
   };
 
   return (
-    <section className="w-full bg-[var(--color-accent)] dark:bg-[#1a1c2e] text-white dark:text-[var(--color-text-primary)] py-24 px-4 mt-12 flex flex-col items-center transition-colors border-y border-transparent dark:border-gray-800">
+    <section className="w-full bg-[#2C3E50] dark:bg-[#050510] text-white py-32 px-4 mt-32 flex flex-col items-center transition-colors border-t border-white/10 shadow-[0_-20px_50px_rgba(0,0,0,0.1)]">
       <div className="max-w-4xl w-full text-center">
         <h3 className="text-xl md:text-3xl font-bold mb-16 px-4">주 2회, 이메일로 받아보는 완벽한 AI 트렌드 리포트</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20 px-4 md:px-12">
           {/* Item 1 */}
           <div className="flex flex-col items-center gap-6 text-center">
-            <div className="w-full max-w-xs md:max-w-sm aspect-square bg-white/20 dark:bg-white/5 rounded-xl flex flex-col items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] p-8 gap-5 border border-white/10 dark:border-white/5 hover:bg-white/30 dark:hover:bg-white/10 transition-all duration-300 hover:-translate-y-1">
-              <div className="drop-shadow-md flex items-center justify-center bg-white/10 rounded-full w-24 h-24 mb-2">
-                <CalendarArrowUp className="w-12 h-12 text-[#3b82f6]" />
+            <div className="w-full max-w-xs md:max-w-sm aspect-square bg-white/[0.12] dark:bg-white/[0.05] rounded-xl flex flex-col items-center justify-center shadow-xl p-8 gap-5 border border-white/20 dark:border-white/10 hover:bg-white/20 dark:hover:border-[var(--color-accent)]/30 transition-all duration-300 hover:-translate-y-2 group">
+              <div className="drop-shadow-lg flex items-center justify-center bg-white/10 rounded-full w-24 h-24 mb-2 border border-white/10 overflow-hidden">
+                <CalendarArrowUp className="w-12 h-12 text-[#D95F3B] dark:text-[#00F0FF] group-hover:scale-110 transition-transform duration-300" />
               </div>
               <h4 className="text-2xl font-bold tracking-tight">AI 생태계 위클리 요약</h4>
               <p className="text-[16px] opacity-90 mt-2 font-medium break-keep">
@@ -32,9 +32,9 @@ export const NewsletterSection = () => {
           </div>
           {/* Item 2 */}
           <div className="flex flex-col items-center gap-6 text-center">
-            <div className="w-full max-w-xs md:max-w-sm aspect-square bg-white/20 dark:bg-white/5 rounded-xl flex flex-col items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] p-8 gap-5 border border-white/10 dark:border-white/5 hover:bg-white/30 dark:hover:bg-white/10 transition-all duration-300 hover:-translate-y-1">
-              <div className="drop-shadow-md flex items-center justify-center bg-white/10 rounded-full w-24 h-24 mb-2">
-                <CalendarArrowDown className="w-12 h-12 text-[#3b82f6]" />
+            <div className="w-full max-w-xs md:max-w-sm aspect-square bg-white/[0.12] dark:bg-white/[0.05] rounded-xl flex flex-col items-center justify-center shadow-xl p-8 gap-5 border border-white/20 dark:border-white/10 hover:bg-white/20 dark:hover:border-[var(--color-accent)]/30 transition-all duration-300 hover:-translate-y-2 group">
+              <div className="drop-shadow-lg flex items-center justify-center bg-white/10 rounded-full w-24 h-24 mb-2 border border-white/10 overflow-hidden">
+                <CalendarArrowDown className="w-12 h-12 text-[#D95F3B] dark:text-[#00F0FF] group-hover:scale-110 transition-transform duration-300" />
               </div>
               <h4 className="text-2xl font-bold tracking-tight">한발 앞선 트렌드 예측</h4>
               <p className="text-[16px] opacity-90 mt-2 font-medium break-keep">
@@ -48,7 +48,7 @@ export const NewsletterSection = () => {
           <h4 className="text-2xl font-bold mb-2">지금 이메일로 받아보세요</h4>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-10 py-4 bg-[var(--color-text-primary)] dark:bg-[var(--color-accent)] text-white dark:text-[#0A0B1A] font-bold rounded-md hover:opacity-90 transition-opacity text-lg"
+            className="px-16 py-5 bg-[#D16D6D] dark:bg-[#00F0FF] text-white dark:text-[#0A0B1A] font-extrabold rounded-md hover:brightness-110 transition-all text-xl shadow-2xl hover:-translate-y-1 active:scale-95"
           >
             지금 구독하기
           </button>
@@ -102,8 +102,9 @@ export const NewsletterSection = () => {
                 <select
                   className="w-full pl-11 pr-4 py-3 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all appearance-none cursor-pointer"
                   required
+                  defaultValue=""
                 >
-                  <option value="" disabled selected hidden>직군 선택</option>
+                  <option value="" disabled hidden>직군 선택</option>
                   <option value="프론트엔드">프론트엔드</option>
                   <option value="백엔드">백엔드</option>
                   <option value="데이터/AI">데이터/AI</option>
@@ -123,8 +124,9 @@ export const NewsletterSection = () => {
                 <select
                   className="w-full pl-11 pr-4 py-3 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all appearance-none cursor-pointer"
                   required
+                  defaultValue=""
                 >
-                  <option value="" disabled selected hidden>경력 선택</option>
+                  <option value="" disabled hidden>경력 선택</option>
                   <option value="신입">신입 (1년 미만)</option>
                   <option value="주니어">주니어 (1~3년)</option>
                   <option value="미들">미들 (4~6년)</option>
