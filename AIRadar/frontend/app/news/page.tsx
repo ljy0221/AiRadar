@@ -8,7 +8,6 @@ export default function NewsPage() {
 
   return (
     <div className="w-full flex flex-col min-h-screen">
-
       {/* 탭 네비게이션 */}
       <NewsTabs activeTab={activeTab} onTabChange={setActiveTab} />
 

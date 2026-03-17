@@ -22,7 +22,7 @@ export const Header = () => {
   return (
     <Disclosure
       as="nav"
-      className="sticky top-0 z-50 w-full bg-[var(--color-bg-primary)] border-b border-gray-200 dark:border-gray-800 backdrop-blur-md bg-opacity-80 dark:bg-opacity-80 transition-colors"
+      className="sticky top-0 z-50 w-full bg-[var(--color-bg-primary)] border-none shadow-none backdrop-blur-md bg-opacity-80 dark:bg-opacity-80 transition-colors"
     >
       <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
         <div className="relative flex h-16 items-center justify-between">

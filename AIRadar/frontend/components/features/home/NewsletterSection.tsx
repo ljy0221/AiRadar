@@ -13,7 +13,7 @@ export const NewsletterSection = () => {
   };
 
   return (
-    <section className="w-full bg-[var(--color-accent)] dark:bg-[#1a1c2e] text-white dark:text-[var(--color-text-primary)] py-24 px-4 mt-12 flex flex-col items-center transition-colors border-y border-transparent dark:border-gray-800">
+    <section className="w-full bg-[#2C3E50] dark:bg-[#050510] text-white py-32 px-4 mt-32 flex flex-col items-center transition-colors border-t border-white/10 shadow-[0_-20px_50px_rgba(0,0,0,0.1)]">
       <div className="max-w-4xl w-full text-center">
         <h3 className="text-xl md:text-3xl font-bold mb-16 px-4">주 2회, 이메일로 받아보는 완벽한 AI 트렌드 리포트</h3>
 
@@ -48,7 +48,7 @@ export const NewsletterSection = () => {
           <h4 className="text-2xl font-bold mb-2">지금 이메일로 받아보세요</h4>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-10 py-4 bg-[var(--color-text-primary)] dark:bg-[var(--color-accent)] text-white dark:text-[#0A0B1A] font-bold rounded-md hover:opacity-90 transition-opacity text-lg"
+            className="px-16 py-5 bg-[#D16D6D] dark:bg-[#00F0FF] text-white dark:text-[#0A0B1A] font-extrabold rounded-md hover:brightness-110 transition-all text-xl shadow-2xl hover:-translate-y-1 active:scale-95"
           >
             지금 구독하기
           </button>

@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import Loading from '@/app/loading';
 import { TimelineFilter } from './TimelineFilter';
 import { TimelineItem, TimelineItemData } from './TimelineItem';
+import { TrendingKeywords } from './TrendingKeywords';
 import { useNewsListQuery } from '@/hooks/queries/useNewsQuery';
 import type { NewsListItem } from '@/types/news';
 
