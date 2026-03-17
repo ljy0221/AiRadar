@@ -14,6 +14,12 @@ else
 fi
 
 cd "${INFRA_DIR}"
+
+if [ ! -f ".env.server1" ]; then
+  echo "[ERROR] .env.server1 not found in ${INFRA_DIR}. Aborting deployment."
+  exit 1
+fi
+
 ${SUDO} docker-compose --env-file .env.server1 -f docker-compose.server1.yml config >/dev/null
 
 run_compose() {
