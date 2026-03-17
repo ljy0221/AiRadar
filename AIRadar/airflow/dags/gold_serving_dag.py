@@ -49,6 +49,7 @@ with DAG(
     schedule_interval='@hourly',
     start_date=datetime(2025, 1, 1),
     catchup=False,
+    max_active_runs=1,    # 동시 실행 1개로 제한 (Spark OOM 방지)
     tags=['gold', 'batch'],
 ) as dag:
 

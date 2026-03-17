@@ -34,6 +34,7 @@ with DAG(
     schedule_interval='@hourly',
     start_date=datetime(2025, 1, 1),
     catchup=False,
+    max_active_runs=1,    # 동시 실행 1개로 제한 (Spark 12 executor × 2g = OOM 방지)
     tags=['silver', 'batch'],
 ) as dag:
 

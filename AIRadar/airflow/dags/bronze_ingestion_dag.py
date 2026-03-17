@@ -37,6 +37,7 @@ with DAG(
     schedule_interval='@hourly',
     start_date=datetime(2025, 1, 1),
     catchup=False,
+    max_active_runs=1,              # 동시 실행 1개로 제한 (Spark OOM 방지)
     is_paused_upon_creation=True,   # Phase 2(Kafka) 전환으로 비활성화
     tags=['bronze', 'batch'],
 ) as dag:
@@ -67,6 +68,7 @@ with DAG(
     schedule_interval='@hourly',
     start_date=datetime(2025, 1, 1),
     catchup=False,
+    max_active_runs=1,              # 동시 실행 1개로 제한 (Spark OOM 방지)
     is_paused_upon_creation=False,  # Phase 2 활성화
     tags=['bronze', 'kafka', 'streaming'],
 ) as kafka_dag:
