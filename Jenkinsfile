@@ -4,14 +4,13 @@ def sendDiscordNotification(scriptContext, String status, int color, String cred
   try {
     scriptContext.withCredentials([scriptContext.string(credentialsId: credentialId, variable: 'DISCORD_WEBHOOK_URL')]) {
       def fields = [
-        [name: 'Job', value: scriptContext.env.JOB_NAME ?: '-', inline: true],
-        [name: 'Build', value: "#${scriptContext.env.BUILD_NUMBER ?: '-'}", inline: true],
-        [name: 'Branch', value: scriptContext.params.DEPLOY_BRANCH ?: '-', inline: true],
-        [name: 'Target', value: scriptContext.params.DEPLOY_TARGET ?: '-', inline: true],
-        [name: 'Result', value: status, inline: true],
-        [name: 'URL', value: scriptContext.env.BUILD_URL ?: '-', inline: false],
+        [name: 'Job',    value: scriptContext.env.JOB_NAME ?: '-',              inline: true],
+        [name: 'Build',  value: "#${scriptContext.env.BUILD_NUMBER ?: '-'}",     inline: true],
+        [name: 'Branch', value: scriptContext.params.DEPLOY_BRANCH ?: '-',       inline: true],
+        [name: 'Target', value: scriptContext.params.DEPLOY_TARGET ?: '-',       inline: true],
+        [name: 'Result', value: status,                                           inline: true],
+        [name: 'URL',    value: scriptContext.env.BUILD_URL ?: '-',              inline: false],
       ]
-
       def payload = JsonOutput.toJson([
         username: 'Jenkins',
         embeds: [[
@@ -22,9 +21,7 @@ def sendDiscordNotification(scriptContext, String status, int color, String cred
           timestamp  : new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX", TimeZone.getTimeZone('Asia/Seoul')),
         ]]
       ])
-
       scriptContext.writeFile file: 'discord-webhook-payload.json', text: payload
-
       scriptContext.sh '''
         curl -sS -H "Content-Type: application/json" \
           -X POST \
@@ -43,13 +40,23 @@ pipeline {
   options {
     timestamps()
     disableConcurrentBuilds()
+    timeout(time: 30, unit: 'MINUTES')
+  }
+
+  triggers {
+    gitlab(
+      triggerOnPush: true,
+      triggerOnMergeRequest: false,
+      branchFilterType: 'NameBasedFilter',
+      includeBranchesSpec: 'develop'
+    )
   }
 
   parameters {
     choice(
       name: 'DEPLOY_TARGET',
-      choices: ['server2', 'server1', 'all'],
-      description: '배포 대상 서버'
+      choices: ['all', 'server1', 'server2'],
+      description: '배포 대상 서버 (자동 트리거 시 all)'
     )
     string(
       name: 'DEPLOY_BRANCH',
@@ -60,37 +67,60 @@ pipeline {
   }
 
   environment {
-    REPO_URL = 'https://lab.ssafy.com/s14-bigdata-dist-sub1/S14P21B104.git'
-    GIT_CREDENTIAL = 'gitlab-http-token'
-    REPO_DIR = '~/S14P21B104'
-    SERVER1_HOST = 'ubuntu@j14b104.p.ssafy.io'
-    SERVER2_HOST = 'ubuntu@j14b104a.p.ssafy.io'
-    SERVER1_SSH_CREDENTIAL = 'airadar-server1-ssh'
-    SERVER2_SSH_CREDENTIAL = 'airadar-server2-ssh'
+    REPO_URL                           = 'https://lab.ssafy.com/s14-bigdata-dist-sub1/S14P21B104.git'
+    GIT_CREDENTIAL                     = 'gitlab-http-token'
+    REPO_DIR                           = '~/S14P21B104'
+    SERVER1_HOST                       = 'ubuntu@j14b104.p.ssafy.io'
+    SERVER2_HOST                       = 'ubuntu@j14b104a.p.ssafy.io'
+    SERVER1_SSH_CREDENTIAL             = 'airadar-server1-ssh'
+    SERVER2_SSH_CREDENTIAL             = 'airadar-server2-ssh'
     DISCORD_SUCCESS_WEBHOOK_CREDENTIAL = 'airadar-discord-webhook-success'
     DISCORD_FAILURE_WEBHOOK_CREDENTIAL = 'airadar-discord-webhook-failure'
+    HEALTH_CHECK_URL                   = 'http://j14b104a.p.ssafy.io:18888/api/health'
   }
 
   stages {
+
     stage('Checkout') {
       steps {
         deleteDir()
-        git branch: params.DEPLOY_BRANCH, credentialsId: env.GIT_CREDENTIAL, url: env.REPO_URL
+        git branch: params.DEPLOY_BRANCH,
+            credentialsId: env.GIT_CREDENTIAL,
+            url: env.REPO_URL
       }
     }
 
-    stage('Build Backend') {
+    stage('Test') {
       steps {
         dir('AIRadar/backend') {
           sh '''
             chmod +x ./gradlew
-            ./gradlew shadowJar --no-daemon
+            ./gradlew test --no-daemon --continue \
+              -Dorg.gradle.caching=true \
+              2>&1 | tee test-output.log
+          '''
+        }
+      }
+      post {
+        always {
+          junit allowEmptyResults: true,
+                testResults: 'AIRadar/backend/build/test-results/**/*.xml'
+        }
+      }
+    }
+
+    stage('Build') {
+      steps {
+        dir('AIRadar/backend') {
+          sh '''
+            ./gradlew shadowJar --no-daemon \
+              -Dorg.gradle.caching=true
           '''
         }
       }
     }
 
-    stage('Validate Files') {
+    stage('Validate') {
       steps {
         script {
           def files = [
@@ -100,16 +130,60 @@ pipeline {
             'AIRadar/infra/scripts/deploy-server2.sh',
             'AIRadar/backend/build/libs/airadar-spark.jar'
           ]
-          for (file in files) {
-            if (!fileExists(file)) {
-              error("Required file missing: ${file}")
+          for (f in files) {
+            if (!fileExists(f)) {
+              error("Required file missing: ${f}")
             }
           }
         }
       }
     }
 
-    stage('Deploy Server2') {
+    stage('Deploy') {
+      steps {
+        script {
+          def deployStages = [:]
+
+          if (params.DEPLOY_TARGET == 'server2' || params.DEPLOY_TARGET == 'all') {
+            deployStages['Deploy Server2'] = {
+              sshagent(credentials: [env.SERVER2_SSH_CREDENTIAL]) {
+                sh """
+                  tar --exclude=.git -czf - . | ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} '
+                    set -e
+                    mkdir -p ${REPO_DIR}
+                    sudo rm -rf ${REPO_DIR}/AIRadar/backend/build
+                    tar -xzf - -C ${REPO_DIR}
+                    cd ${REPO_DIR}
+                    bash AIRadar/infra/scripts/deploy-server2.sh
+                  '
+                """
+              }
+            }
+          }
+
+          if (params.DEPLOY_TARGET == 'server1' || params.DEPLOY_TARGET == 'all') {
+            deployStages['Deploy Server1'] = {
+              sshagent(credentials: [env.SERVER1_SSH_CREDENTIAL]) {
+                sh """
+                  tar --exclude=.git -czf - . | ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} '
+                    set -e
+                    mkdir -p ${REPO_DIR}
+                    sudo rm -rf ${REPO_DIR}/AIRadar/backend/build
+                    tar -xzf - -C ${REPO_DIR}
+                    cd ${REPO_DIR}
+                    bash AIRadar/infra/scripts/deploy-server1.sh
+                  '
+                """
+              }
+            }
+          }
+
+          parallel deployStages
+        }
+      }
+    }
+
+    stage('Health Check') {
       when {
         anyOf {
           expression { params.DEPLOY_TARGET == 'server2' }
@@ -117,40 +191,62 @@ pipeline {
         }
       }
       steps {
-        sshagent(credentials: [env.SERVER2_SSH_CREDENTIAL]) {
-          sh """
-            tar --exclude=.git -czf - . | ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} '
-              set -e
-              mkdir -p ${REPO_DIR}
-              sudo rm -rf ${REPO_DIR}/AIRadar/backend/build
-              tar -xzf - -C ${REPO_DIR}
-              cd ${REPO_DIR}
-              bash AIRadar/infra/scripts/deploy-server2.sh
-            '
-          """
+        script {
+          def maxRetries = 10
+          def retryInterval = 15
+          def healthy = false
+
+          for (int i = 1; i <= maxRetries; i++) {
+            echo "Health check attempt ${i}/${maxRetries}..."
+            def result = sh(
+              script: "curl -sf --max-time 5 ${env.HEALTH_CHECK_URL} -o /dev/null && echo OK || echo FAIL",
+              returnStdout: true
+            ).trim()
+
+            if (result == 'OK') {
+              echo "Health check passed on attempt ${i}"
+              healthy = true
+              break
+            }
+            if (i < maxRetries) {
+              sleep(retryInterval)
+            }
+          }
+
+          if (!healthy) {
+            error("Health check failed after ${maxRetries} attempts. Triggering rollback.")
+          }
         }
       }
     }
 
-    stage('Deploy Server1') {
+    stage('Rollback') {
       when {
-        anyOf {
-          expression { params.DEPLOY_TARGET == 'server1' }
-          expression { params.DEPLOY_TARGET == 'all' }
-        }
+        expression { currentBuild.result == 'FAILURE' }
       }
       steps {
-        sshagent(credentials: [env.SERVER1_SSH_CREDENTIAL]) {
-          sh """
-            tar --exclude=.git -czf - . | ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} '
-              set -e
-              mkdir -p ${REPO_DIR}
-              sudo rm -rf ${REPO_DIR}/AIRadar/backend/build
-              tar -xzf - -C ${REPO_DIR}
-              cd ${REPO_DIR}
-              bash AIRadar/infra/scripts/deploy-server1.sh
-            '
-          """
+        echo "Deployment failed. Rolling back to previous version..."
+        script {
+          if (params.DEPLOY_TARGET == 'server2' || params.DEPLOY_TARGET == 'all') {
+            sshagent(credentials: [env.SERVER2_SSH_CREDENTIAL]) {
+              sh """
+                ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} '
+                  cd ${REPO_DIR}
+                  bash AIRadar/infra/scripts/deploy-server2.sh --rollback
+                '
+              """
+            }
+          }
+          if (params.DEPLOY_TARGET == 'server1' || params.DEPLOY_TARGET == 'all') {
+            sshagent(credentials: [env.SERVER1_SSH_CREDENTIAL]) {
+              sh """
+                ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} '
+                  cd ${REPO_DIR}
+                  bash AIRadar/infra/scripts/deploy-server1.sh --rollback
+                '
+              """
+            }
+          }
         }
       }
     }
@@ -158,13 +254,13 @@ pipeline {
 
   post {
     success {
-      echo 'Jenkins deployment pipeline completed successfully.'
+      echo 'Deployment completed successfully.'
       script {
         sendDiscordNotification(this, 'SUCCESS', 5763719, env.DISCORD_SUCCESS_WEBHOOK_CREDENTIAL)
       }
     }
     failure {
-      echo 'Jenkins deployment pipeline failed. Check the stage logs.'
+      echo 'Deployment failed. Check stage logs.'
       script {
         sendDiscordNotification(this, 'FAILURE', 15548997, env.DISCORD_FAILURE_WEBHOOK_CREDENTIAL)
       }
