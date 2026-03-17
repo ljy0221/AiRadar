@@ -1,7 +1,7 @@
 import { MetricData, KeywordTrend, ChartData, DashboardResponse } from '@/services/dashboardApi';
 import { MOCK_LIFECYCLE, MOCK_DAILY_DATA, TechLifecycleDto, TechKeywordDailyDto } from '@/services/raw/techKeywordRaw';
 
-export const analyzeDashboardData = (): DashboardResponse => {
+export const analyzeDashboardData = (originalDictionary: any[]): DashboardResponse => {
   // 1. Metrics 계산
   const risingCount = MOCK_LIFECYCLE.filter(k => k.status === 'RISING').length;
   const decliningCount = MOCK_LIFECYCLE.filter(k => k.status === 'DECLINING').length;
@@ -80,7 +80,7 @@ export const analyzeDashboardData = (): DashboardResponse => {
     keywords,
     barData,
     radarData,
-    interestData
+    keywordDictionary: originalDictionary // 기존 하드코딩된 사전 유지
   };
 };
 
