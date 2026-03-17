@@ -20,9 +20,9 @@ default_args = {
 
 SPARK_CONF = {
     'spark.master': 'spark://spark-master:7077',
-    'spark.executor.memory': '2g',
-    'spark.executor.cores': '2',
-    'spark.executor.instances': '4',   # Worker 2대 × executor 2개
+    'spark.executor.memory': '1g',
+    'spark.executor.cores': '1',
+    'spark.executor.instances': '2',   # OOM 방지 (15g 서버 기준 2개 제한)
     'spark.driver.memory': '1g',
     'spark.sql.extensions': 'io.delta.sql.DeltaSparkSessionExtension',
     'spark.sql.catalog.spark_catalog': 'org.apache.spark.sql.delta.catalog.DeltaCatalog',
@@ -34,6 +34,7 @@ with DAG(
     schedule_interval='@hourly',
     start_date=datetime(2025, 1, 1),
     catchup=False,
+    max_active_runs=1,    # 동시 실행 1개로 제한 (Spark 12 executor × 2g = OOM 방지)
     tags=['silver', 'batch'],
 ) as dag:
 

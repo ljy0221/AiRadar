@@ -15,6 +15,15 @@ else
   SUDO="sudo"
 fi
 
+cd "${INFRA_DIR}"
+
+if [ ! -f ".env.server2" ]; then
+  echo "[ERROR] .env.server2 not found in ${INFRA_DIR}. Aborting deployment."
+  exit 1
+fi
+
+${SUDO} docker-compose --env-file .env.server2 -f docker-compose.server2.yml config >/dev/null
+
 run_compose() {
   ${SUDO} docker-compose --env-file .env.server2 -f docker-compose.server2.yml "$@"
 }

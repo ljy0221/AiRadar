@@ -76,7 +76,7 @@ services:
       SPARK_MASTER_URL: spark://spark-master:7077
       SPARK_WORKER_WEBUI_PORT: 8081
       SPARK_WORKER_CORES: ${SPARK_WORKER_CORES:-2}
-      SPARK_WORKER_MEMORY: ${SPARK_WORKER_MEMORY:-4g}
+      SPARK_WORKER_MEMORY: ${SPARK_WORKER_MEMORY:-2g}
       SPARK_NO_DAEMONIZE: "true"
       BRONZE_BASE_PATH: ${BRONZE_BASE_PATH:-}
       SILVER_BASE_PATH: ${SILVER_BASE_PATH:-}
@@ -128,13 +128,16 @@ services:
     depends_on:
       spark-master:
         condition: service_started
+    env_file:
+      - .env.server1
     ports:
       - "${AIRFLOW_PORT:-18081}:8080"
     command: >
       bash -c "
         airflow db migrate &&
         airflow users create --username \"$${_AIRFLOW_WWW_USER_USERNAME:-admin}\" --password \"$${_AIRFLOW_WWW_USER_PASSWORD:-admin}\" --firstname admin --lastname admin --role Admin --email admin@example.com || true;
-        exec airflow standalone
+        airflow scheduler &
+        exec airflow webserver
       "
     volumes:
       - ../airflow/dags:/opt/airflow/dags
@@ -150,6 +153,11 @@ services:
       AIRFLOW__CELERY__BROKER_URL: redis://${SERVER2_PRIVATE_HOST:-localhost}:${SERVER2_REDIS_PORT:-16379}/0
       _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USERNAME:-admin}
       _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-change-me}
+      AIRFLOW__WEBSERVER__WEB_SERVER_WORKER_TIMEOUT: 300
+      AIRFLOW__WEBSERVER__WORKERS: 2
+      AIRFLOW__CORE__PARALLELISM: 4
+      AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: 2
+      AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG: 1
       AIRFLOW_CONN_SPARK_DEFAULT: '{"conn_type":"spark","host":"spark://spark-master","port":7077}'
       CRAWLING_API_BASE_URL: http://crawler:8002
       POSTGRES_URL: postgresql://${POSTGRES_USER:-airadar}:${POSTGRES_PASSWORD:-airadar_secret}@${SERVER2_PRIVATE_HOST:-localhost}:${SERVER2_POSTGRES_PORT:-15432}/${POSTGRES_DB:-airadar}
@@ -163,7 +171,7 @@ services:
       POSTGRES_JDBC_URL: jdbc:postgresql://${SERVER2_PRIVATE_HOST:-localhost}:${SERVER2_POSTGRES_PORT:-15432}/${POSTGRES_DB:-airadar}
       POSTGRES_USER: ${POSTGRES_USER:-airadar}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
-    mem_limit: 2g
+    mem_limit: 6g
     restart: unless-stopped
 
   jenkins:
