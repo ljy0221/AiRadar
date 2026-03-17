@@ -258,7 +258,7 @@ def main() -> None:
     if zero_results:
         print(f"\n[주의] 0건 수집된 항목 ({len(zero_results)}개):")
         for r in zero_results:
-            print(f"  {r['date']} | {r['type']}")
+            print(f"  {r['type']}")
 
     print(f"""
 다음 단계:
