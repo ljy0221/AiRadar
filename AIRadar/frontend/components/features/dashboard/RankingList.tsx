@@ -1,0 +1,67 @@
+'use client';
+
+import { RankingItem } from '@/services/dashboardApi';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+
+interface RankingListProps {
+  title: string;
+  data: RankingItem[];
+}
+
+export const RankingList = ({ title, data }: RankingListProps) => {
+  return (
+    <div className="bg-white dark:bg-[#1a1c2e] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col h-full">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-xl font-bold">{title}</h3>
+        <span className="text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded tracking-tight uppercase">Live Update</span>
+      </div>
+
+      <div className="flex flex-col flex-1 divide-y divide-gray-100 dark:divide-gray-800/50">
+        {data.map((item) => {
+          const isNew = item.change === 'new';
+          const isUp = typeof item.change === 'number' && item.change > 0;
+          const isDown = typeof item.change === 'number' && item.change < 0;
+
+          return (
+            <div key={item.rank} className="flex items-center py-3.5 group hover:bg-gray-50/50 dark:hover:bg-gray-800/20 px-2 -mx-2 rounded-lg transition-colors overflow-hidden">
+              {/* 순위 */}
+              <div className="w-8 flex-shrink-0">
+                <span className={`text-lg font-black ${
+                  item.rank <= 3 ? 'text-[var(--color-accent)]' : 'text-gray-400'
+                }`}>
+                  {item.rank}
+                </span>
+              </div>
+
+              {/* 키워드 */}
+              <div className="flex-1 min-w-0 mr-4">
+                <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate group-hover:text-[var(--color-accent)] transition-colors">
+                  {item.keyword}
+                </p>
+              </div>
+
+              {/* 변동 정보 */}
+              <div className="w-16 flex justify-end items-center gap-1 flex-shrink-0">
+                {isNew ? (
+                  <span className="bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black px-1.5 py-0.5 rounded uppercase leading-none">New</span>
+                ) : isUp ? (
+                  <div className="flex items-center text-green-500 font-bold text-xs">
+                    <TrendingUp className="w-3.5 h-3.5 mr-0.5" />
+                    {item.change}
+                  </div>
+                ) : isDown ? (
+                  <div className="flex items-center text-red-500 font-bold text-xs">
+                    <TrendingDown className="w-3.5 h-3.5 mr-0.5" />
+                    {Math.abs(item.change as number)}
+                  </div>
+                ) : (
+                  <Minus className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};

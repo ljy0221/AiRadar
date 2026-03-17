@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MetricCard, KeywordTrendList, KeywordBarChart, KeywordRadarChart, KeywordDictionary, GithubTrendingCard, PaperListCard } from '@/components/features/dashboard';
+import { MetricCard, KeywordTrendList, KeywordBarChart, KeywordRadarChart, KeywordDictionary, GithubTrendingCard, PaperListCard, ModelComparison, RankingList } from '@/components/features/dashboard';
 import { TrendingUp, TrendingDown, Activity, ListOrdered, Loader2 } from 'lucide-react';
 import { useDashboardSummary } from '@/hooks/queries/useDashboardData';
 
@@ -54,8 +54,8 @@ export default function DashboardPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as DashboardTab)}
                 className={`relative py-4 text-sm font-bold transition-all duration-200 ${activeTab === tab.id
-                    ? 'text-[var(--color-accent)]'
-                    : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]'
+                  ? 'text-[var(--color-accent)]'
+                  : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]'
                   }`}
               >
                 {tab.label}
@@ -82,6 +82,12 @@ export default function DashboardPage() {
                 ))}
               </div>
 
+              {/* Rankings Row: 실시간 기술 랭킹 & 인기 검색어 */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <RankingList title="실시간 기술 랭킹" data={data.rankingData} />
+                <RankingList title="웹 서비스 인기 검색어" data={data.popularSearches} />
+              </div>
+
               {/* Technical Analysis List */}
               <div className="bg-white dark:bg-[#1a1c2e] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
                 <h2 className="text-2xl font-bold mb-6">기술 분석</h2>
@@ -99,9 +105,14 @@ export default function DashboardPage() {
 
           {/* Tab Content: 심층 분석 (Analytics) */}
           {activeTab === 'analytics' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <KeywordBarChart data={data.barData} />
-              <KeywordRadarChart data={data.radarData} />
+            <div className="flex flex-col gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <KeywordBarChart data={data.barData} />
+                <KeywordRadarChart data={data.radarData} />
+              </div>
+
+              {/* 모델 성능 비교 차트 추가 */}
+              <ModelComparison data={data.modelComparison} />
             </div>
           )}
 

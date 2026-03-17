@@ -24,40 +24,43 @@ export const KeywordTrendList = ({ data }: { data: KeywordData[] }) => {
         const isDown = item.weeklyGrowth < 0;
 
         return (
-          <div key={index} className="flex flex-col md:flex-row items-center justify-between p-4 md:p-6 bg-white dark:bg-[#1a1c2e] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm gap-4">
-            <div className="flex items-center gap-4 w-full md:w-1/3">
-              <h4 className="text-lg md:text-xl font-bold truncate">{item.name}</h4>
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${style.color} ${style.bg}`}>
+          <div key={index} className="grid grid-cols-1 md:grid-cols-12 items-center p-4 md:px-6 md:py-4 bg-white dark:bg-[#1a1c2e] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm gap-4 transition-all hover:bg-gray-50/50 dark:hover:bg-gray-800/20">
+            {/* 키워드 영역 (4칸) */}
+            <div className="col-span-1 md:col-span-3 flex items-center gap-3 overflow-hidden">
+              <h4 className="text-base md:text-lg font-bold truncate flex-1" title={item.name}>{item.name}</h4>
+              <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] md:text-xs font-bold whitespace-nowrap ${style.color} ${style.bg}`}>
                 {item.status}
               </span>
             </div>
-            
-            <div className="flex items-center justify-between w-full md:w-2/3 gap-4 md:gap-8 overflow-hidden">
+
+            {/* 지표 영역 (4칸: 점수, 속도, 증가율) */}
+            <div className="col-span-1 md:col-span-4 grid grid-cols-3 gap-2">
               <div className="flex flex-col items-center">
-                <span className="text-xs text-gray-400">트렌드 점수</span>
-                <span className="text-xl md:text-2xl font-bold">{item.trendScore.toFixed(1)}</span>
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Score</span>
+                <span className="text-base md:text-lg font-black text-[var(--color-text-primary)]">{item.trendScore.toFixed(1)}</span>
               </div>
               <div className="flex flex-col items-center">
-                <span className="text-xs text-gray-400">변화 속도</span>
-                <div className={`flex items-center gap-1 font-bold ${isUp ? 'text-green-500' : isDown ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
-                  {isUp ? <TrendingUp className="w-4 h-4" /> : isDown ? <TrendingDown className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Velocity</span>
+                <div className={`flex items-center gap-0.5 font-black text-sm md:text-base ${isUp ? 'text-green-500' : isDown ? 'text-red-500' : 'text-gray-500'}`}>
+                  {isUp ? <TrendingUp className="w-3.5 h-3.5" /> : isDown ? <TrendingDown className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
                   {Math.abs(item.changeRate)}
                 </div>
               </div>
               <div className="flex flex-col items-center">
-                <span className="text-xs text-gray-400">주간 증가율</span>
-                <span className={`font-bold ${isUp ? 'text-green-500' : isDown ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Weekly</span>
+                <span className={`font-black text-sm md:text-base ${isUp ? 'text-green-500' : isDown ? 'text-red-500' : 'text-gray-500'}`}>
                   {isUp ? '+' : ''}{item.weeklyGrowth}%
                 </span>
               </div>
-              
-              <div className="hidden md:flex flex-1 items-center gap-2">
-                <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full ${isUp ? 'bg-green-500' : isDown ? 'bg-red-500' : 'bg-gray-50 dark:bg-gray-800/500'}`} 
-                    style={{ width: `${Math.min(Math.max((item.trendScore / 100) * 100, 0), 100)}%` }} 
-                  />
-                </div>
+            </div>
+
+            {/* 그래프 영역 (5칸) */}
+            <div className="col-span-1 md:col-span-5 flex items-center gap-3">
+              <div className="w-full h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden shrink-0">
+                <div
+                  className={`h-full rounded-full transition-all duration-1000 ${isUp ? 'bg-green-500' : isDown ? 'bg-red-500' : 'bg-gray-400'}`}
+                  style={{ width: `${Math.min(Math.max((item.trendScore / 100) * 100, 0), 100)}%` }}
+                />
               </div>
             </div>
           </div>

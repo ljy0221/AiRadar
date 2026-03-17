@@ -5,3 +5,5 @@ export * from './KeywordRadarChart';
 export * from './KeywordDictionary';
 export * from './GithubTrendingCard';
 export * from './PaperListCard';
+export * from './ModelComparison';
+export * from './RankingList';

@@ -1,4 +1,4 @@
-import { MetricData, KeywordTrend, ChartData, DashboardResponse } from '@/services/dashboardApi';
+import { MetricData, KeywordTrend, ChartData, DashboardResponse, RankingItem } from '@/services/dashboardApi';
 import { MOCK_DAILY_DATA, TechLifecycleDto } from '@/services/raw/techKeywordRaw';
 
 // --- 자체 데이터 분석기 로직 (Client-side Aggregation) ---
@@ -9,7 +9,7 @@ const calculateAnalyzedKeywords = (): TechLifecycleDto[] => {
   let maxNews = 1;
 
   const entries = Object.entries(MOCK_DAILY_DATA);
-  
+
   entries.forEach(([_, dailyArr]) => {
     const today = dailyArr[dailyArr.length - 1];
     if (today.paperMentions > maxPaper) maxPaper = today.paperMentions;
@@ -30,7 +30,7 @@ const calculateAnalyzedKeywords = (): TechLifecycleDto[] => {
     const lastWeek = dailyArr.slice(0, 7);
     const thisWeek = dailyArr.slice(7, 14);
 
-    const sumVolume = (arr: typeof dailyArr) => 
+    const sumVolume = (arr: typeof dailyArr) =>
       arr.reduce((acc, d) => acc + d.paperMentions + d.githubActivity + d.newsMentions, 0);
 
     const lastWeekTotal = sumVolume(lastWeek);
@@ -77,37 +77,37 @@ export const analyzeDashboardData = (originalDictionary: any[]): DashboardRespon
   // 1. Metrics 계산
   const risingCount = analyzedData.filter(k => k.status === 'RISING').length;
   const decliningCount = analyzedData.filter(k => k.status === 'DECLINING').length;
-  
+
   const peakKeywords = analyzedData.filter(k => k.status === 'PEAK');
-  const peakAvgScore = peakKeywords.length > 0 
-    ? peakKeywords.reduce((acc, k) => acc + k.trendScore, 0) / peakKeywords.length 
+  const peakAvgScore = peakKeywords.length > 0
+    ? peakKeywords.reduce((acc, k) => acc + k.trendScore, 0) / peakKeywords.length
     : 0;
 
   const topRising = analyzedData.filter(k => k.status === 'RISING').sort((a, b) => b.trendScore - a.trendScore)[0]?.keyword || "없음";
   const worstDeclining = analyzedData.filter(k => k.status === 'DECLINING').sort((a, b) => a.weekOverWeek - b.weekOverWeek)[0]?.keyword || "없음";
-    
+
   const metrics: MetricData[] = [
-    { 
-      title: topRising, 
-      value: risingCount.toString(), 
-      subtitle: "이번 주 떠오르는 기술", 
-      trend: 'up' 
+    {
+      title: topRising,
+      value: risingCount.toString(),
+      subtitle: "이번 주 떠오르는 기술",
+      trend: 'up'
     },
-    { 
-      title: worstDeclining, 
-      value: decliningCount.toString(), 
-      subtitle: "이번 주 사라지는 기술", 
-      trend: 'down' 
+    {
+      title: worstDeclining,
+      value: decliningCount.toString(),
+      subtitle: "이번 주 사라지는 기술",
+      trend: 'down'
     },
-    { 
-      title: `평균 ${peakAvgScore.toFixed(1)}점`, 
-      value: peakKeywords.length.toString(), 
-      subtitle: "피크 상태 기술" 
+    {
+      title: `평균 ${peakAvgScore.toFixed(1)}점`,
+      value: peakKeywords.length.toString(),
+      subtitle: "피크 상태 기술"
     },
-    { 
-      title: `${analyzedData.length}개 카테고리`, 
-      value: analyzedData.length.toString(), 
-      subtitle: "추적 중인 키워드" 
+    {
+      title: `${analyzedData.length}개 카테고리`,
+      value: analyzedData.length.toString(),
+      subtitle: "추적 중인 키워드"
     },
   ];
 
@@ -131,11 +131,11 @@ export const analyzeDashboardData = (originalDictionary: any[]): DashboardRespon
   const topRadarKeywords = [...analyzedData]
     .sort((a, b) => b.trendScore - a.trendScore)
     .slice(0, 3);
-    
+
   const radarData = topRadarKeywords.map(k => ({
     subject: k.keyword,
     trendScore: Math.round(k.trendScore),
-    growth: Math.max(0, Math.round(k.weekOverWeek)), 
+    growth: Math.max(0, Math.round(k.weekOverWeek)),
     fullMark: 100
   }));
 
@@ -152,12 +152,70 @@ export const analyzeDashboardData = (originalDictionary: any[]): DashboardRespon
     }));
   }
 
+  // 6. 모델 성능 비교 데이터 (Benchmark Simulation)
+  const modelComparison: DashboardResponse['modelComparison'] = [
+    {
+      modelName: 'GPT-4o',
+      category: 'Closed',
+      benchmarks: [
+        { name: 'MMLU (지능)', score: 88.7, fullMark: 100 },
+        { name: 'GSM8K (수학)', score: 92.0, fullMark: 100 },
+        { name: 'HumanEval (코딩)', score: 90.2, fullMark: 100 },
+        { name: 'GPQA (과학)', score: 53.6, fullMark: 100 }
+      ]
+    },
+    {
+      modelName: 'Claude 3.5 Sonnet',
+      category: 'Closed',
+      benchmarks: [
+        { name: 'MMLU (지능)', score: 88.7, fullMark: 100 },
+        { name: 'GSM8K (수학)', score: 96.4, fullMark: 100 },
+        { name: 'HumanEval (코딩)', score: 92.0, fullMark: 100 },
+        { name: 'GPQA (과학)', score: 59.4, fullMark: 100 }
+      ]
+    },
+    {
+      modelName: 'Llama 3.1 405B',
+      category: 'Open Weights',
+      benchmarks: [
+        { name: 'MMLU (지능)', score: 88.6, fullMark: 100 },
+        { name: 'GSM8K (수학)', score: 96.8, fullMark: 100 },
+        { name: 'HumanEval (코딩)', score: 89.0, fullMark: 100 },
+        { name: 'GPQA (과학)', score: 51.1, fullMark: 100 }
+      ]
+    }
+  ];
+
+  // 7. 실시간 기술 랭킹 (Top 5)
+  const rankingData: RankingItem[] = analyzedData
+    .sort((a, b) => b.trendScore - a.trendScore)
+    .slice(0, 5)
+    .map((k, i) => ({
+      rank: i + 1,
+      keyword: k.keyword,
+      change: i === 0 ? 'new' : Math.floor(Math.random() * 5) - 2, // 가상 변동 데이터
+      score: k.trendScore
+    }));
+
+  // 8. 서비스 내 인기 검색어 (가상 데이터 - Top 5)
+  const popularSearches: RankingItem[] = [
+    { rank: 1, keyword: 'Llama 3.1 405B', change: 1 },
+    { rank: 2, keyword: 'Agentic Workflow', change: 'new' },
+    { rank: 3, keyword: 'Claude 3.5 Sonnet', change: -1 },
+    { rank: 4, keyword: 'RAG Optimization', change: 0 },
+    { rank: 5, keyword: 'GPT-4o mini', change: 2 },
+  ];
+
   return {
     metrics,
     keywords,
     barData,
     radarData,
-    keywordDictionary: originalDictionary 
+    keywordDictionary: originalDictionary,
+    modelComparison,
+    interestData,
+    rankingData,
+    popularSearches
   };
 };
 
