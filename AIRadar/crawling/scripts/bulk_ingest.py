@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
+import threading
 import time
 import urllib.request
 import urllib.error
@@ -69,6 +71,48 @@ TYPE_TO_CONFIGS = {
     "paper": ["paper_arxiv"],
     "github": ["github"],
 }
+
+
+# ---------------------------------------------------------------------------
+# 프로그레스 바
+# ---------------------------------------------------------------------------
+BAR_WIDTH = 30
+
+def progress_bar(current: int, total: int, label: str = "") -> str:
+    filled = int(BAR_WIDTH * current / total) if total > 0 else 0
+    bar = "█" * filled + "░" * (BAR_WIDTH - filled)
+    pct = int(100 * current / total) if total > 0 else 0
+    return f"[{bar}] {pct:3d}% {current}/{total} {label}"
+
+
+class Spinner:
+    """요청 대기 중 스피너를 백그라운드 스레드로 출력"""
+    FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+
+    def __init__(self, label: str) -> None:
+        self.label = label
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._spin, daemon=True)
+
+    def _spin(self) -> None:
+        idx = 0
+        start = time.time()
+        while not self._stop.is_set():
+            elapsed = int(time.time() - start)
+            frame = self.FRAMES[idx % len(self.FRAMES)]
+            sys.stdout.write(f"\r  {frame} {self.label} ({elapsed}s 경과)...")
+            sys.stdout.flush()
+            idx += 1
+            time.sleep(0.1)
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        self._thread.join()
+        sys.stdout.write("\r" + " " * 60 + "\r")
+        sys.stdout.flush()
 
 
 # ---------------------------------------------------------------------------
@@ -146,10 +190,19 @@ def main() -> None:
 
     for idx, cfg_name in enumerate(configs):
         payload = dict(CRAWL_CONFIGS[cfg_name])
-        print(f"\n[{idx + 1}/{len(configs)}] {cfg_name} 수집 중... (최대 {payload.get('max_articles', payload.get('github_top_n', '-'))}건)")
+        max_cnt = payload.get("max_articles", payload.get("github_top_n", "?"))
+
+        # 전체 진행 바 출력
+        print(f"\n전체 진행: {progress_bar(idx, len(configs), f'({idx+1}/{len(configs)}) {cfg_name}')}")
+        print(f"  요청: {cfg_name} (최대 {max_cnt}건)")
+
+        spinner = Spinner(f"{cfg_name} 수집")
+        spinner.start()
 
         try:
             result = call_crawl_jobs(args.crawl_url, payload, timeout=600)
+            spinner.stop()
+
             crawled = result.get("crawled_count", 0)
             failed = result.get("failed_count", 0)
             kafka = result.get("metadata", {}).get("kafka", {})
@@ -158,7 +211,11 @@ def main() -> None:
                 if isinstance(v, dict)
             )
 
-            print(f"  완료: 수집 {crawled}건, Kafka 발행 {published}건 (실패 {failed}건)")
+            # 수집 결과 바
+            bar = progress_bar(crawled, max_cnt if isinstance(max_cnt, int) else crawled, "수집완료")
+            print(f"  {bar}")
+            print(f"  ✓ 수집 {crawled}건 | Kafka 발행 {published}건 | 실패 {failed}건")
+
             total_collected += crawled
             total_failed += failed
             results_summary.append({
@@ -167,14 +224,16 @@ def main() -> None:
             })
 
         except urllib.error.HTTPError as e:
-            print(f"  HTTP 오류 {e.code}: {e.reason}")
+            spinner.stop()
+            print(f"  ✗ HTTP 오류 {e.code}: {e.reason}")
             total_failed += 1
             results_summary.append({
                 "type": cfg_name, "crawled": 0, "published": 0, "failed": 1,
                 "error": str(e),
             })
         except Exception as exc:
-            print(f"  오류: {exc}")
+            spinner.stop()
+            print(f"  ✗ 오류: {exc}")
             total_failed += 1
             results_summary.append({
                 "type": cfg_name, "crawled": 0, "published": 0, "failed": 1,
@@ -183,6 +242,9 @@ def main() -> None:
 
         if idx < len(configs) - 1:
             time.sleep(args.delay)
+
+    # 최종 전체 완료 바
+    print(f"\n전체 진행: {progress_bar(len(configs), len(configs), '완료!')}")
 
     # 최종 요약
     print("\n" + "=" * 65)
@@ -196,7 +258,7 @@ def main() -> None:
     if zero_results:
         print(f"\n[주의] 0건 수집된 항목 ({len(zero_results)}개):")
         for r in zero_results:
-            print(f"  {r['date']} | {r['type']}")
+            print(f"  {r['type']}")
 
     print(f"""
 다음 단계:
