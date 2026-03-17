@@ -134,7 +134,8 @@ services:
       bash -c "
         airflow db migrate &&
         airflow users create --username \"$${_AIRFLOW_WWW_USER_USERNAME:-admin}\" --password \"$${_AIRFLOW_WWW_USER_PASSWORD:-admin}\" --firstname admin --lastname admin --role Admin --email admin@example.com || true;
-        exec airflow standalone
+        airflow scheduler &
+        exec airflow webserver
       "
     volumes:
       - ../airflow/dags:/opt/airflow/dags
