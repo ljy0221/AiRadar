@@ -17,6 +17,7 @@ import org.apache.spark.sql.types.StructType;
 import java.time.Instant;
 import java.util.Properties;
 
+import static com.mcp.airadar.spark.utils.SparkUtils.configureS3A;
 import static com.mcp.airadar.spark.utils.SparkUtils.getArg;
 import static org.apache.spark.sql.functions.*;
 
@@ -130,27 +131,13 @@ public class KafkaBronzeConsumerJob {
             throw new IllegalArgumentException("필수 인자 누락: --source-type (news | github | paper)");
         }
 
-        SparkSession spark = SparkSession.builder()
+        SparkSession.Builder builder = SparkSession.builder()
             .appName("KafkaBronzeConsumerJob-" + sourceType)
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
             .config("spark.sql.catalog.spark_catalog",
-                    "org.apache.spark.sql.delta.catalog.DeltaCatalog")
-            // S3A (MinIO) 설정 — ⚠️ 기본값은 로컬 개발 전용, Staging 이상은 환경변수로만 주입
-            .config("spark.hadoop.fs.s3a.impl",
-                    "org.apache.hadoop.fs.s3a.S3AFileSystem")
-            .config("spark.hadoop.fs.s3a.endpoint",
-                    System.getenv().getOrDefault("MINIO_ENDPOINT", "http://localhost:9000"))
-            .config("spark.hadoop.fs.s3a.access.key",
-                    System.getenv().getOrDefault("AWS_ACCESS_KEY_ID", "minioadmin"))
-            .config("spark.hadoop.fs.s3a.secret.key",
-                    System.getenv().getOrDefault("AWS_SECRET_ACCESS_KEY", "minioadmin123"))
-            .config("spark.hadoop.fs.s3a.path.style.access", "true")
-            .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
-            .config("spark.hadoop.fs.s3a.aws.credentials.provider",
-                    "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider")
-            .config("spark.hadoop.fs.s3a.fast.upload", "true")
-            .config("spark.hadoop.fs.s3a.multipart.size", "104857600")
-            .getOrCreate();
+                    "org.apache.spark.sql.delta.catalog.DeltaCatalog");
+        configureS3A(builder);
+        SparkSession spark = builder.getOrCreate();
 
         spark.sparkContext().setLogLevel("WARN");
 
@@ -197,28 +184,49 @@ public class KafkaBronzeConsumerJob {
             col("timestamp").as("kafka_timestamp")
         );
 
+        // envelope 구조 언래핑: "payload" 키가 있으면 그 값 사용, 없으면 원본(flat 구조) 사용
+        // 구버전 크롤러 메시지: {"schema_version":"1.0","payload":{...flat...}}
+        // 신버전 크롤러 메시지: {flat fields directly}
+        Dataset<Row> unwrappedStream = valueStream.select(
+            when(
+                get_json_object(col("raw_json"), "$.payload").isNotNull(),
+                get_json_object(col("raw_json"), "$.payload")
+            ).otherwise(col("raw_json")).as("raw_json"),
+            col("kafka_timestamp")
+        );
+
         // source-type별 파싱 및 Bronze 스키마 변환
         Dataset<Row> bronzeStream = switch (sourceType) {
-            case "news"   -> parseNews(valueStream);
-            case "github" -> parseGithub(valueStream);
-            case "paper"  -> parsePaper(valueStream);
+            case "news"   -> parseNews(unwrappedStream);
+            case "github" -> parseGithub(unwrappedStream);
+            case "paper"  -> parsePaper(unwrappedStream);
             default -> throw new IllegalArgumentException("지원하지 않는 source-type: " + sourceType
                 + " (지원: news, github, paper)");
         };
 
-        // foreachBatch: 각 마이크로배치를 Delta Lake에 Append
+        // foreachBatch: 각 마이크로배치를 Delta Lake에 Append + 처리 건수 로그
         // batch_date 파티션 덕분에 SilverRefinementJob이 날짜별로 읽을 수 있다
+        final long[] totalRows = {0L};
         StreamingQuery query = bronzeStream.writeStream()
-            .format("delta")
-            .outputMode("append")
+            .foreachBatch((batchDf, batchId) -> {
+                long count = batchDf.count();
+                totalRows[0] += count;
+                System.out.println("[Bronze Kafka] 배치 #" + batchId + " 처리 건수: " + count);
+                if (count > 0) {
+                    batchDf.write()
+                        .format("delta")
+                        .mode("append")
+                        .partitionBy("batch_date")
+                        .save(bronzeOutputPath);
+                }
+            })
             .option("checkpointLocation", checkpointPath)
-            .partitionBy("batch_date")
             .trigger(Trigger.AvailableNow())   // 현재 메시지 모두 처리 후 종료 (배치 모드)
-            .start(bronzeOutputPath);
+            .start();
 
         query.awaitTermination();
 
-        System.out.println("[Bronze Kafka] 처리 완료: " + bronzeOutputPath);
+        System.out.println("[Bronze Kafka] 처리 완료: " + bronzeOutputPath + " | 총 처리 건수: " + totalRows[0]);
         publishDoneEvent(sourceType);
     }
 

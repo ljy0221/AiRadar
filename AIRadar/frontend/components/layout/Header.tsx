@@ -37,28 +37,34 @@ export const Header = () => {
           </div>
           <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
             <div className="flex shrink-0 items-center">
-              <Link href="/" className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)] hover:opacity-80 transition-opacity">
-                로고
+              <Link href="/" className="font-serif text-2xl font-normal tracking-tight text-[var(--color-text-primary)] hover:opacity-80 transition-opacity">
+                AI Radar
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:block">
-              <div className="flex space-x-4">
+              <div className="flex space-x-4 h-16 items-center">
                 {navigation.map((item) => {
                   const isCurrent = pathname.startsWith(item.href);
                   return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      aria-current={isCurrent ? 'page' : undefined}
-                      className={classNames(
-                        isCurrent
-                          ? 'text-[var(--color-accent)] font-bold'
-                          : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]',
-                        'rounded-md px-3 py-2 text-base transition-colors',
+                    <div key={item.name} className="relative h-full flex items-center">
+                      <Link
+                        href={item.href}
+                        aria-current={isCurrent ? 'page' : undefined}
+                        className={classNames(
+                          isCurrent
+                            ? 'text-[var(--color-accent)] font-bold'
+                            : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]',
+                          'rounded-md px-3 py-2 text-base transition-colors',
+                        )}
+                      >
+                        {item.name}
+                      </Link>
+                      {/* Arrowhead / Caret Indicator (Prominent Style) */}
+                      {isCurrent && (
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[8px] border-b-[var(--color-accent)] z-50">
+                        </div>
                       )}
-                    >
-                      {item.name}
-                    </Link>
+                    </div>
                   );
                 })}
               </div>

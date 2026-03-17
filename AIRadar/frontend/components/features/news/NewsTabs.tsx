@@ -5,26 +5,29 @@ interface NewsTabsProps {
 
 export const NewsTabs = ({ activeTab, onTabChange }: NewsTabsProps) => {
   return (
-    <div className="mx-4 max-w-7xl md:mx-auto rounded-2xl border border-gray-200/50 dark:border-gray-800/50 mb-8 mt-4 sticky top-4 bg-white/70 dark:bg-[#12141D]/70 backdrop-blur-md z-10 p-4 shadow-sm">
-      <div className="flex gap-4">
-        <button
-          onClick={() => onTabChange('timeline')}
-          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'timeline'
-            ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
-            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-300'
-            }`}
-        >
-          뉴스 타임라인
-        </button>
-        <button
-          onClick={() => onTabChange('corporate')}
-          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'corporate'
-            ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
-            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-300'
-            }`}
-        >
-          기업 AI 활동
-        </button>
+    <div className="sticky top-[64px] z-40 w-full bg-[var(--color-bg-primary)]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 transition-colors">
+      <div className="mx-auto max-w-7xl px-4 md:px-8">
+        <div className="flex space-x-8">
+          {[
+            { id: 'timeline', label: '뉴스 타임라인' },
+            { id: 'corporate', label: '기업 AI 활동' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id as 'timeline' | 'corporate')}
+              className={`relative py-4 text-sm font-bold transition-all duration-200 ${
+                activeTab === tab.id
+                  ? 'text-[var(--color-accent)]'
+                  : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]'
+              }`}
+            >
+              {tab.label}
+              {activeTab === tab.id && (
+                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[var(--color-accent)] rounded-full shadow-[0_0_8px_rgba(var(--color-accent-rgb),0.5)]" />
+              )}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

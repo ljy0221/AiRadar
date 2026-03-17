@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { Input, Modal } from '@/components/common';
-import { Mail, User, Briefcase, ChevronDown } from 'lucide-react';
-
+import { Mail, User, Briefcase, ChevronDown, CalendarArrowUp, CalendarArrowDown } from 'lucide-react';
 export const NewsletterSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -16,20 +15,32 @@ export const NewsletterSection = () => {
   return (
     <section className="w-full bg-[var(--color-accent)] dark:bg-[#1a1c2e] text-white dark:text-[var(--color-text-primary)] py-24 px-4 mt-12 flex flex-col items-center transition-colors border-y border-transparent dark:border-gray-800">
       <div className="max-w-4xl w-full text-center">
-        <h3 className="text-xl md:text-3xl font-bold mb-16 px-4">이 모든 인사이트를 매주 메일로 보내드릴게요</h3>
+        <h3 className="text-xl md:text-3xl font-bold mb-16 px-4">주 2회, 이메일로 받아보는 완벽한 AI 트렌드 리포트</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20 px-4 md:px-12">
           {/* Item 1 */}
-          <div className="flex flex-col items-center gap-6">
-            <div className="w-full max-w-xs md:max-w-sm aspect-square bg-white/20 dark:bg-white/5 rounded-lg flex items-center justify-center shadow-inner" />
-            <div className="w-16 h-1.5 bg-white/60 rounded-full" />
-            <p className="text-sm md:text-base font-semibold">매주 AI 테크의 핵심 키워드 정리</p>
+          <div className="flex flex-col items-center gap-6 text-center">
+            <div className="w-full max-w-xs md:max-w-sm aspect-square bg-white/20 dark:bg-white/5 rounded-xl flex flex-col items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] p-8 gap-5 border border-white/10 dark:border-white/5 hover:bg-white/30 dark:hover:bg-white/10 transition-all duration-300 hover:-translate-y-1">
+              <div className="drop-shadow-md flex items-center justify-center bg-white/10 rounded-full w-24 h-24 mb-2">
+                <CalendarArrowUp className="w-12 h-12 text-[#3b82f6]" />
+              </div>
+              <h4 className="text-2xl font-bold tracking-tight">AI 생태계 위클리 요약</h4>
+              <p className="text-[16px] opacity-90 mt-2 font-medium break-keep">
+                전 주 핵심 일정 및 동향 브리핑
+              </p>
+            </div>
           </div>
           {/* Item 2 */}
-          <div className="flex flex-col items-center gap-6">
-            <div className="w-full max-w-xs md:max-w-sm aspect-square bg-white/20 dark:bg-white/5 rounded-lg flex items-center justify-center shadow-inner" />
-            <div className="w-16 h-1.5 bg-white/60 rounded-full" />
-            <p className="text-sm md:text-base font-semibold">현업에서 와닿는 AI 생태계 이야기</p>
+          <div className="flex flex-col items-center gap-6 text-center">
+            <div className="w-full max-w-xs md:max-w-sm aspect-square bg-white/20 dark:bg-white/5 rounded-xl flex flex-col items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] p-8 gap-5 border border-white/10 dark:border-white/5 hover:bg-white/30 dark:hover:bg-white/10 transition-all duration-300 hover:-translate-y-1">
+              <div className="drop-shadow-md flex items-center justify-center bg-white/10 rounded-full w-24 h-24 mb-2">
+                <CalendarArrowDown className="w-12 h-12 text-[#3b82f6]" />
+              </div>
+              <h4 className="text-2xl font-bold tracking-tight">한발 앞선 트렌드 예측</h4>
+              <p className="text-[16px] opacity-90 mt-2 font-medium break-keep">
+                차주 AI 트렌드 및 주요 일정 안내
+              </p>
+            </div>
           </div>
         </div>
 

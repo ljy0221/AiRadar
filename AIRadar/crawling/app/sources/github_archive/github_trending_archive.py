@@ -52,12 +52,12 @@ class GithubTrendingArchiveCrawler:
     def crawl(
         self,
         max_articles: int,
-        window_hours: int,
+        window_minutes: int,
         top_n: int,
         pr_per_repo: int,
     ) -> tuple[list[ParsedGithubArchiveItem], list[str], int, int]:
         now_utc = datetime.now(timezone.utc)
-        start_utc = now_utc - timedelta(hours=window_hours)
+        start_utc = now_utc - timedelta(minutes=window_minutes)
 
         watch_counts: dict[str, int] = {}
         fork_counts: dict[str, int] = {}
@@ -207,6 +207,8 @@ class GithubTrendingArchiveCrawler:
                 "open_issues": int(data.get("open_issues_count") or 0),
                 "language": data.get("language"),
                 "topics": topics,
+                "full_name": repo_name,
+                "readme_excerpt": None,
                 "license": ((data.get("license") or {}).get("spdx_id") or None),
                 "created_at": data.get("created_at"),
                 "updated_at": data.get("updated_at"),

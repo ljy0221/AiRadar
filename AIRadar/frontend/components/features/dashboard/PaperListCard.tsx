@@ -1,6 +1,4 @@
-'use client';
-
-import { BookOpen, Users } from 'lucide-react';
+import { BookOpen, Users, FileText } from 'lucide-react';
 import { usePaperListQuery } from '@/hooks/queries/usePaperQuery';
 
 const CATEGORY_COLOR: Record<string, string> = {
@@ -37,7 +35,10 @@ export const PaperListCard = () => {
   return (
     <div className="bg-white dark:bg-[#1a1c2e] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">📄 최신 Arxiv 논문</h2>
+        <div className="flex items-center gap-2">
+          <FileText className="w-5 h-5 text-blue-500" />
+          <h2 className="text-xl font-bold">최신 Arxiv 논문</h2>
+        </div>
         <span className="text-xs text-gray-400 dark:text-gray-500">발행일 최신순</span>
       </div>
 

@@ -24,12 +24,21 @@ export interface ChartData {
   sentimentScore: number;
 }
 
+export interface KeywordDefinition {
+  id: string;
+  term: string;
+  englishTerm: string;
+  category: '개념/이론' | '모델/아키텍처' | '학습/기법' | '기타';
+  summary: string;
+  description: string;
+}
+
 export interface DashboardResponse {
   metrics: MetricData[];
   keywords: KeywordTrend[];
   barData: { name: string; score: number; color: string }[];
   radarData: { subject: string; trendScore: number; growth: number; fullMark: number }[];
-  interestData: Record<string, ChartData[]>;
+  keywordDictionary: KeywordDefinition[];
 }
 
 import { analyzeDashboardData } from '@/lib/analyzers/dashboardAnalyzer';
