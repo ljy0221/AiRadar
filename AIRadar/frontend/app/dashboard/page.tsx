@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { MetricCard, KeywordTrendList, KeywordBarChart, KeywordRadarChart, KeywordDictionary, GithubTrendingCard, PaperListCard, ModelComparison, RankingList } from '@/components/features/dashboard';
 import { TrendingUp, TrendingDown, Activity, ListOrdered, Loader2 } from 'lucide-react';
 import { useDashboardSummary } from '@/hooks/queries/useDashboardData';
+import Loading from '@/app/loading';
 
 type DashboardTab = 'overview' | 'analytics' | 'dictionary';
 
@@ -12,12 +13,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
 
   if (isLoading) {
-    return (
-      <div className="w-full h-screen flex flex-col items-center justify-center gap-4 text-gray-500">
-        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent)]" />
-        <p>실시간 AI 트렌드 데이터를 불러오는 중입니다...</p>
-      </div>
-    );
+    return <Loading />;
   }
 
   if (isError || !data) {
@@ -85,7 +81,7 @@ export default function DashboardPage() {
               {/* Rankings Row: 실시간 기술 랭킹 & 인기 검색어 */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <RankingList title="실시간 기술 랭킹" data={data.rankingData} />
-                <RankingList title="웹 서비스 인기 검색어" data={data.popularSearches} />
+                <RankingList title="서비스 인기 검색어" data={data.popularSearches} />
               </div>
 
               {/* Technical Analysis List */}

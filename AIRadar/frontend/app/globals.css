@@ -16,7 +16,7 @@
   :root {
     --bg-primary: #FAF9F5;
     --text-primary: #2C3E50;
-    --accent: #D16D6D;
+    --accent: #E89E9E;
   }
 
   /* 다크 모드*/
@@ -24,7 +24,7 @@
     :root {
       --bg-primary: #0A0B1A;
       --text-primary: #E6EDF3;
-      --accent: #00F0FF;
+      --accent: #66EDFF;
     }
   }
 
@@ -32,7 +32,7 @@
   .dark {
     --bg-primary: #0A0B1A;
     --text-primary: #E6EDF3;
-    --accent: #00F0FF;
+    --accent: #66EDFF;
   }
 }
 
@@ -52,6 +52,7 @@ nav {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -79,19 +80,78 @@ nav {
 }
 
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 .animate-float {
   animation: float 4s ease-in-out infinite;
 }
 
-.delay-100 { animation-delay: 0.1s; }
-.delay-200 { animation-delay: 0.2s; }
-.delay-300 { animation-delay: 0.3s; }
-.delay-400 { animation-delay: 0.4s; }
-.delay-500 { animation-delay: 0.5s; }
-.delay-600 { animation-delay: 0.6s; }
-.delay-700 { animation-delay: 0.7s; }
+.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
+
+.delay-500 {
+  animation-delay: 0.5s;
+}
+
+.delay-600 {
+  animation-delay: 0.6s;
+}
+
+.delay-700 {
+  animation-delay: 0.7s;
+}
+
+
+@keyframes radar-pulse {
+  0% {
+    transform: scale(0.2);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes scan-line {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-radar {
+  animation: radar-pulse 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+.animate-scan {
+  animation: scan-line 4s linear infinite;
+}
