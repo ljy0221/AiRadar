@@ -20,7 +20,7 @@ export const NewsletterSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20 px-4 md:px-12">
           {/* Item 1 */}
           <div className="flex flex-col items-center gap-6 text-center">
-            <div className="w-full max-w-xs md:max-w-sm aspect-square bg-white/20 dark:bg-white/5 rounded-xl flex flex-col items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] p-8 gap-5 border border-white/10 dark:border-white/5 hover:bg-white/30 dark:hover:bg-white/10 transition-all duration-300 hover:-translate-y-1">
+            <div className="w-full max-w-xs md:max-w-sm aspect-square bg-white/20 dark:bg-white/5 rounded-xl flex flex-col items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] p-8 gap-5 border border-white/10 dark:border-white/5 hover:bg-white/30 dark:hover:bg-white/10 transition-[transform,background-color] duration-300 transform-gpu hover:-translate-y-1">
               <div className="drop-shadow-md flex items-center justify-center bg-white/10 rounded-full w-24 h-24 mb-2">
                 <CalendarArrowUp className="w-12 h-12 text-[#3b82f6]" />
               </div>
@@ -32,7 +32,7 @@ export const NewsletterSection = () => {
           </div>
           {/* Item 2 */}
           <div className="flex flex-col items-center gap-6 text-center">
-            <div className="w-full max-w-xs md:max-w-sm aspect-square bg-white/20 dark:bg-white/5 rounded-xl flex flex-col items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] p-8 gap-5 border border-white/10 dark:border-white/5 hover:bg-white/30 dark:hover:bg-white/10 transition-all duration-300 hover:-translate-y-1">
+            <div className="w-full max-w-xs md:max-w-sm aspect-square bg-white/20 dark:bg-white/5 rounded-xl flex flex-col items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] p-8 gap-5 border border-white/10 dark:border-white/5 hover:bg-white/30 dark:hover:bg-white/10 transition-[transform,background-color] duration-300 transform-gpu hover:-translate-y-1">
               <div className="drop-shadow-md flex items-center justify-center bg-white/10 rounded-full w-24 h-24 mb-2">
                 <CalendarArrowDown className="w-12 h-12 text-[#3b82f6]" />
               </div>
@@ -102,8 +102,9 @@ export const NewsletterSection = () => {
                 <select
                   className="w-full pl-11 pr-4 py-3 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all appearance-none cursor-pointer"
                   required
+                  defaultValue=""
                 >
-                  <option value="" disabled selected hidden>직군 선택</option>
+                  <option value="" disabled hidden>직군 선택</option>
                   <option value="프론트엔드">프론트엔드</option>
                   <option value="백엔드">백엔드</option>
                   <option value="데이터/AI">데이터/AI</option>
@@ -123,8 +124,9 @@ export const NewsletterSection = () => {
                 <select
                   className="w-full pl-11 pr-4 py-3 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all appearance-none cursor-pointer"
                   required
+                  defaultValue=""
                 >
-                  <option value="" disabled selected hidden>경력 선택</option>
+                  <option value="" disabled hidden>경력 선택</option>
                   <option value="신입">신입 (1년 미만)</option>
                   <option value="주니어">주니어 (1~3년)</option>
                   <option value="미들">미들 (4~6년)</option>

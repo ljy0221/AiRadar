@@ -23,9 +23,9 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div 
-        className="w-full max-w-2xl bg-white dark:bg-[#1a1c2e] text-[var(--color-text-primary)] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden"
+        className="w-full max-w-2xl bg-white dark:bg-[#1a1c2e] text-[var(--color-text-primary)] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden transform-gpu"
         onClick={(e) => e.stopPropagation()}
       >
         <div className={`flex justify-between items-center px-6 py-4 ${title ? 'border-b border-gray-100 dark:border-gray-800' : ''}`}>
