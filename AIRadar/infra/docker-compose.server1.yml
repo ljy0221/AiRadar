@@ -9,6 +9,7 @@ services:
     volumes:
       - zookeeper-data:/var/lib/zookeeper/data
       - zookeeper-log:/var/lib/zookeeper/log
+    mem_limit: 512m
     restart: unless-stopped
 
   kafka:
@@ -32,6 +33,7 @@ services:
       KAFKA_NUM_PARTITIONS: 3
     volumes:
       - kafka-data:/var/lib/kafka/data
+    mem_limit: 1g
     restart: unless-stopped
 
   spark-master:
@@ -59,6 +61,7 @@ services:
     volumes:
       - ../backend/build/libs/airadar-spark.jar:/opt/spark-jobs/airadar-spark.jar
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    mem_limit: 1g
     restart: unless-stopped
 
   spark-worker1:
@@ -89,6 +92,7 @@ services:
     volumes:
       - ../backend/build/libs/airadar-spark.jar:/opt/spark-jobs/airadar-spark.jar
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    mem_limit: 3g
     restart: unless-stopped
 
   crawler:
@@ -113,6 +117,7 @@ services:
       CRAWLER_KAFKA_REQUEST_TIMEOUT_MS: ${CRAWLER_KAFKA_REQUEST_TIMEOUT_MS:-15000}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       RAW_S3_BUCKET: ${RAW_S3_BUCKET:-}
+    mem_limit: 512m
     restart: unless-stopped
 
   airflow:
@@ -158,6 +163,7 @@ services:
       POSTGRES_JDBC_URL: jdbc:postgresql://${SERVER2_PRIVATE_HOST:-localhost}:${SERVER2_POSTGRES_PORT:-15432}/${POSTGRES_DB:-airadar}
       POSTGRES_USER: ${POSTGRES_USER:-airadar}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
+    mem_limit: 2g
     restart: unless-stopped
 
   jenkins:
@@ -173,7 +179,7 @@ services:
       - ../..:/workspace
     environment:
       JAVA_OPTS: "-Djenkins.install.runSetupWizard=true -Xmx768m"
-    mem_limit: 1g
+    mem_limit: 3g
     restart: unless-stopped
 
 volumes:
