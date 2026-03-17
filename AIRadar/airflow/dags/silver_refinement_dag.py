@@ -20,8 +20,8 @@ default_args = {
 
 SPARK_CONF = {
     'spark.master': 'spark://spark-master:7077',
-    'spark.executor.memory': '2g',
-    'spark.executor.cores': '2',
+    'spark.executor.memory': '1g',
+    'spark.executor.cores': '1',
     'spark.executor.instances': '2',   # OOM 방지 (15g 서버 기준 2개 제한)
     'spark.driver.memory': '1g',
     'spark.sql.extensions': 'io.delta.sql.DeltaSparkSessionExtension',
