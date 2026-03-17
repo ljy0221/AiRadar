@@ -4,3 +4,4 @@ export * from './TimelineItem';
 export * from './NewsTimelineTab';
 export * from './CompanyActivityCard';
 export * from './CorporateActivityTab';
+export * from './TrendingKeywords';

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { TimelineFilter } from './TimelineFilter';
 import { TimelineItem, TimelineItemData } from './TimelineItem';
+import { TrendingKeywords } from './TrendingKeywords';
 import { useNewsListQuery } from '@/hooks/queries/useNewsQuery';
 import type { NewsListItem } from '@/types/news';
 
@@ -107,6 +108,8 @@ export const NewsTimelineTab = () => {
   return (
     <div className="w-full flex justify-center py-6">
       <div className="w-full max-w-4xl">
+        <TrendingKeywords />
+        
         <TimelineFilter 
           currentCategory={regionFilter} 
           setCategory={setRegionFilter} 

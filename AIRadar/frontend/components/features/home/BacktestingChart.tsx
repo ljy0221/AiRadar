@@ -36,25 +36,25 @@ export const BacktestingChart = () => {
           <LineChart data={backtestingMockData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorPredicted" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#2D3A8C" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#2D3A8C" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(156, 163, 175, 0.2)" />
-            <XAxis 
-              dataKey="month" 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fontSize: 12, fill: 'currentColor', opacity: 0.6 }} 
+            <XAxis
+              dataKey="month"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: 'currentColor', opacity: 0.6 }}
               dy={10}
             />
-            <YAxis 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fontSize: 12, fill: 'currentColor', opacity: 0.6 }} 
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: 'currentColor', opacity: 0.6 }}
             />
             <Tooltip
-              contentStyle={{ 
+              contentStyle={{
                 backgroundColor: 'var(--color-bg, rgba(255, 255, 255, 0.9))',
                 borderColor: 'rgba(156, 163, 175, 0.2)',
                 borderRadius: '8px',
@@ -64,26 +64,39 @@ export const BacktestingChart = () => {
               labelStyle={{ color: 'inherit', fontWeight: 'bold', marginBottom: '4px' }}
             />
             <Legend 
-              iconType="circle" 
-              wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} 
+              content={(props) => {
+                const { payload } = props;
+                return (
+                  <ul className="flex items-center justify-start gap-6 md:gap-8 pt-4 pl-8 md:pl-12">
+                    {payload?.map((entry, index) => (
+                      <li key={`item-${index}`} className="flex items-center gap-2 text-xs md:text-sm text-gray-600 dark:text-gray-300">
+                        <svg className="w-2.5 h-2.5 md:w-3 md:h-3" viewBox="0 0 10 10">
+                          <circle cx="5" cy="5" r="5" fill={entry.color} />
+                        </svg>
+                        <span>{entry.value}</span>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              }}
             />
-            <Line 
+            <Line
               name="AI 예측 트렌드 지수"
-              type="monotone" 
-              dataKey="predicted" 
-              stroke="#8b5cf6" 
-              strokeWidth={3} 
-              dot={{ r: 4, strokeWidth: 2 }} 
-              activeDot={{ r: 6 }} 
+              type="monotone"
+              dataKey="predicted"
+              stroke="#2D3A8C"
+              strokeWidth={3}
+              dot={{ r: 4, strokeWidth: 2 }}
+              activeDot={{ r: 6 }}
             />
-            <Line 
+            <Line
               name="실제 시장 동향"
-              type="monotone" 
-              dataKey="actual" 
-              stroke="#10b981" 
-              strokeWidth={3} 
+              type="monotone"
+              dataKey="actual"
+              stroke="#D95F3B"
+              strokeWidth={3}
               strokeDasharray="5 5"
-              dot={{ r: 4, strokeWidth: 2 }} 
+              dot={{ r: 4, strokeWidth: 2 }}
             />
           </LineChart>
         </ResponsiveContainer>

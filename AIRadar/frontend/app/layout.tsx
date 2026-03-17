@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, Noto_Sans_KR } from "next/font/google";
+import { Space_Grotesk, Inter, Noto_Serif_KR } from "next/font/google";
 import "./globals.css";
 import { MainLayout } from "../components/layout";
 import { Providers } from "./providers";
@@ -18,10 +18,10 @@ const inter = Inter({
   variable: "--font-sans",
 });
 
-// 한글 폰트 (Noto Sans KR)
-const notoSansKR = Noto_Sans_KR({
+// 한글 폰트 (Noto Serif KR - 명조체 계열)
+const notoSerifKR = Noto_Serif_KR({
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-korean",
 });
 
@@ -37,7 +37,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" suppressHydrationWarning>
-      <body className={`${spaceGrotesk.variable} ${inter.variable} ${notoSansKR.variable} font-sans`}>
+      <body className={`${spaceGrotesk.variable} ${inter.variable} ${notoSerifKR.variable} font-sans`}>
         <Providers>
           <MainLayout>{children}</MainLayout>
         </Providers>
