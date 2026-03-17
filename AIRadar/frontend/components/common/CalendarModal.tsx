@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, X, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
 import { Modal } from './Modal';
 
@@ -27,50 +27,52 @@ export const CalendarModal = ({
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  const handleYearSelect = (selectedYear: number) => {
+  const handleYearSelect = useCallback((selectedYear: number) => {
     setCurrentDate(new Date(selectedYear, month, 1));
     setViewMode('select-month');
-  };
+  }, [month]);
 
-  const handleMonthSelect = (selectedMonth: number) => {
+  const handleMonthSelect = useCallback((selectedMonth: number) => {
     setCurrentDate(new Date(year, selectedMonth, 1));
     setViewMode('calendar');
-  };
+  }, [year]);
 
-  const getDaysInMonth = (year: number, month: number) => {
+  const getDaysInMonth = useCallback((year: number, month: number) => {
     return new Date(year, month + 1, 0).getDate();
-  };
+  }, []);
 
-  const getFirstDayOfMonth = (year: number, month: number) => {
+  const getFirstDayOfMonth = useCallback((year: number, month: number) => {
     return new Date(year, month, 1).getDay();
-  };
+  }, []);
 
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-  };
+  const handlePrevMonth = useCallback(() => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  }, []);
 
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-  };
+  const handleNextMonth = useCallback(() => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  }, []);
 
-  const isDateAvailable = (dateString: string) => {
-    return availableDates.includes(dateString);
-  };
+  const availableDatesSet = useMemo(() => new Set(availableDates), [availableDates]);
 
-  const handleDateClick = (dateString: string) => {
+  const isDateAvailable = useCallback((dateString: string) => {
+    return availableDatesSet.has(dateString);
+  }, [availableDatesSet]);
+
+  const handleDateClick = useCallback((dateString: string) => {
     if (isDateAvailable(dateString)) {
       onDateSelect(dateString);
       onClose();
     }
-  };
+  }, [isDateAvailable, onDateSelect, onClose]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     onDateSelect(null);
     onClose();
-  };
+  }, [onDateSelect, onClose]);
 
-  const daysInMonth = getDaysInMonth(year, month);
-  const firstDay = getFirstDayOfMonth(year, month);
+  const daysInMonth = useMemo(() => getDaysInMonth(year, month), [year, month, getDaysInMonth]);
+  const firstDay = useMemo(() => getFirstDayOfMonth(year, month), [year, month, getFirstDayOfMonth]);
 
   const days = useMemo(() => {
     const blanks = Array.from({ length: firstDay }).map((_, i) => (
@@ -88,7 +90,7 @@ export const CalendarModal = ({
           key={`day-${day}`}
           onClick={() => handleDateClick(dateString)}
           disabled={!isAvailable}
-          className={`relative w-10 h-10 flex items-center justify-center rounded-full text-sm font-medium transition-colors
+          className={`relative w-10 h-10 flex items-center justify-center rounded-full text-sm font-medium transition-[background-color] duration-75
             ${isSelected ? 'bg-[var(--color-accent)] text-white' : ''}
             ${!isSelected && isAvailable ? 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100' : ''}
             ${!isAvailable ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' : ''}
@@ -109,7 +111,7 @@ export const CalendarModal = ({
     ));
 
     return [...blanks, ...monthDays, ...paddingCells];
-  }, [year, month, daysInMonth, firstDay, availableDates, selectedDate]);
+  }, [year, month, daysInMonth, firstDay, availableDatesSet, selectedDate, handleDateClick]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>

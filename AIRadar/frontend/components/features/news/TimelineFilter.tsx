@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { CalendarDays, X } from 'lucide-react';
 import { CalendarModal } from '@/components/common';
 
@@ -18,6 +18,10 @@ export const TimelineFilter = ({
   onDateSelect
 }: TimelineFilterProps) => {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+  const handleCloseCalendar = useCallback(() => {
+    setIsCalendarOpen(false);
+  }, []);
 
   return (
     <div className="flex flex-col gap-4 mb-8">
@@ -68,7 +72,7 @@ export const TimelineFilter = ({
 
       <CalendarModal 
         isOpen={isCalendarOpen} 
-        onClose={() => setIsCalendarOpen(false)}
+        onClose={handleCloseCalendar}
         availableDates={availableDates}
         selectedDate={selectedDate}
         onDateSelect={onDateSelect}

@@ -126,11 +126,45 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
                   className={`transition-all duration-300 ease-in-out origin-top ${isExpanded ? 'max-h-[500px] opacity-100 p-4 pt-0' : 'max-h-0 opacity-0 overflow-hidden outline-none'
                     }`}
                 >
-                  <div className="pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
-                    <h5 className="text-xs font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-wider">상세 설명</h5>
-                    <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                      {item.description}
-                    </p>
+                  <div className="pt-4 border-t border-gray-200/50 dark:border-gray-700/50 flex flex-col gap-4">
+                    {/* 모델 상세 스펙 (있는 경우만) */}
+                    {item.details && (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="bg-gray-50 dark:bg-gray-800/50 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700">
+                          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter mb-1">Developer</p>
+                          <p className="text-xs font-bold text-[var(--color-accent)]">{item.details.developer}</p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-800/50 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700">
+                          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter mb-1">Parameters</p>
+                          <p className="text-xs font-bold">{item.details.parameters}</p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-800/50 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700">
+                          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter mb-1">Launch</p>
+                          <p className="text-xs font-bold">{item.details.launchDate}</p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-800/50 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700">
+                          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter mb-1">Context</p>
+                          <p className="text-xs font-bold">{item.details.contextWindow}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <h5 className="text-xs font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-wider">상세 설명</h5>
+                      <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                        {item.description}
+                      </p>
+                    </div>
+
+                    {item.details?.strengths && (
+                      <div className="flex flex-wrap gap-2">
+                        {item.details.strengths.map(s => (
+                          <span key={s} className="px-2 py-1 text-[10px] font-bold bg-[var(--color-accent)]/10 text-[var(--color-accent)] rounded-md border border-[var(--color-accent)]/20">
+                            # {s}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

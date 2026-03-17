@@ -1,19 +1,19 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
+import Loading from '@/app/loading';
 import { CompanyActivityCard } from './CompanyActivityCard';
 import { useNewsListQuery } from '@/hooks/queries/useNewsQuery';
 import type { NewsListItem } from '@/types/news';
 
 // ── 회사 브랜드 맵 (repo owner → 표시 정보) ──────────────────────────────
 const COMPANY_META: Record<string, { name: string; initial: string; color: string }> = {
-  openai:      { name: 'OpenAI',             initial: 'O', color: '#10a37f' },
-  google:      { name: 'Google (DeepMind)',  initial: 'G', color: '#4285F4' },
+  openai: { name: 'OpenAI', initial: 'O', color: '#10a37f' },
+  google: { name: 'Google (DeepMind)', initial: 'G', color: '#4285F4' },
   'google-deepmind': { name: 'Google (DeepMind)', initial: 'G', color: '#4285F4' },
-  meta:        { name: 'Meta',               initial: 'M', color: '#0668E1' },
-  'meta-llama':{ name: 'Meta',               initial: 'M', color: '#0668E1' },
-  anthropic:   { name: 'Anthropic',          initial: 'A', color: '#D19B6D' },
-  microsoft:   { name: 'Microsoft',          initial: 'MS', color: '#00BCF2' },
+  meta: { name: 'Meta', initial: 'M', color: '#0668E1' },
+  'meta-llama': { name: 'Meta', initial: 'M', color: '#0668E1' },
+  anthropic: { name: 'Anthropic', initial: 'A', color: '#D19B6D' },
+  microsoft: { name: 'Microsoft', initial: 'MS', color: '#00BCF2' },
 };
 
 const DEFAULT_COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#14b8a6', '#8b5cf6'];
@@ -70,14 +70,7 @@ export const CorporateActivityTab = () => {
   const { data, isLoading, isError } = useNewsListQuery();
 
   if (isLoading) {
-    return (
-      <div className="w-full flex justify-center py-20">
-        <div className="flex flex-col items-center gap-3 text-gray-400">
-          <Loader2 className="w-7 h-7 animate-spin text-[var(--color-accent)]" />
-          <p className="text-sm">기업 활동 데이터를 불러오는 중...</p>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   if (isError || !data) {

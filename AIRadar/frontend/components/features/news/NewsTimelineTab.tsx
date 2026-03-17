@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import Loading from '@/app/loading';
 import { TimelineFilter } from './TimelineFilter';
 import { TimelineItem, TimelineItemData } from './TimelineItem';
 import { TrendingKeywords } from './TrendingKeywords';
@@ -61,40 +61,36 @@ export const NewsTimelineTab = () => {
   const { data, isLoading, isError } = useNewsListQuery({ region });
 
   const allGroupedData = data ? groupByDate(data) : [];
-  
+
   // 가용한 날짜 문자열(YYYY-MM-DD 형식) 추출
-  const availableDates = data ? Array.from(new Set(data.map(item => item.publishedAt.split('T')[0]))) : [];
+  const availableDates = useMemo(() => 
+    data ? Array.from(new Set(data.map(item => item.publishedAt.split('T')[0]))) : [],
+    [data]
+  );
 
   // 선택된 날짜가 있으면, 'YYYY-MM-DD' 형식의 날짜와 매칭되는 그룹만 필터링
   // data 내부의 publishedAt이 ISO 문자열이므로 T 이전 부분으로 판별
   const groupedData = selectedDate
     ? allGroupedData.map(group => {
-        const filteredItems = group.items.filter(item => {
-          // 원래 data[]와 group.items가 분리되어 있으므로 item 자체에 원본 날짜가 필요할 수 있으나,
-          // 여기서는 group.dateText 포맷("YYYY년 M월 D일")을 파싱하거나, 단순하게 날짜 문자열 변환으로 우회합니다.
-          // 또는 data를 순회하며 필터링 후 다시 groupByDate를 호출하는 것이 안전합니다.
-          return true;
-        });
-        return { ...group, items: filteredItems };
-      }).filter(group => group.items.length > 0)
+      const filteredItems = group.items.filter(item => {
+        // 원래 data[]와 group.items가 분리되어 있으므로 item 자체에 원본 날짜가 필요할 수 있으나,
+        // 여기서는 group.dateText 포맷("YYYY년 M월 D일")을 파싱하거나, 단순하게 날짜 문자열 변환으로 우회합니다.
+        // 또는 data를 순회하며 필터링 후 다시 groupByDate를 호출하는 것이 안전합니다.
+        return true;
+      });
+      return { ...group, items: filteredItems };
+    }).filter(group => group.items.length > 0)
     : allGroupedData;
 
   // 개선된 필터링: 원본 데이터 자체를 날짜로 필터링한 후 그룹화
-  const filteredData = selectedDate && data 
+  const filteredData = selectedDate && data
     ? data.filter(item => item.publishedAt.startsWith(selectedDate))
     : data;
-    
+
   const finalGroupedData = filteredData ? groupByDate(filteredData) : [];
 
   if (isLoading) {
-    return (
-      <div className="w-full flex justify-center py-20">
-        <div className="flex flex-col items-center gap-3 text-gray-400">
-          <Loader2 className="w-7 h-7 animate-spin text-[var(--color-accent)]" />
-          <p className="text-sm">뉴스 데이터를 불러오는 중...</p>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   if (isError) {
@@ -108,11 +104,9 @@ export const NewsTimelineTab = () => {
   return (
     <div className="w-full flex justify-center py-6">
       <div className="w-full max-w-4xl">
-        <TrendingKeywords />
-        
-        <TimelineFilter 
-          currentCategory={regionFilter} 
-          setCategory={setRegionFilter} 
+        <TimelineFilter
+          currentCategory={regionFilter}
+          setCategory={setRegionFilter}
           availableDates={availableDates}
           selectedDate={selectedDate}
           onDateSelect={setSelectedDate}
