@@ -32,7 +32,7 @@ public class SecurityConfig {
                         // 인증 API 공개
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
                         // 헬스체크 공개
-                        .requestMatchers("/actuator/health", "/health").permitAll()
+                        .requestMatchers("/actuator/health", "/health", "/api/health").permitAll()
                         // 기존 뉴스/검색/대시보드 API 공개 유지
                         .requestMatchers("/api/v1/news/**", "/api/v1/papers/**",
                                          "/api/v1/search/**", "/api/v1/dashboard/**").permitAll()
