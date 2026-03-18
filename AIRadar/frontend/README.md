@@ -78,9 +78,9 @@ AI 트렌드를 분석하고 예측한 결과를 보여주는 웹사이트 프�
 *   **파일명 (React 컴포넌트):** **PascalCase** 로 작성합니다.
     *   ✅ `Button.tsx`, `TrendChart.tsx`, `LoginForm.tsx`
     *   ❌ `button.tsx`, `trend-chart.tsx`
-*   **기타 파일명 (유틸, 훅스 등):** **camelCase** 로 작성합니다.
-    *   ✅ `useFetch.ts`, `formatters.ts`, `index.ts`
-    *   ❌ `use_fetch.ts`, `Formatters.ts`
+*   **기타 파일명 (유틸, 훅스, 서비스 등):** **camelCase** 로 작성합니다.
+    *   ✅ `useFetch.ts`, `formatters.ts`, `authApi.ts`, `index.ts`
+    *   ❌ `use_fetch.ts`, `Formatters.ts`, `AuthApi.ts`
 
 ---
 

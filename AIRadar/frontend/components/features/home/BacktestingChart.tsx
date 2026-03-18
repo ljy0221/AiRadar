@@ -14,7 +14,7 @@ import {
   AreaChart,
 } from 'recharts';
 
-import { backtestingMockData } from '@/services/homeMockData';
+import { backtestingMockData } from '@/services/common/homeMockData';
 
 export const BacktestingChart = () => {
   const [mounted, setMounted] = useState(false);

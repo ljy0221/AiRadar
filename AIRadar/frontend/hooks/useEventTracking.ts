@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
-import { trackUserEvent, submitFeedback, type UserEventPayload } from '@/services/eventService';
+import { trackUserEvent, submitFeedback, type UserEventPayload } from '@/services/common/eventService';
 
 /**
  * 페이지뷰 및 사용자 이벤트 자동 트래킹 훅

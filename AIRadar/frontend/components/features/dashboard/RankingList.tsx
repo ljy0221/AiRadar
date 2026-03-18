@@ -1,6 +1,6 @@
 'use client';
 
-import { RankingItem } from '@/services/dashboardApi';
+import { RankingItem } from '@/services/dashboard/dashboardApi';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface RankingListProps {
