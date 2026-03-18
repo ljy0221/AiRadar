@@ -113,7 +113,7 @@ pipeline {
       steps {
         dir('AIRadar/backend') {
           sh '''
-            ./gradlew shadowJar --no-daemon \
+            ./gradlew clean shadowJar --no-daemon \
               -Dorg.gradle.caching=true
           '''
         }
