@@ -64,10 +64,6 @@ export const Header = () => {
                         >
                           {item.name}
                         </Link>
-                        {isCurrent && (
-                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[8px] border-b-[var(--color-accent)] z-50">
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -77,12 +73,20 @@ export const Header = () => {
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
               <div className="flex items-center gap-4">
                 {isLoggedIn ? (
-                  <button
-                    onClick={() => logoutState()}
-                    className="text-sm font-bold text-white bg-[var(--color-accent)] hover:opacity-90 transition-all px-6 py-2 rounded-full shadow-[0_4px_12px_rgba(var(--color-accent-rgb),0.3)]"
-                  >
-                    로그아웃
-                  </button>
+                  <>
+                    <Link
+                      href="/profile"
+                      className="text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors px-3 py-2"
+                    >
+                      프로필
+                    </Link>
+                    <button
+                      onClick={() => logoutState()}
+                      className="text-sm font-bold text-white bg-[var(--color-accent)] hover:opacity-90 transition-all px-6 py-2 rounded-full shadow-[0_4px_12px_rgba(var(--color-accent-rgb),0.3)]"
+                    >
+                      로그아웃
+                    </button>
+                  </>
                 ) : (
                   <button
                     onClick={() => setIsAuthModalOpen(true)}
@@ -93,12 +97,6 @@ export const Header = () => {
                 )}
                 <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1 hidden sm:block"></div>
                 <ThemeToggle />
-                      >
-                        {item.name}
-                      </Link>
-                    </div>
-                  );
-                })}
               </div>
             </div>
           </div>
@@ -127,13 +125,22 @@ export const Header = () => {
             })}
             <div className="pt-4 pb-2 border-t border-gray-100 dark:border-gray-800 mt-2">
               {isLoggedIn ? (
-                <DisclosureButton
-                  as="button"
-                  onClick={() => logoutState()}
-                  className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-colors"
-                >
-                  로그아웃
-                </DisclosureButton>
+                <>
+                  <DisclosureButton
+                    as={Link}
+                    href="/profile"
+                    className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-colors"
+                  >
+                    프로필
+                  </DisclosureButton>
+                  <DisclosureButton
+                    as="button"
+                    onClick={() => logoutState()}
+                    className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-colors"
+                  >
+                    로그아웃
+                  </DisclosureButton>
+                </>
               ) : (
                 <DisclosureButton
                   as="button"
