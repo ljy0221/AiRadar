@@ -1,8 +1,16 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Mail, User, Briefcase, ChevronDown, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { useRef, useState, useCallback, useEffect } from 'react';
+import { Mail, User, Briefcase, ChevronDown, ArrowRight, ChevronLeft } from 'lucide-react';
 import { Input, Modal } from '@/components/common';
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useSpring,
+  useMotionValueEvent,
+  MotionValue,
+} from 'framer-motion';
 
 const NEWSLETTER_CARDS = [
   {
@@ -32,17 +40,317 @@ const NEWSLETTER_CARDS = [
   },
 ];
 
-export const NewsletterSection = () => {
+const ALL_ITEMS = [
+  ...NEWSLETTER_CARDS,
+  { tag: '구독', title: '지금 바로 구독하기', desc: '' },
+];
+
+const TOTAL = ALL_ITEMS.length; // 6
+const SPREAD_ANGLE = 160; // 총 부채꼴 각도 (160도로 약간 좁혀서 양 끝이 잘리지 않게)
+const ANGLE_STEP = SPREAD_ANGLE / (TOTAL - 1);
+const START_OFFSET = SPREAD_ANGLE / 2;   // +80: 왼쪽 끝 카드가 정면(0°)에
+const END_OFFSET = -SPREAD_ANGLE / 2;    // -80: 오른쪽 끝 카드가 정면(0°)에
+
+const RADIUS = 760;
+const CARD_W = 480;
+const CARD_H = 290;
+
+// ─── 공통 카드 ───────────────────────────────────────────────────────────────
+const NewsletterCard = ({
+  card,
+  isFront,
+}: {
+  card: (typeof ALL_ITEMS)[number];
+  isFront: boolean;
+}) => (
+  <div
+    className={`w-full h-full bg-[#1e100d] rounded-3xl border-2 overflow-hidden flex flex-row transition-all duration-500 group ${
+      isFront
+        ? 'border-[#C8432A]/70 shadow-[0_0_60px_rgba(200,67,42,0.35)]'
+        : 'border-white/10 shadow-xl'
+    }`}
+  >
+    <div className="w-[38%] h-full bg-gradient-to-br from-[#3D251E] to-[#1e100d] p-6 relative flex flex-col gap-3 overflow-hidden">
+      <div
+        className={`w-full h-3 rounded-full transition-colors duration-500 ${isFront ? 'bg-[#C8432A]/40' : 'bg-white/20'}`}
+      />
+      <div className="w-3/4 h-2 bg-white/10 rounded-full" />
+      <div className="w-full h-[120px] mt-4 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center">
+        <Mail
+          className={`w-12 h-12 transition-all duration-500 ${isFront ? 'text-[#C8432A]/60' : 'text-white/20'}`}
+        />
+      </div>
+    </div>
+    <div className="w-[62%] h-full p-7 relative flex flex-col justify-center bg-[#1e100d]">
+      <div className="absolute top-4 right-4 px-3 py-1 bg-[#C8432A] rounded-lg">
+        <span className="text-[10px] text-white font-bold tracking-wider">{card.tag}</span>
+      </div>
+      <h4
+        className={`text-2xl font-black mb-2.5 leading-snug transition-colors duration-500 ${isFront ? 'text-[#C8432A]' : 'text-white'}`}
+      >
+        {card.title}
+      </h4>
+      {card.desc && (
+        <p
+          className={`text-xs text-gray-400 font-medium line-clamp-3 leading-relaxed transition-opacity duration-500 ${isFront ? 'opacity-100' : 'opacity-55'}`}
+        >
+          {card.desc}
+        </p>
+      )}
+    </div>
+  </div>
+);
+
+// ─── 모바일 캐러셀 ────────────────────────────────────────────────────────────
+const MobileCarousel = ({ onSubscribe }: { onSubscribe: () => void }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const total = NEWSLETTER_CARDS.length + 1;
+  const prev = useCallback(() => setActiveIndex((i) => (i - 1 + total) % total), [total]);
+  const next = useCallback(() => setActiveIndex((i) => (i + 1) % total), [total]);
+
+  return (
+    <section className="bg-[#1a0e0b] py-16 px-5">
+      <div className="text-center mb-10 space-y-3">
+        <span className="text-[#C8432A] font-extrabold tracking-widest text-xs uppercase">Newsletter</span>
+        <h3 className="text-3xl font-black tracking-tight text-white leading-tight">
+          똑똑하게 앞서가는<br />AI 리더의 구독 리스트
+        </h3>
+      </div>
+      <div className="relative w-full overflow-hidden">
+        <motion.div
+          key={activeIndex}
+          initial={{ opacity: 0, x: 40 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -40 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="w-full h-[220px]"
+        >
+          {activeIndex < NEWSLETTER_CARDS.length ? (
+            <NewsletterCard card={NEWSLETTER_CARDS[activeIndex]} isFront />
+          ) : (
+            <button
+              onClick={onSubscribe}
+              className="w-full h-full rounded-3xl border-4 border-dashed border-white/10 flex flex-col items-center justify-center gap-4 hover:border-[#C8432A]/50 transition-all text-white group"
+            >
+              <div className="w-14 h-14 bg-[#C8432A] rounded-full flex items-center justify-center shadow-2xl">
+                <ArrowRight className="w-7 h-7" />
+              </div>
+              <span className="text-lg font-bold">지금 바로 구독하기</span>
+            </button>
+          )}
+        </motion.div>
+      </div>
+      <div className="flex items-center justify-center gap-6 mt-6">
+        <button onClick={prev} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#C8432A]/30 transition-colors">
+          <ChevronLeft className="w-5 h-5 text-white" />
+        </button>
+        <div className="flex gap-2">
+          {Array.from({ length: total }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveIndex(i)}
+              className={`h-1.5 rounded-full transition-all duration-300 ${i === activeIndex ? 'w-6 bg-[#C8432A]' : 'w-1.5 bg-white/30'}`}
+            />
+          ))}
+        </div>
+        <button onClick={next} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#C8432A]/30 transition-colors">
+          <ArrowRight className="w-5 h-5 text-white" />
+        </button>
+      </div>
+    </section>
+  );
+};
+
+// ─── 개별 스프레드 카드 (MotionValue 체인으로 완전 보간) ──────────────────────
+const SpreadCard = ({
+  item,
+  index,
+  rotationDeg,
+  onSubscribe,
+  onActivate,
+}: {
+  item: (typeof ALL_ITEMS)[number];
+  index: number;
+  rotationDeg: MotionValue<number>;
+  onSubscribe: () => void;
+  onActivate: (idx: number) => void;
+}) => {
+  const cardBaseAngle = -SPREAD_ANGLE / 2 + index * ANGLE_STEP; // -80° ~ +80°
+
+  // 현재 이 카드의 실제 각도 = 기본 각도 + 전체 회전량
+  const actualAngle = useTransform(rotationDeg, (rot) => cardBaseAngle + rot);
+
+  // x, y 위치 (반원 중심점 기준)
+  const cardX = useTransform(actualAngle, (angle) => {
+    const rad = (angle * Math.PI) / 180;
+    return Math.sin(rad) * RADIUS - CARD_W / 2;
+  });
+  const cardY = useTransform(actualAngle, (angle) => {
+    const rad = (angle * Math.PI) / 180;
+    return -Math.cos(rad) * RADIUS - CARD_H / 2;
+  });
+
+  // 카드 자체는 항상 수평 유지
+  const cardRotate = useTransform(actualAngle, (angle) => -angle);
+
+  // 정면과의 거리 기반 scale
+  const cardScale = useTransform(actualAngle, (angle) => {
+    const dist = Math.abs(angle);
+    if (dist < 15) return 1.08;
+    if (dist < 35) return 0.95;
+    if (dist < 60) return 0.85;
+    return 0.75;
+  });
+
+  // 정면과의 거리 기반 opacity
+  const cardOpacity = useTransform(actualAngle, (angle) => {
+    const dist = Math.abs(angle);
+    if (dist < 15) return 1;
+    if (dist < 40) return 0.6;
+    if (dist < 70) return 0.4;
+    return 0.2;
+  });
+
+  // zIndex (정면 카드가 위로)
+  const cardZIndex = useTransform(actualAngle, (angle) => {
+    return Math.round(10 - Math.abs(angle) / 10);
+  });
+
+  // isFront 상태 (React state, 렌더링용)
+  const [isFront, setIsFront] = useState(index === 0);
+  useMotionValueEvent(actualAngle, 'change', (angle) => {
+    const front = Math.abs(angle) < 15;
+    setIsFront(front);
+    if (front) onActivate(index);
+  });
+
+  const isCTA = index === TOTAL - 1;
+
+  return (
+    <motion.div
+      className="absolute cursor-pointer"
+      style={{
+        width: CARD_W,
+        height: CARD_H,
+        x: cardX,
+        y: cardY,
+        rotate: cardRotate,
+        scale: cardScale,
+        opacity: cardOpacity,
+        zIndex: cardZIndex,
+      }}
+    >
+      {isCTA ? (
+        <button
+          onClick={onSubscribe}
+          className={`w-full h-full rounded-3xl border-4 border-dashed flex flex-col items-center justify-center gap-4 transition-all text-white group ${
+            isFront ? 'border-[#C8432A] bg-[#C8432A]/10' : 'border-white/15'
+          }`}
+        >
+          <div className="w-20 h-20 bg-[#C8432A] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
+            <ArrowRight className="w-10 h-10" />
+          </div>
+          <span className="text-2xl font-bold">지금 바로 구독하기</span>
+        </button>
+      ) : (
+        <NewsletterCard card={item} isFront={isFront} />
+      )}
+    </motion.div>
+  );
+};
+
+// ─── 데스크탑 스프레드 섹션 ───────────────────────────────────────────────────
+const DesktopScrollSection = ({ onSubscribe }: { onSubscribe: () => void }) => {
+  const targetRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const { scrollYProgress } = useScroll({
+    target: targetRef,
+    offset: ['start start', 'end end'],
+  });
+
+  const rawRotation = useTransform(scrollYProgress, [0, 1], [START_OFFSET, END_OFFSET]);
+  const rotationDeg = useSpring(rawRotation, { stiffness: 55, damping: 22, mass: 0.8 });
+
+  return (
+    <section ref={targetRef} className="relative h-[350vh] bg-[#1a0e0b]">
+      <div className="sticky top-0 h-screen flex flex-col overflow-hidden bg-[#1a0e0b]">
+
+        {/* 헤더 영역 */}
+        <div className="relative z-30 pt-16 text-center space-y-2 flex-shrink-0">
+          <span className="text-[#C8432A] font-extrabold tracking-widest text-xs uppercase">
+            Newsletter
+          </span>
+          <h3 className="text-5xl xl:text-6xl font-black tracking-tight text-white leading-tight">
+            똑똑하게 앞서가는 AI 리더의 구독 리스트
+          </h3>
+          {/* 활성 카드 설명 */}
+          <motion.p
+            key={activeIndex}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="text-gray-400 text-sm h-5"
+          >
+            {ALL_ITEMS[activeIndex]?.desc ?? ''}
+          </motion.p>
+        </div>
+
+        {/* 인디케이터 */}
+        <div className="absolute bottom-8 left-0 w-full flex justify-center gap-2 z-30">
+          {ALL_ITEMS.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all duration-500 ${
+                i === activeIndex ? 'w-8 bg-[#C8432A]' : 'w-2 bg-white/20'
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* 부채꼴 스프레드 영역
+            중심점: 화면 하단 (카드들이 위쪽 반원호에 배치) */}
+        <div
+          className="absolute left-1/2"
+          style={{
+            bottom: -(RADIUS - 300),
+            transform: 'translateX(-50%)',
+            width: (RADIUS + CARD_W) * 2,
+            height: RADIUS + CARD_H,
+          }}
+        >
+          {/* 중심 글로우 */}
+          <div
+            className="absolute left-1/2 -translate-x-1/2 w-1 bg-gradient-to-t from-[#C8432A]/40 to-transparent pointer-events-none"
+            style={{ bottom: 0, height: RADIUS * 0.45 }}
+          />
+          <div
+            className="absolute left-1/2 -translate-x-1/2 w-48 h-48 rounded-full bg-[#C8432A]/5 blur-3xl pointer-events-none"
+            style={{ bottom: 0 }}
+          />
+
+          {/* 카드 컨테이너 */}
+          <div className="absolute left-1/2 bottom-0" style={{ transform: 'translateX(-50%)' }}>
+            {ALL_ITEMS.map((item, index) => (
+              <SpreadCard
+                key={index}
+                item={item}
+                index={index}
+                rotationDeg={rotationDeg}
+                onSubscribe={onSubscribe}
+                onActivate={setActiveIndex}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─── 메인 컴포넌트 ────────────────────────────────────────────────────────────
+export const NewsletterSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const nextSlide = useCallback(() => {
-    setActiveIndex((prev) => (prev + 1) % NEWSLETTER_CARDS.length);
-  }, []);
-
-  const prevSlide = () => {
-    setActiveIndex((prev) => (prev - 1 + NEWSLETTER_CARDS.length) % NEWSLETTER_CARDS.length);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,161 +359,40 @@ export const NewsletterSection = () => {
   };
 
   return (
-    <section className="w-full bg-[#241611] relative text-white py-24 md:py-32 overflow-hidden flex flex-col items-center min-h-[750px] justify-center">
-      {/* Upper Color Transition - Smoother blend from the previous section to dark brown */}
-      <div className="absolute top-0 left-0 w-full h-[320px] bg-gradient-to-b from-transparent via-[#241611]/40 to-[#241611] pointer-events-none z-0" />
-      
-      <div className="max-w-6xl w-full px-6 flex flex-col items-center relative z-10">
-        {/* Header - More Compact */}
-        <div className="text-center mb-12 space-y-2">
-          <span className="text-[#C8432A] font-extrabold tracking-widest text-xs uppercase drop-shadow-sm">Newsletter</span>
-          <h3 className="text-2xl md:text-5xl font-black tracking-tight text-white drop-shadow-sm">
-            똑똑하게 앞서가는 <br className="md:hidden" /> AI 리더의 구독 리스트
-          </h3>
-        </div>
+    <>
+      <div className="md:hidden">
+        <MobileCarousel onSubscribe={() => setIsModalOpen(true)} />
+      </div>
 
-        {/* 3D Carousel Container - Adjusted for wider cards */}
-        <div className="relative w-full h-[320px] md:h-[380px] flex items-center justify-center">
-          <div className="relative w-full max-w-5xl h-full flex items-center justify-center">
-            {NEWSLETTER_CARDS.map((card, index) => {
-              let position = index - activeIndex;
-              if (position < -2) position += NEWSLETTER_CARDS.length;
-              if (position > 2) position -= NEWSLETTER_CARDS.length;
-
-              const isActive = position === 0;
-              const isFar = Math.abs(position) > 1;
-
-              return (
-                <div
-                  key={index}
-                  className={`absolute w-[280px] md:w-[460px] h-[260px] md:h-[300px] transition-all duration-700 ease-in-out cursor-pointer
-                    ${isActive ? 'z-30 opacity-100 scale-100 translate-x-0' : ''}
-                    ${position === -1 ? 'z-20 opacity-40 scale-85 -translate-x-[55%] md:-translate-x-[65%] rotate-y-12 blur-[2px]' : ''}
-                    ${position === 1 ? 'z-20 opacity-40 scale-85 translate-x-[55%] md:translate-x-[65%] -rotate-y-12 blur-[2px]' : ''}
-                    ${isFar ? 'z-10 opacity-0 scale-75 translate-x-0 blur-[10px]' : ''}
-                  `}
-                  onClick={() => setActiveIndex(index)}
-                  style={{
-                    perspective: '1000px',
-                    transform: `
-                      translateX(${position * (typeof window !== 'undefined' && window.innerWidth < 768 ? 55 : 70)}%) 
-                      scale(${isActive ? 1 : 0.85}) 
-                      rotateY(${position * -15}deg)
-                    `,
-                  }}
-                >
-                  <div className={`w-full h-full bg-[#241611] rounded-2xl border-2 border-white/20 overflow-hidden flex flex-row shadow-2xl transition-all duration-500 ${isActive ? 'ring-2 ring-[#C8432A]/50 shadow-[#C8432A]/20 shadow-2xl' : ''}`}>
-                    {/* Mockup Preview Area - Now on the left for landscape */}
-                    <div className="w-[45%] h-full bg-gradient-to-br from-[#3D251E] to-[#241611] p-5 relative flex flex-col gap-2.5 group overflow-hidden">
-                      <div className="w-full h-3 bg-white/20 rounded-full animate-pulse" />
-                      <div className="w-3/4 h-2.5 bg-white/10 rounded-full" />
-                      <div className="w-full h-24 mt-2 bg-white/5 rounded-lg border-2 border-white/10 flex items-center justify-center">
-                         <Mail className="w-8 h-8 text-white/20" />
-                      </div>
-                      
-                      {isActive && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#C8432A]/10 to-transparent pointer-events-none" />
-                      )}
-                    </div>
-
-                    {/* Card Content Area - Now on the right */}
-                    <div className="w-[55%] h-full p-5 md:p-8 relative flex flex-col justify-center bg-[#241611]">
-                      {/* Floating Badge moved to the right content area */}
-                      <div className="absolute top-4 right-4 px-3 py-1 bg-[#C8432A] border-2 border-[#C8432A] rounded-md shadow-lg">
-                        <span className="text-[10px] text-white font-black tracking-tighter">{card.tag}</span>
-                      </div>
-
-                      <h4 className="text-lg md:text-xl font-black mb-2 group-hover:text-[#C8432A] transition-colors leading-tight">
-                        {card.title}
-                      </h4>
-                      <p className="text-[11px] md:text-xs text-gray-400 font-medium line-clamp-3 leading-relaxed">
-                        {card.desc}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <button 
-            onClick={prevSlide}
-            className="absolute left-1 md:left-4 z-40 p-2.5 rounded-full bg-black/30 hover:bg-black/50 border border-white/20 transition-all active:scale-90 backdrop-blur-sm"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={nextSlide}
-            className="absolute right-1 md:right-4 z-40 p-2.5 rounded-full bg-black/30 hover:bg-black/50 border border-white/20 transition-all active:scale-90 backdrop-blur-sm"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Indicators & CTA */}
-        <div className="flex flex-col items-center gap-6 mt-8">
-          <div className="flex gap-2">
-            {NEWSLETTER_CARDS.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setActiveIndex(index)}
-                className={`h-1 rounded-full transition-all duration-500 ${activeIndex === index ? 'w-6 bg-[#C8432A]' : 'w-1.5 bg-white/20'}`}
-              />
-            ))}
-          </div>
-
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="group relative px-10 py-4 bg-[#C8432A] text-white font-bold rounded-full hover:brightness-110 transition-all flex items-center gap-2 overflow-hidden shadow-lg active:scale-95"
-          >
-            <span className="relative z-10 text-base">지금 구독하기</span>
-            <ArrowRight className="w-4 h-4 relative z-10 transition-transform group-hover:translate-x-1" />
-          </button>
-        </div>
+      <div className="hidden md:block">
+        <DesktopScrollSection onSubscribe={() => setIsModalOpen(true)} />
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <div className="flex flex-col gap-6 py-4 px-4 md:px-6">
           <div className="text-center">
             <h2 className="text-3xl font-extrabold text-[#C8432A] tracking-tighter mb-1">Join the Intel</h2>
-            <p className="text-gray-400 text-xs text-balance">최신 AI 동향을 누구보다 빠르게 받아보세요.</p>
+            <p className="text-gray-400 text-xs">최신 AI 동향을 누구보다 빠르게 받아보세요.</p>
           </div>
-
           <form className="flex flex-col w-full gap-4" onSubmit={handleSubmit}>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <Mail className="w-4 h-4 text-gray-500" />
               </div>
-              <Input
-                type="email"
-                placeholder="you@email.com"
-                className="w-full pl-10 bg-gray-50/50 dark:bg-gray-800/20 border-gray-700 text-sm"
-                required
-              />
+              <Input type="email" placeholder="you@email.com" className="w-full pl-10 bg-gray-50/50 dark:bg-gray-800/20 border-gray-700 text-sm" required />
             </div>
-
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <User className="w-4 h-4 text-gray-500" />
                 </div>
-                <Input
-                  type="text"
-                  placeholder="닉네임"
-                  className="w-full pl-10 bg-gray-50/50 dark:bg-gray-800/20 border-gray-700 text-sm"
-                  required
-                />
+                <Input type="text" placeholder="닉네임" className="w-full pl-10 bg-gray-50/50 dark:bg-gray-800/20 border-gray-700 text-sm" required />
               </div>
-
               <div className="relative flex-1">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Briefcase className="w-4 h-4 text-gray-500" />
                 </div>
-                <select
-                  className="w-full pl-10 pr-4 py-2.5 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/20 text-xs focus:outline-none focus:ring-2 focus:ring-[#C8432A] transition-all appearance-none cursor-pointer"
-                  required
-                  defaultValue=""
-                >
+                <select className="w-full pl-10 pr-4 py-2.5 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/20 text-xs focus:outline-none focus:ring-2 focus:ring-[#C8432A] transition-all appearance-none cursor-pointer" required defaultValue="">
                   <option value="" disabled hidden>직군 선택</option>
                   <option value="프론트엔드">프론트엔드</option>
                   <option value="백엔드">백엔드</option>
@@ -219,16 +406,12 @@ export const NewsletterSection = () => {
                 </div>
               </div>
             </div>
-
-            <button
-              type="submit"
-              className="w-full py-3.5 text-base bg-[#C8432A] text-white font-bold rounded-lg shadow-lg hover:opacity-90 transition-all active:scale-95"
-            >
+            <button type="submit" className="w-full py-3.5 text-base bg-[#C8432A] text-white font-bold rounded-lg shadow-lg hover:opacity-90 transition-all active:scale-95">
               뉴스레터 시작하기
             </button>
           </form>
         </div>
       </Modal>
-    </section>
+    </>
   );
 };

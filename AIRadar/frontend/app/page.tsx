@@ -5,7 +5,9 @@ export default function Home() {
     <div className="w-full flex flex-col items-center">
       <HeroSection />
       <FeatureSection />
-      <NewsletterSection />
+      <div className="w-screen relative left-1/2 -translate-x-1/2">
+        <NewsletterSection />
+      </div>
       <FaqSection />
     </div>
   );
