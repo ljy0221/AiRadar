@@ -62,6 +62,8 @@ fi
 cd "${INFRA_DIR}"
 ${SUDO} docker-compose --env-file .env.server2 -f docker-compose.server2.yml config >/dev/null
 
+run_compose build --no-cache backend frontend
+
 if ! run_compose up -d --remove-orphans; then
   cleanup_and_retry
 fi
