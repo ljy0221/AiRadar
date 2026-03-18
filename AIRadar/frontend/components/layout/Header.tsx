@@ -93,6 +93,12 @@ export const Header = () => {
                 )}
                 <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1 hidden sm:block"></div>
                 <ThemeToggle />
+                      >
+                        {item.name}
+                      </Link>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

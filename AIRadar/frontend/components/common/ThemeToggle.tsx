@@ -20,8 +20,9 @@ export const ThemeToggle = () => {
   return (
     <button
       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors flex items-center justify-center text-[var(--color-text-primary)]"
+      className="p-2 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 flex items-center justify-center text-[var(--color-text-primary)] hover:scale-110 active:scale-95"
       aria-label="테마 변경"
+      title={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
     >
       {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
     </button>
