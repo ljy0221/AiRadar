@@ -1,5 +1,5 @@
-import { MetricData, KeywordTrend, ChartData, DashboardResponse, RankingItem } from '@/services/dashboardApi';
-import { MOCK_DAILY_DATA, TechLifecycleDto } from '@/services/raw/techKeywordRaw';
+import { MetricData, KeywordTrend, ChartData, DashboardResponse, RankingItem } from '@/services/dashboard/dashboardApi';
+import { MOCK_DAILY_DATA, TechLifecycleDto } from '@/services/dashboard/techKeywordRaw';
 
 // --- 자체 데이터 분석기 로직 (Client-side Aggregation) ---
 const calculateAnalyzedKeywords = (): TechLifecycleDto[] => {
