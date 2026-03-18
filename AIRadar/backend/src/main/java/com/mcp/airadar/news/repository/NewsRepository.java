@@ -43,4 +43,13 @@ public interface NewsRepository extends JpaRepository<NewsItem, String> {
 
     /** score 내림차순 인기 기사 (Cold start fallback) */
     List<NewsItem> findTop20ByIsActiveTrueOrderByScoreDescPublishedAtDesc();
+
+    @Query(value = """
+            SELECT *
+            FROM news_items
+            WHERE is_active = TRUE
+            ORDER BY RANDOM()
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<NewsItem> findRandomActiveItems(@Param("limit") int limit);
 }
