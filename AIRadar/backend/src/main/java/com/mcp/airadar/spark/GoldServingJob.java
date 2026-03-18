@@ -313,7 +313,8 @@ public class GoldServingJob {
         } catch (Exception e) {
             // 전날 데이터가 없는 경우(첫 수집일) — star_delta_1d = NULL
             System.out.println("[Gold/github/daily] 전날 데이터 없음, star_delta_1d=NULL 으로 진행");
-            withDelta = today.withColumn("star_delta_1d", functions.lit(null).cast("int"));
+            withDelta = today
+                .withColumn("star_delta_1d", functions.lit(null).cast("int"));
         }
 
         // 4. Staging 테이블에 쓰기
