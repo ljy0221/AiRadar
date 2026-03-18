@@ -4,7 +4,7 @@
 
 import type { GithubListParams, GithubRepo } from '@/types/github';
 
-import { MOCK_GITHUB_REPOS } from './raw/githubRaw';
+import { MOCK_GITHUB_REPOS } from './githubRaw';
 
 // ─────────────────────────────────────────────────────────────
 // API Functions

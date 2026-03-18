@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchGithubRepos, fetchTrendingRepos } from '@/services/githubApi';
+import { fetchGithubRepos, fetchTrendingRepos } from '@/services/github/githubApi';
 import type { GithubListParams } from '@/types/github';
 
 // GitHub 레포 목록 쿼리 훅

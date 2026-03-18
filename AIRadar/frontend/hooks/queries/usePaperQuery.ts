@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchPaperDetail, fetchPaperList } from '@/services/paperApi';
+import { fetchPaperDetail, fetchPaperList } from '@/services/paper/paperApi';
 import type { PaperListParams } from '@/types/paper';
 
 // 논문 목록 쿼리 훅

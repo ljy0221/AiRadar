@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchNewsDetail, fetchNewsList } from '@/services/newsApi';
+import { fetchNewsDetail, fetchNewsList } from '@/services/news/newsApi';
 import type { NewsListParams } from '@/types/news';
 
 // 뉴스 목록 쿼리 훅
