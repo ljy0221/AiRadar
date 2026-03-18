@@ -55,5 +55,5 @@ CREATE TABLE user_recommendations (
     expires_at   TIMESTAMP NOT NULL DEFAULT (NOW() + INTERVAL '1 day')
 );
 
-CREATE INDEX idx_user_recommendations ON user_recommendations(user_id, score DESC)
-    WHERE expires_at > NOW();
+CREATE INDEX idx_user_recommendations ON user_recommendations(user_id, score DESC);
+CREATE INDEX idx_user_recommendations_expires ON user_recommendations(expires_at);
