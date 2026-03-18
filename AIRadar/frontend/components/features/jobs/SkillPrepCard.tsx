@@ -45,7 +45,7 @@ export const SkillPrepCard = ({ uniqueSkills, recommendedSkills, tools }: SkillP
           ))}
         </div>
       </div>
-      
+
       <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mt-2 border-t border-gray-100 dark:border-gray-800 pt-6 mt-auto">
         이러한 AI 기반 툴들을 활용하여 생산성을 높이고, 더 높은 수준의 업무에 집중하세요. AI와 협업하여 차별화된 역량을 키워나가는 것이 중요합니다.
       </p>

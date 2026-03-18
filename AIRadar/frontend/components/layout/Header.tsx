@@ -59,11 +59,6 @@ export const Header = () => {
                       >
                         {item.name}
                       </Link>
-                      {/* Arrowhead / Caret Indicator (Prominent Style) */}
-                      {isCurrent && (
-                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[8px] border-b-[var(--color-accent)] z-50">
-                        </div>
-                      )}
                     </div>
                   );
                 })}
