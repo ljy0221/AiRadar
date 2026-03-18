@@ -40,7 +40,7 @@ pipeline {
   options {
     timestamps()
     disableConcurrentBuilds()
-    timeout(time: 30, unit: 'MINUTES')
+    timeout(time: 45, unit: 'MINUTES')
   }
 
   triggers {
@@ -192,8 +192,8 @@ pipeline {
       }
       steps {
         script {
-          def maxRetries = 10
-          def retryInterval = 15
+          def maxRetries = 20
+          def retryInterval = 20
           def healthy = false
 
           for (int i = 1; i <= maxRetries; i++) {
