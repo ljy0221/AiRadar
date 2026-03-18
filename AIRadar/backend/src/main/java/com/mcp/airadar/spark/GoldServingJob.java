@@ -8,12 +8,14 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.functions;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Properties;
 
 import static com.mcp.airadar.spark.utils.SparkUtils.configureS3A;
@@ -262,6 +264,79 @@ public class GoldServingJob {
 
         executeInTransaction(jdbcUrl, user, password, "github_repos_staging", upsertSql);
         System.out.println("[Gold/github] Upsert 완료");
+
+        insertGithubDaily(spark, date, jdbcUrl, user, password);
+    }
+
+    // -------------------------------------------------------------------------
+    // github_repo_daily Upsert (날짜별 이력 + star_delta_1d 계산)
+    // -------------------------------------------------------------------------
+
+    private static void insertGithubDaily(SparkSession spark, String date,
+                                          String jdbcUrl, String user, String password) throws SQLException {
+        // 1. Silver에서 오늘 날짜 github 데이터 읽기
+        String silverDeltaPath = silverPath("github");
+        Dataset<Row> today = spark.read().format("delta").load(silverDeltaPath)
+            .filter("batch_date = '" + date + "' AND error_log IS NULL")
+            .dropDuplicates("repo_id")
+            .select("repo_id", "stars", "forks", "open_issues", "weekly_commits", "batch_date");
+
+        // 2. 전날 github_repo_daily에서 stars 읽기 (JDBC → Spark DataFrame)
+        String prevDate = LocalDate.parse(date).minusDays(1).toString();
+        String prevQuery = "(SELECT repo_id, stars AS prev_stars FROM github_repo_daily " +
+                           "WHERE snapshot_date = '" + prevDate + "') AS prev";
+
+        Dataset<Row> withDelta;
+        try {
+            Dataset<Row> prev = spark.read()
+                .format("jdbc")
+                .option("url",      jdbcUrl)
+                .option("dbtable",  prevQuery)
+                .option("user",     user)
+                .option("password", password)
+                .option("driver",   "org.postgresql.Driver")
+                .load();
+
+            // 3. Left join → star_delta_1d = 오늘 stars - 전날 stars (전날 없으면 NULL)
+            withDelta = today.join(prev, today.col("repo_id").equalTo(prev.col("repo_id")), "left")
+                .select(
+                    today.col("repo_id"),
+                    today.col("batch_date"),
+                    today.col("stars"),
+                    today.col("forks"),
+                    today.col("open_issues"),
+                    today.col("weekly_commits"),
+                    functions.when(prev.col("prev_stars").isNotNull(),
+                        today.col("stars").minus(prev.col("prev_stars"))
+                    ).otherwise(functions.lit(null).cast("int")).as("star_delta_1d")
+                );
+        } catch (Exception e) {
+            // 전날 데이터가 없는 경우(첫 수집일) — star_delta_1d = NULL
+            System.out.println("[Gold/github/daily] 전날 데이터 없음, star_delta_1d=NULL 으로 진행");
+            withDelta = today
+                .withColumn("star_delta_1d", functions.lit(null).cast("int"));
+        }
+
+        // 4. Staging 테이블에 쓰기
+        writeToStaging(withDelta, "github_repo_daily_staging", jdbcUrl, user, password);
+
+        // 5. github_repo_daily Upsert
+        String upsertSql = """
+            INSERT INTO github_repo_daily
+                (repo_id, snapshot_date, stars, forks, open_issues, weekly_commits, star_delta_1d)
+            SELECT repo_id, batch_date, stars, forks, open_issues, weekly_commits, star_delta_1d
+            FROM github_repo_daily_staging
+            ON CONFLICT (repo_id, snapshot_date)
+            DO UPDATE SET
+                stars          = EXCLUDED.stars,
+                forks          = EXCLUDED.forks,
+                open_issues    = EXCLUDED.open_issues,
+                weekly_commits = EXCLUDED.weekly_commits,
+                star_delta_1d  = EXCLUDED.star_delta_1d;
+            """;
+
+        executeInTransaction(jdbcUrl, user, password, "github_repo_daily_staging", upsertSql);
+        System.out.println("[Gold/github/daily] Upsert 완료 " + withDelta.count() + "건");
     }
 
     // -------------------------------------------------------------------------
