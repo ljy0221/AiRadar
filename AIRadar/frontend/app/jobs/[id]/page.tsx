@@ -72,13 +72,14 @@ const jobData = {
 };
 
 export default function JobDetailPage() {
+  const [activeTaskIdx, setActiveTaskIdx] = useState(0);
   const [selectedScenario, setSelectedScenario] = useState<any>(null);
 
   const handleCloseModal = () => setSelectedScenario(null);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-8 flex flex-col min-h-screen">
-      
+
       {/* 백 버튼 */}
       <div className="mb-4">
         <Link href="/jobs" className="inline-flex items-center text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-[var(--color-accent)] transition-colors">
@@ -86,31 +87,53 @@ export default function JobDetailPage() {
         </Link>
       </div>
 
-      <JobHeader 
-        jobTitle={jobData.title} 
+      <JobHeader
+        jobTitle={jobData.title}
         category={jobData.category}
         aiRiskScore={jobData.aiRiskScore}
       />
 
-      <div className="flex flex-col lg:flex-row gap-8 mt-6">
-        
-        {/* 왼쪽 핵심 업무 리스트 영역 */}
-        <div className="flex-1 flex flex-col gap-6">
-          {jobData.coreTasks.map((task, idx) => (
-            <CoreTaskCard 
-              key={idx}
-              number={idx + 1}
-              title={task.title}
-              description={task.description}
-              sources={task.sources}
-              onOpenScenario={() => setSelectedScenario(task.scenario)}
-            />
-          ))}
+      {/* 핵심업무 탭 메뉴 */}
+      <div className="flex flex-wrap gap-3 mb-6 mt-2">
+        {jobData.coreTasks.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => setActiveTaskIdx(idx)}
+            className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all ${activeTaskIdx === idx
+              ? 'bg-[#1e293b] text-white shadow-md'
+              : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700'
+              }`}
+          >
+            핵심업무 {idx + 1}
+          </button>
+        ))}
+      </div>
+
+      <div className="lg:grid lg:grid-cols-12 gap-10 items-start">
+
+        {/* 왼쪽 핵심 업무 카드 영역 (선택된 탭 내용만 표시) - 비율 9/12 (75%) */}
+        <div className="lg:col-span-8 flex flex-col gap-6">
+          <CoreTaskCard
+            number={activeTaskIdx + 1}
+            title={jobData.coreTasks[activeTaskIdx].title}
+            description={jobData.coreTasks[activeTaskIdx].description}
+            sources={jobData.coreTasks[activeTaskIdx].sources}
+            onOpenScenario={() => setSelectedScenario(jobData.coreTasks[activeTaskIdx].scenario)}
+          />
         </div>
 
-        {/* 오른쪽 스킬 & 대비 방안 영역 */}
-        <div className="w-full lg:w-80 shrink-0">
-          <SkillPrepCard 
+        {/* 오른쪽 스킬 & 대비 방안 영역 - 비율 4/12 (33%) -> Wait, 8+4 is 12. Let's try 8:4 first for a clean split like levels.fyi sideboards. */}
+        <div className="hidden lg:block lg:col-span-4 sticky top-28">
+          <SkillPrepCard
+            uniqueSkills={jobData.prepInfo.uniqueSkills}
+            recommendedSkills={jobData.prepInfo.recommendedSkills}
+            tools={jobData.prepInfo.tools}
+          />
+        </div>
+
+        {/* 모바일 화면용 스킬 카드 (그리드 밖이나 아래에 배치) */}
+        <div className="lg:hidden mt-8">
+          <SkillPrepCard
             uniqueSkills={jobData.prepInfo.uniqueSkills}
             recommendedSkills={jobData.prepInfo.recommendedSkills}
             tools={jobData.prepInfo.tools}
@@ -120,7 +143,7 @@ export default function JobDetailPage() {
       </div>
 
       {/* 시나리오 팝업 모달 */}
-      <ScenarioModal 
+      <ScenarioModal
         isOpen={!!selectedScenario}
         onClose={handleCloseModal}
         title={selectedScenario?.title || ''}

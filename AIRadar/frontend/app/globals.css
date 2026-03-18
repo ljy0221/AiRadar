@@ -16,7 +16,7 @@
   :root {
     --bg-primary: #FAF9F5;
     --text-primary: #2C3E50;
-    --accent: #E89E9E;
+    --accent: #D16D6D;
   }
 
   /* 다크 모드*/
@@ -154,4 +154,14 @@ nav {
 
 .animate-scan {
   animation: scan-line 4s linear infinite;
+}
+
+/* Recharts 전역 포커스 테두리 제거 */
+.recharts-wrapper,
+.recharts-surface {
+  outline: none !important;
+}
+
+.recharts-legend-item {
+  cursor: default !important;
 }
