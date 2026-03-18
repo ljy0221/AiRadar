@@ -4,7 +4,7 @@
 
 import type { PaperDetail, PaperListItem, PaperListParams } from '@/types/paper';
 
-import { MOCK_PAPER_LIST, MOCK_PAPER_DETAIL } from './raw/paperRaw';
+import { MOCK_PAPER_LIST, MOCK_PAPER_DETAIL } from './paperRaw';
 
 // ─────────────────────────────────────────────────────────────
 // API Functions

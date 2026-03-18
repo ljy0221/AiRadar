@@ -19,7 +19,7 @@ export const KeywordBarChart = ({ data }: { data: BarData[] }) => {
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(156, 163, 175, 0.2)" />
             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} angle={-15} textAnchor="end" />
             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} />
-            <Tooltip 
+            <Tooltip
               cursor={{ fill: 'rgba(156, 163, 175, 0.1)' }}
               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
             />

@@ -1,6 +1,6 @@
 'use client';
 
-import { ModelPerformance } from '@/services/dashboardApi';
+import { ModelPerformance } from '@/services/dashboard/dashboardApi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface ModelComparisonProps {
@@ -10,7 +10,7 @@ interface ModelComparisonProps {
 export const ModelComparison = ({ data }: ModelComparisonProps) => {
   // Recharts 형식으로 데이터 변환
   const benchmarkNames = data[0]?.benchmarks.map(b => b.name) || [];
-  
+
   const chartData = benchmarkNames.map(name => {
     const entry: any = { name };
     data.forEach(model => {
@@ -38,22 +38,22 @@ export const ModelComparison = ({ data }: ModelComparisonProps) => {
             barGap={8}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#88888820" />
-            <XAxis 
-              dataKey="name" 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: '#888', fontSize: 12 }} 
+            <XAxis
+              dataKey="name"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#888', fontSize: 12 }}
             />
-            <YAxis 
-              domain={[0, 100]} 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: '#888', fontSize: 12 }} 
+            <YAxis
+              domain={[0, 100]}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#888', fontSize: 12 }}
             />
-            <Tooltip 
+            <Tooltip
               cursor={{ fill: '#88888810' }}
-              contentStyle={{ 
-                backgroundColor: '#1a1c2e', 
+              contentStyle={{
+                backgroundColor: '#1a1c2e',
                 border: '1px solid #374151',
                 borderRadius: '8px',
                 color: '#fff'
@@ -61,20 +61,20 @@ export const ModelComparison = ({ data }: ModelComparisonProps) => {
             />
             <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
             {data.map((model, index) => (
-              <Bar 
-                key={model.modelName} 
-                dataKey={model.modelName} 
-                fill={colors[index % colors.length]} 
-                radius={[4, 4, 0, 0]} 
+              <Bar
+                key={model.modelName}
+                dataKey={model.modelName}
+                fill={colors[index % colors.length]}
+                radius={[4, 4, 0, 0]}
               />
             ))}
           </BarChart>
         </ResponsiveContainer>
       </div>
-      
+
       <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg">
         <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed text-center">
-          * 벤치마크 점수는 제조사 공식 발표 및 허깅페이스 리더보드 기준 시뮬레이션 데이터입니다.<br/>
+          * 벤치마크 점수는 제조사 공식 발표 및 허깅페이스 리더보드 기준 시뮬레이션 데이터입니다.<br />
           (MMLU: 대학 수준 지식, GSM8K: 초등 수학 추론, HumanEval: 코딩 테스트, GPQA: 대학원 수준 과학 논리)
         </p>
       </div>

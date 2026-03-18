@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Search, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
 import { Input } from '@/components/common/Input';
-import type { KeywordDefinition } from '@/services/dashboardApi';
+import type { KeywordDefinition } from '@/services/dashboard/dashboardApi';
 
 interface KeywordDictionaryProps {
   data: KeywordDefinition[];

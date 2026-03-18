@@ -12,7 +12,7 @@ import {
   Legend,
 } from 'recharts';
 
-import { correlationMockData } from '@/services/homeMockData';
+import { correlationMockData } from '@/services/common/homeMockData';
 
 export const CorrelationChart = () => {
   const [mounted, setMounted] = useState(false);
