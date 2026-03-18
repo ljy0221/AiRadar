@@ -65,7 +65,13 @@ dependencies {
     // 6. Kafka (Spring Boot 이벤트 Consumer/Producer)
     implementation 'org.springframework.kafka:spring-kafka'
 
-    // 7. Test
+    // 7. Security & JWT
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    // 8. Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
