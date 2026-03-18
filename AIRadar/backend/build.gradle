@@ -40,6 +40,7 @@ dependencies {
     // 2. Data Lake (Delta Lake & Spark)
     implementation "org.apache.spark:spark-sql_${scalaVersion}:${sparkVersion}"
     implementation "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
+    implementation "org.apache.spark:spark-mllib_${scalaVersion}:${sparkVersion}"
     implementation "io.delta:delta-spark_${scalaVersion}:${deltaVersion}"
     implementation "javax.servlet:javax.servlet-api:3.1.0" // Spark SQL UDF에서 필요 (Spark 3.5+)
 
