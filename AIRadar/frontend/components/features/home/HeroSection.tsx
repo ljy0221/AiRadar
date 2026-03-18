@@ -1,4 +1,4 @@
-import { ChevronDown } from 'lucide-react';
+import { Mouse, ChevronDown } from 'lucide-react';
 
 export const HeroSection = () => {
   return (
@@ -41,8 +41,9 @@ export const HeroSection = () => {
         {/* 2. 하단 여백 영역: 화면 전체(min-h-screen)에서 위쪽 글씨 박스가 차지한 공간을 제외한 모든 남는 공간(flex-1)을 사진으로 꽉꽉 채워줍니다! */}
         <div className="w-full relative z-20 flex-1 bg-transparent flex items-end justify-center pb-12">
           {/* 뒤에 깔린 사진 때문에 화살표가 잘 안보일까바 반투명 동그라미 추가 */}
-          <div className="bg-white/40 dark:bg-black/40 backdrop-blur-sm p-3 rounded-full animate-bounce">
-            <ChevronDown className="w-10 h-10 text-slate-800 dark:text-slate-200" />
+          <div className="animate-bounce flex flex-col items-center gap-2 drop-shadow-lg">
+            <Mouse className="w-7 h-7 text-white stroke-[1.5px]" />
+            <ChevronDown className="w-5 h-5 text-white" />
           </div>
         </div>
       </section>
