@@ -30,6 +30,21 @@ api.interceptors.request.use(
 // Response Interceptor
 api.interceptors.response.use(
   (response) => {
+    // 백엔드 공통 응답 포맷 처리: { success, code, message, path, data }
+    if (
+      response.data &&
+      typeof response.data === 'object' &&
+      'success' in response.data
+    ) {
+      if (response.data.success) {
+        // 성공 응답 시에는 사용할 핵심 데이터(data 필드)만 반환
+        return response.data.data;
+      } else {
+        // 서버 측 논리적 에러 (success: false)
+        return Promise.reject(new Error(response.data.message || 'API 통신 성공했으나 로직 실패'));
+      }
+    }
+
     return response.data;
   },
   async (error) => {
