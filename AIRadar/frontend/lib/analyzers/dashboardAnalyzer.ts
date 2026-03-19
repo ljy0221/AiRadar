@@ -100,8 +100,8 @@ export const analyzeDashboardData = (originalDictionary: any[]): DashboardRespon
       trend: 'down'
     },
     {
-      title: `평균 ${peakAvgScore.toFixed(1)}점`,
-      value: peakKeywords.length.toString(),
+      title: "평균 점수", // 제목을 '평균 점수'로
+      value: `${peakAvgScore.toFixed(1)}점`, // 값을 실제 점수로
       subtitle: "피크 상태 기술"
     },
     {
