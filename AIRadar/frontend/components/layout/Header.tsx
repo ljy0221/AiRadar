@@ -31,7 +31,7 @@ export const Header = () => {
         className="sticky top-0 z-50 w-full bg-[var(--color-bg-primary)] border-none shadow-none backdrop-blur-md bg-opacity-80 dark:bg-opacity-80 transition-colors"
       >
         <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
-          <div className="relative flex h-16 items-center justify-between">
+          <div className="relative flex h-14 items-center justify-between">
             <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
               <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 text-[var(--color-text-primary)] hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none transition-colors">
                 <span className="absolute -inset-0.5" />
@@ -47,7 +47,7 @@ export const Header = () => {
                 </Link>
               </div>
               <div className="hidden sm:ml-6 sm:block">
-                <div className="flex space-x-4 h-16 items-center">
+                <div className="flex space-x-4 h-14 items-center">
                   {navigation.map((item) => {
                     const isCurrent = pathname.startsWith(item.href);
                     return (
@@ -71,7 +71,7 @@ export const Header = () => {
               </div>
             </div>
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-              <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-4">
                 {isLoggedIn ? (
                   <>
                     <Link
@@ -82,7 +82,7 @@ export const Header = () => {
                     </Link>
                     <button
                       onClick={() => logoutState()}
-                      className="text-sm font-bold text-white bg-[var(--color-accent)] hover:opacity-90 transition-all px-6 py-2 rounded-full shadow-[0_4px_12px_rgba(var(--color-accent-rgb),0.3)]"
+                      className="text-sm font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 transition-all px-6 py-2 rounded-full"
                     >
                       로그아웃
                     </button>
@@ -90,12 +90,14 @@ export const Header = () => {
                 ) : (
                   <button
                     onClick={() => setIsAuthModalOpen(true)}
-                    className="text-sm font-bold text-white bg-[var(--color-accent)] hover:opacity-90 transition-all px-6 py-2 rounded-full shadow-[0_4px_12px_rgba(var(--color-accent-rgb),0.3)]"
+                    className="text-sm font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 transition-all px-6 py-2 rounded-full"
                   >
                     로그인
                   </button>
                 )}
-                <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1 hidden sm:block"></div>
+                <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1"></div>
+              </div>
+              <div className="ml-2 sm:ml-4 flex items-center">
                 <ThemeToggle />
               </div>
             </div>
@@ -116,41 +118,41 @@ export const Header = () => {
                     isCurrent
                       ? 'text-[var(--color-accent)] font-bold bg-gray-50 dark:bg-gray-800/50'
                       : 'text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)]',
-                    'block rounded-md px-3 py-2 text-base transition-colors',
+                    'flex items-center w-full rounded-md px-3 h-12 text-base transition-colors',
                   )}
                 >
                   {item.name}
                 </DisclosureButton>
               );
             })}
-            <div className="pt-4 pb-2 border-t border-gray-100 dark:border-gray-800 mt-2">
-              {isLoggedIn ? (
-                <>
-                  <DisclosureButton
-                    as={Link}
-                    href="/profile"
-                    className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-colors"
-                  >
-                    프로필
-                  </DisclosureButton>
-                  <DisclosureButton
-                    as="button"
-                    onClick={() => logoutState()}
-                    className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-colors"
-                  >
-                    로그아웃
-                  </DisclosureButton>
-                </>
-              ) : (
+            
+            {/* 로그인 / 로그아웃 영역도 동일한 간격 유지 (별도 테두리/여백 제외) */}
+            {isLoggedIn ? (
+              <>
+                <DisclosureButton
+                  as={Link}
+                  href="/profile"
+                  className="flex items-center w-full text-left rounded-md px-3 h-12 text-base font-medium text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-colors"
+                >
+                  프로필
+                </DisclosureButton>
                 <DisclosureButton
                   as="button"
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="block w-full text-left rounded-md px-3 py-2 text-base font-bold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  onClick={() => logoutState()}
+                  className="flex items-center w-full text-left rounded-md px-3 h-12 text-base font-medium text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-colors"
                 >
-                  로그인
+                  로그아웃
                 </DisclosureButton>
-              )}
-            </div>
+              </>
+            ) : (
+              <DisclosureButton
+                as="button"
+                onClick={() => setIsAuthModalOpen(true)}
+                className="flex items-center w-full text-left rounded-md px-3 h-12 text-base font-bold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+              >
+                로그인
+              </DisclosureButton>
+            )}
           </div>
         </DisclosurePanel>
       </Disclosure>
