@@ -6,12 +6,15 @@ export interface UserInfo {
   name: string;
   nickname: string;
   isNewsletterSubscribed: boolean;
+  interests?: string[]; // AI 키워드 목록
 }
 
 export interface UpdateUserInput {
   nickname?: string;
   email?: string;
+  password?: string;
   isNewsletterSubscribed?: boolean;
+  interests?: string[];
 }
 
 export const userApi = {

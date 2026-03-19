@@ -26,11 +26,10 @@ function toTimelineItemData(news: NewsListItem): TimelineItemData {
 
 function categoryLabel(cat: NewsListItem['category']): string {
   const map: Record<string, string> = {
-    AI_MODEL: '모델/연구',
-    AI_HARDWARE: '하드웨어',
-    AI_POLICY: '정책/규제',
-    AI_RESEARCH: '기술/연구',
-    AI_BUSINESS: '비즈니스',
+    LLM: '대형 언어 모델',
+    Vision: '비전 AI',
+    Semiconductor: '반도체',
+    ETC: '기타 뉴스',
   };
   return map[cat] ?? cat;
 }
