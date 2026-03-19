@@ -115,7 +115,7 @@ const MobileCarousel = ({ onSubscribe }: { onSubscribe: () => void }) => {
   const next = useCallback(() => setActiveIndex((i) => (i + 1) % total), [total]);
 
   return (
-    <section className="bg-[#1a0e0b] py-16 px-5">
+    <section className="w-full bg-[#1a0e0b] py-16 px-5 w-screen max-w-[100vw] overflow-hidden">
       <div className="text-center mb-10 space-y-3">
         <span className="text-[#C8432A] font-extrabold tracking-widest text-xs uppercase">Newsletter</span>
         <h3 className="text-3xl font-black tracking-tight text-white leading-tight">
@@ -136,12 +136,12 @@ const MobileCarousel = ({ onSubscribe }: { onSubscribe: () => void }) => {
           ) : (
             <button
               onClick={onSubscribe}
-              className="w-full h-full rounded-3xl border-4 border-dashed border-white/10 flex flex-col items-center justify-center gap-4 hover:border-[#C8432A]/50 transition-all text-white group"
+              className="w-full h-full bg-gradient-to-br from-[#3D251E] to-[#1e100d] rounded-3xl border-2 border-[#C8432A]/50 flex flex-col items-center justify-center gap-4 hover:border-[#C8432A] transition-all duration-300 text-white group shadow-[0_0_40px_rgba(200,67,42,0.15)]"
             >
-              <div className="w-14 h-14 bg-[#C8432A] rounded-full flex items-center justify-center shadow-2xl">
+              <div className="w-14 h-14 bg-[#C8432A] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
                 <ArrowRight className="w-7 h-7" />
               </div>
-              <span className="text-lg font-bold">지금 바로 구독하기</span>
+              <span className="text-lg font-bold group-hover:text-[#C8432A] transition-colors">지금 바로 구독하기</span>
             </button>
           )}
         </motion.div>

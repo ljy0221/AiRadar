@@ -71,7 +71,7 @@ export const Header = () => {
               </div>
             </div>
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-              <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-4">
                 {isLoggedIn ? (
                   <>
                     <Link
@@ -95,7 +95,9 @@ export const Header = () => {
                     로그인
                   </button>
                 )}
-                <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1 hidden sm:block"></div>
+                <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1"></div>
+              </div>
+              <div className="ml-2 sm:ml-4 flex items-center">
                 <ThemeToggle />
               </div>
             </div>
@@ -116,41 +118,41 @@ export const Header = () => {
                     isCurrent
                       ? 'text-[var(--color-accent)] font-bold bg-gray-50 dark:bg-gray-800/50'
                       : 'text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)]',
-                    'block rounded-md px-3 py-2 text-base transition-colors',
+                    'flex items-center w-full rounded-md px-3 h-12 text-base transition-colors',
                   )}
                 >
                   {item.name}
                 </DisclosureButton>
               );
             })}
-            <div className="pt-4 pb-2 border-t border-gray-100 dark:border-gray-800 mt-2">
-              {isLoggedIn ? (
-                <>
-                  <DisclosureButton
-                    as={Link}
-                    href="/profile"
-                    className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-colors"
-                  >
-                    프로필
-                  </DisclosureButton>
-                  <DisclosureButton
-                    as="button"
-                    onClick={() => logoutState()}
-                    className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-colors"
-                  >
-                    로그아웃
-                  </DisclosureButton>
-                </>
-              ) : (
+            
+            {/* 로그인 / 로그아웃 영역도 동일한 간격 유지 (별도 테두리/여백 제외) */}
+            {isLoggedIn ? (
+              <>
+                <DisclosureButton
+                  as={Link}
+                  href="/profile"
+                  className="flex items-center w-full text-left rounded-md px-3 h-12 text-base font-medium text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-colors"
+                >
+                  프로필
+                </DisclosureButton>
                 <DisclosureButton
                   as="button"
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="block w-full text-left rounded-md px-3 py-2 text-base font-bold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  onClick={() => logoutState()}
+                  className="flex items-center w-full text-left rounded-md px-3 h-12 text-base font-medium text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-colors"
                 >
-                  로그인
+                  로그아웃
                 </DisclosureButton>
-              )}
-            </div>
+              </>
+            ) : (
+              <DisclosureButton
+                as="button"
+                onClick={() => setIsAuthModalOpen(true)}
+                className="flex items-center w-full text-left rounded-md px-3 h-12 text-base font-bold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+              >
+                로그인
+              </DisclosureButton>
+            )}
           </div>
         </DisclosurePanel>
       </Disclosure>
