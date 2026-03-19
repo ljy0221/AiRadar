@@ -5,25 +5,31 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface RankingListProps {
   title: string;
+  subtitle?: string;
   data: RankingItem[];
 }
 
-export const RankingList = ({ title, data }: RankingListProps) => {
+export const RankingList = ({ title, subtitle, data }: RankingListProps) => {
   return (
-    <div className="bg-white dark:bg-[#1a1c2e] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col h-full">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-bold">{title}</h3>
-        <span className="text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded tracking-tight uppercase">Live Update</span>
-      </div>
+    <div className="bg-white dark:bg-[#1a1c2e] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col h-full overflow-hidden">
+      {title && (
+        <div className="px-8 py-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-start">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-2xl font-black text-[var(--color-text-primary)]">{title}</h3>
+            {subtitle && <p className="text-[13px] text-gray-500 dark:text-gray-400">{subtitle}</p>}
+          </div>
+          <span className="text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded tracking-tight uppercase">Live Update</span>
+        </div>
+      )}
 
-      <div className="flex flex-col flex-1 divide-y divide-gray-100 dark:divide-gray-800/50">
+      <div className="flex flex-col flex-1 divide-y divide-gray-100 dark:divide-gray-800/50 px-8 py-4">
         {data.map((item) => {
           const isNew = item.change === 'new';
           const isUp = typeof item.change === 'number' && item.change > 0;
           const isDown = typeof item.change === 'number' && item.change < 0;
 
           return (
-            <div key={item.rank} className="flex items-center py-3.5 group hover:bg-gray-50/50 dark:hover:bg-gray-800/20 px-2 -mx-2 rounded-lg transition-colors overflow-hidden">
+            <div key={item.rank} className="flex items-center py-1.5 group hover:bg-gray-50/50 dark:hover:bg-gray-800/20 rounded-lg transition-colors overflow-hidden">
               {/* 순위 */}
               <div className="w-8 flex-shrink-0">
                 <span className={`text-lg font-black ${

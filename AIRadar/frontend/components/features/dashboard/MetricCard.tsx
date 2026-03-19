@@ -9,16 +9,37 @@ interface MetricCardProps {
 }
 
 export const MetricCard = ({ title, value, subtitle, icon, trend }: MetricCardProps) => {
+  // Determine what to emphasize based on the content
+  const valStr = String(value);
+  const isRankValue = valStr === '1' || valStr === '2';
+
+  // Tech name becomes big for ranks (1st, 2nd)
+  const displayBig = isRankValue ? title : value;
+  // Metric title (like "평균 점수") becomes middle text for metric cards
+  const displaySmallHeader = isRankValue ? null : title;
+
   return (
-    <div className="bg-white dark:bg-[#1a1c2e] p-6 rounded-xl border border-gray-200 dark:border-gray-800 flex flex-col gap-2 shadow-sm relative overflow-hidden">
-      <div className="flex justify-between items-start mb-2">
-        {icon && <div className="text-[var(--color-accent)]">{icon}</div>}
+    <div className="bg-white dark:bg-[#1a1c2e] px-6 py-5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col h-[120px] text-left transition-all hover:shadow-md">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[var(--color-accent)]">
+          {icon}
+        </div>
       </div>
-      <div>
-        <h4 className="text-3xl font-bold mb-1">{value}</h4>
-        <h5 className="text-base font-semibold text-[color:var(--color-text-primary)]">{title}</h5>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>
+
+      <div className="flex flex-col">
+        <h4 className="text-xl font-extrabold text-[var(--color-text-primary)] tracking-tight leading-tight">
+          {displayBig}
+        </h4>
+        {displaySmallHeader && (
+          <p className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mt-0.5">
+            {displaySmallHeader}
+          </p>
+        )}
       </div>
+
+      <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium mt-auto">
+        {subtitle}
+      </p>
     </div>
   );
 };

@@ -31,7 +31,7 @@ export const Header = () => {
         className="sticky top-0 z-50 w-full bg-[var(--color-bg-primary)] border-none shadow-none backdrop-blur-md bg-opacity-80 dark:bg-opacity-80 transition-colors"
       >
         <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
-          <div className="relative flex h-16 items-center justify-between">
+          <div className="relative flex h-14 items-center justify-between">
             <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
               <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 text-[var(--color-text-primary)] hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none transition-colors">
                 <span className="absolute -inset-0.5" />
@@ -47,7 +47,7 @@ export const Header = () => {
                 </Link>
               </div>
               <div className="hidden sm:ml-6 sm:block">
-                <div className="flex space-x-4 h-16 items-center">
+                <div className="flex space-x-4 h-14 items-center">
                   {navigation.map((item) => {
                     const isCurrent = pathname.startsWith(item.href);
                     return (
@@ -82,7 +82,7 @@ export const Header = () => {
                     </Link>
                     <button
                       onClick={() => logoutState()}
-                      className="text-sm font-bold text-white bg-[var(--color-accent)] hover:opacity-90 transition-all px-6 py-2 rounded-full shadow-[0_4px_12px_rgba(var(--color-accent-rgb),0.3)]"
+                      className="text-sm font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 transition-all px-6 py-2 rounded-full"
                     >
                       로그아웃
                     </button>
@@ -90,7 +90,7 @@ export const Header = () => {
                 ) : (
                   <button
                     onClick={() => setIsAuthModalOpen(true)}
-                    className="text-sm font-bold text-white bg-[var(--color-accent)] hover:opacity-90 transition-all px-6 py-2 rounded-full shadow-[0_4px_12px_rgba(var(--color-accent-rgb),0.3)]"
+                    className="text-sm font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 transition-all px-6 py-2 rounded-full"
                   >
                     로그인
                   </button>
