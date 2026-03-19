@@ -1,4 +1,6 @@
 import { Mouse, ChevronDown } from 'lucide-react';
+import heroDay from '@/public/hero-day.png';
+import heroNight from '@/public/hero-night.jpg';
 
 export const HeroSection = () => {
   return (
@@ -14,13 +16,13 @@ export const HeroSection = () => {
         {/* 라이트 모드용 패럴랙스 배경 (항상 맨 밑바닥에 완전 화면 크기로 깔려 있음) */}
         <div
           className="absolute inset-0 z-0 opacity-100 dark:opacity-0 transition-opacity duration-500 bg-fixed bg-cover bg-bottom"
-          style={{ backgroundImage: 'url("./hero-day.png?v=4")' }}
+          style={{ backgroundImage: `url("${heroDay.src}")` }}
         />
 
         {/* 다크 모드용 패럴랙스 배경 */}
         <div
           className="absolute inset-0 z-0 opacity-0 dark:opacity-100 transition-opacity duration-500 bg-fixed bg-cover bg-bottom"
-          style={{ backgroundImage: 'url("./hero-night.jpg?v=4")' }}
+          style={{ backgroundImage: `url("${heroNight.src}")` }}
         />
 
         {/* 1. 상단 텍스트 영역: 왼쪽 정렬 + 세리프 폰트 적용 */}
