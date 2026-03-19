@@ -2,14 +2,15 @@ package com.mcp.airadar.news.controller;
 
 import com.mcp.airadar.news.dto.NewsDto;
 import com.mcp.airadar.news.service.NewsService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/news")
+@RequestMapping("/api/v1/news")
 public class NewsController {
 
     private final NewsService newsService;
@@ -19,12 +20,12 @@ public class NewsController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<NewsDto.ListItem>> getNewsList(
+    public ResponseEntity<List<NewsDto.DailyGroup>> getNewsList(
             @RequestParam(required = false) String region,
             @RequestParam(required = false) String category,
-            @PageableDefault(size = 20, sort = "publishedAt") Pageable pageable
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        return ResponseEntity.ok(newsService.getNewsList(region, category, pageable));
+        return ResponseEntity.ok(newsService.getNewsList(region, category, date));
     }
 
     @GetMapping("/{articleId}")

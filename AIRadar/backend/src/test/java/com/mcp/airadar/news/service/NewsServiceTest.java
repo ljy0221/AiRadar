@@ -11,19 +11,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class NewsServiceTest {
@@ -34,68 +34,66 @@ class NewsServiceTest {
     @InjectMocks
     private NewsService newsService;
 
-    private Pageable pageable;
     private NewsItem sampleItem;
 
     @BeforeEach
     void setUp() {
-        pageable = PageRequest.of(0, 20);
         sampleItem = new NewsItem();
+        ReflectionTestUtils.setField(sampleItem, "articleId", "article-001");
+        ReflectionTestUtils.setField(sampleItem, "title", "sample title");
+        ReflectionTestUtils.setField(sampleItem, "source", "TechCrunch");
+        ReflectionTestUtils.setField(sampleItem, "region", "GLOBAL");
+        ReflectionTestUtils.setField(sampleItem, "category", "LLM");
+        ReflectionTestUtils.setField(sampleItem, "sentiment", "POSITIVE");
+        ReflectionTestUtils.setField(sampleItem, "score", BigDecimal.valueOf(0.85));
+        ReflectionTestUtils.setField(sampleItem, "summary", "sample summary");
+        ReflectionTestUtils.setField(sampleItem, "url", "https://example.com/news/article-001");
+        ReflectionTestUtils.setField(sampleItem, "publishedAt", LocalDateTime.of(2026, 3, 19, 8, 30));
     }
 
     @Test
-    @DisplayName("region + category 둘 다 없으면 전체 조회")
-    void getNewsList_noFilter() {
-        Page<NewsItem> page = new PageImpl<>(List.of(sampleItem));
-        when(newsRepository.findByIsActiveTrueOrderByPublishedAtDesc(pageable)).thenReturn(page);
+    @DisplayName("date가 있으면 해당 날짜만 조회")
+    void getNewsList_withDate() {
+        LocalDate targetDate = LocalDate.of(2026, 3, 19);
+        when(newsRepository.findRecentNewsFeed("GLOBAL", "LLM", targetDate.atStartOfDay(), targetDate.plusDays(1).atStartOfDay()))
+                .thenReturn(List.of(sampleItem));
 
-        Page<NewsDto.ListItem> result = newsService.getNewsList(null, null, pageable);
+        List<NewsDto.DailyGroup> result = newsService.getNewsList("GLOBAL", "LLM", targetDate);
 
-        assertThat(result).isNotNull();
-        verify(newsRepository).findByIsActiveTrueOrderByPublishedAtDesc(pageable);
-        verify(newsRepository, never()).findByIsActiveTrueAndRegionOrderByPublishedAtDesc(any(), any());
-        verify(newsRepository, never()).findByIsActiveTrueAndCategoryOrderByPublishedAtDesc(any(), any());
-        verify(newsRepository, never()).findByIsActiveTrueAndRegionAndCategoryOrderByPublishedAtDesc(any(), any(), any());
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).date()).isEqualTo(targetDate);
+        assertThat(result.get(0).items()).hasSize(1);
+        assertThat(result.get(0).items().get(0).articleId()).isEqualTo("article-001");
+        verify(newsRepository).findRecentNewsFeed("GLOBAL", "LLM", targetDate.atStartOfDay(), targetDate.plusDays(1).atStartOfDay());
     }
 
     @Test
-    @DisplayName("region만 있으면 region 필터 조회")
-    void getNewsList_regionOnly() {
-        Page<NewsItem> page = new PageImpl<>(List.of(sampleItem));
-        when(newsRepository.findByIsActiveTrueAndRegionOrderByPublishedAtDesc(eq("DOMESTIC"), eq(pageable)))
-                .thenReturn(page);
+    @DisplayName("같은 날짜 내에서는 score 내림차순으로 정렬")
+    void getNewsList_sortsByScoreWithinDate() {
+        NewsItem lowerScoreItem = new NewsItem();
+        ReflectionTestUtils.setField(lowerScoreItem, "articleId", "article-002");
+        ReflectionTestUtils.setField(lowerScoreItem, "title", "lower score");
+        ReflectionTestUtils.setField(lowerScoreItem, "source", "Reuters");
+        ReflectionTestUtils.setField(lowerScoreItem, "region", "GLOBAL");
+        ReflectionTestUtils.setField(lowerScoreItem, "category", "LLM");
+        ReflectionTestUtils.setField(lowerScoreItem, "sentiment", "NEUTRAL");
+        ReflectionTestUtils.setField(lowerScoreItem, "score", BigDecimal.valueOf(0.42));
+        ReflectionTestUtils.setField(lowerScoreItem, "summary", "lower summary");
+        ReflectionTestUtils.setField(lowerScoreItem, "url", "https://example.com/news/article-002");
+        ReflectionTestUtils.setField(lowerScoreItem, "publishedAt", LocalDateTime.of(2026, 3, 19, 9, 30));
 
-        newsService.getNewsList("DOMESTIC", null, pageable);
+        LocalDate targetDate = LocalDate.of(2026, 3, 19);
+        when(newsRepository.findRecentNewsFeed(null, null, targetDate.atStartOfDay(), targetDate.plusDays(1).atStartOfDay()))
+                .thenReturn(List.of(lowerScoreItem, sampleItem));
 
-        verify(newsRepository).findByIsActiveTrueAndRegionOrderByPublishedAtDesc("DOMESTIC", pageable);
+        List<NewsDto.DailyGroup> result = newsService.getNewsList(null, null, targetDate);
+
+        assertThat(result.get(0).items().get(0).articleId()).isEqualTo("article-001");
+        assertThat(result.get(0).items().get(1).articleId()).isEqualTo("article-002");
     }
 
     @Test
-    @DisplayName("category만 있으면 category 필터 조회")
-    void getNewsList_categoryOnly() {
-        Page<NewsItem> page = new PageImpl<>(List.of(sampleItem));
-        when(newsRepository.findByIsActiveTrueAndCategoryOrderByPublishedAtDesc(eq("NLP"), eq(pageable)))
-                .thenReturn(page);
-
-        newsService.getNewsList(null, "NLP", pageable);
-
-        verify(newsRepository).findByIsActiveTrueAndCategoryOrderByPublishedAtDesc("NLP", pageable);
-    }
-
-    @Test
-    @DisplayName("region + category 둘 다 있으면 복합 필터 조회")
-    void getNewsList_regionAndCategory() {
-        Page<NewsItem> page = new PageImpl<>(List.of(sampleItem));
-        when(newsRepository.findByIsActiveTrueAndRegionAndCategoryOrderByPublishedAtDesc(
-                eq("GLOBAL"), eq("Vision"), eq(pageable))).thenReturn(page);
-
-        newsService.getNewsList("GLOBAL", "Vision", pageable);
-
-        verify(newsRepository).findByIsActiveTrueAndRegionAndCategoryOrderByPublishedAtDesc("GLOBAL", "Vision", pageable);
-    }
-
-    @Test
-    @DisplayName("존재하는 articleId 조회 → Detail 반환")
+    @DisplayName("찾는 articleId가 있으면 Detail 반환")
     void getNewsDetail_found() {
         when(newsRepository.findByArticleIdAndIsActiveTrue("abc123")).thenReturn(Optional.of(sampleItem));
 
@@ -105,7 +103,7 @@ class NewsServiceTest {
     }
 
     @Test
-    @DisplayName("없는 articleId 조회 → EntityNotFoundException 발생")
+    @DisplayName("없는 articleId면 EntityNotFoundException 발생")
     void getNewsDetail_notFound() {
         when(newsRepository.findByArticleIdAndIsActiveTrue("no-such-id")).thenReturn(Optional.empty());
 
