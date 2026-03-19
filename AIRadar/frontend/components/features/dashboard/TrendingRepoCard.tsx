@@ -9,7 +9,7 @@ import type { GithubRepo } from '@/types/github';
 const generateMockData = (seed: number) => {
   const daily: any[] = [];
   const monthly: any[] = [];
-  
+
   // Daily
   let baseStars = seed * 1000;
   for (let i = 11; i <= 18; i++) {
@@ -67,8 +67,6 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
 
   return (
     <div className="bg-white dark:bg-[#1a1c2e] p-6 lg:p-8 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col lg:flex-row gap-8 lg:gap-12">
-      
-      {/* 🔴 Left: Repo Info */}
       <div className="lg:w-1/3 flex flex-col pt-2">
         <div className="flex items-start gap-4 mb-4">
           <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white font-black text-lg shadow-md shadow-orange-500/20">
@@ -81,8 +79,8 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
             <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
               {repo.language && (
                 <span className="flex items-center gap-1.5 px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-xs font-medium">
-                  <span 
-                    className="w-2 h-2 rounded-full" 
+                  <span
+                    className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: getLanguageColor(repo.language) }}
                   />
                   {repo.language}
@@ -113,28 +111,25 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
         </div>
       </div>
 
-      {/* 🔵 Right: Activity Chart */}
       <div className="lg:w-2/3 flex flex-col h-[350px]">
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-sm font-bold text-[var(--color-text-primary)]">레포지토리 활동 내역</h4>
           <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
             <button
               onClick={() => setChartTab('daily')}
-              className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                chartTab === 'daily' 
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' 
+              className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${chartTab === 'daily'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
+                }`}
             >
               일간
             </button>
             <button
               onClick={() => setChartTab('monthly')}
-              className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                chartTab === 'monthly' 
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' 
+              className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${chartTab === 'monthly'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
+                }`}
             >
               월간
             </button>
@@ -147,7 +142,7 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(156, 163, 175, 0.2)" />
               <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} dy={10} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} tickFormatter={(value) => value >= 1000 ? `${value / 1000}k` : value} />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border)', borderRadius: '8px', color: 'var(--color-text-primary)' }}
                 itemStyle={{ fontSize: '12px' }}
               />
