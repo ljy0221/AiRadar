@@ -1,4 +1,4 @@
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, ExternalLink } from 'lucide-react';
 
 export interface TimelineItemData {
   id: string;
@@ -10,6 +10,7 @@ export interface TimelineItemData {
   date: string;
   hashtags: string[];
   isHot?: boolean;
+  url?: string;
 }
 
 interface TimelineItemProps {
@@ -47,7 +48,7 @@ export const TimelineItem = ({ data }: TimelineItemProps) => {
           {data.summary}
         </p>
 
-        {/* 하단 출처 & 날짜 / 해시태그 */}
+        {/* 하단 출처 & 날짜 / 해시태그 / 원문 링크 */}
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-3 mt-4">
           <div className="text-xs text-gray-400 dark:text-gray-500">
             <span>{data.publisher}</span>
@@ -55,12 +56,22 @@ export const TimelineItem = ({ data }: TimelineItemProps) => {
             <span>{data.date}</span>
           </div>
 
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             {data.hashtags.map((tag, idx) => (
               <span key={idx} className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded-md">
                 #{tag}
               </span>
             ))}
+            {data.url && (
+              <a
+                href={data.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-[var(--color-accent)] font-semibold hover:underline"
+              >
+                원문 보기 <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
           </div>
         </div>
       </div>

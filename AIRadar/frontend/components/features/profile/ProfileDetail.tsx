@@ -44,13 +44,13 @@ export const ProfileDetail = () => {
   return (
     <div className="max-w-5xl mx-auto py-12 px-4">
       <h1 className="text-3xl font-bold mb-8 text-[var(--color-text-primary)]">내 프로필</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-8">
           <div className="bg-white dark:bg-gray-800/50 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="flex justify-between items-start mb-8">
               <div>
-                <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">{user.nickname}</h2>
+                <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">{user.name}</h2>
                 <p className="text-gray-500 text-sm">{user.email}</p>
               </div>
               <Button variant="outline" onClick={() => setIsEditModalOpen(true)}>
@@ -63,7 +63,6 @@ export const ProfileDetail = () => {
               <div className="flex items-center justify-between p-6 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
                 <div>
                   <p className="font-medium text-[var(--color-text-primary)]">뉴스레터 구독</p>
-                  <p className="text-sm text-gray-500">AI 트렌드 소식을 이메일로 받아봅니다.</p>
                 </div>
                 <Button
                   variant={user.isNewsletterSubscribed ? 'outline' : 'primary'}
@@ -76,7 +75,7 @@ export const ProfileDetail = () => {
               </div>
             </div>
           </div>
-          
+
           {/* 추후 다른 컴포넌트 추가 영역 */}
           <div className="bg-white dark:bg-gray-800/50 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700 h-64 flex items-center justify-center text-gray-400 border-dashed">
             추가 예정 영역

@@ -46,14 +46,20 @@ const ALL_ITEMS = [
 ];
 
 const TOTAL = ALL_ITEMS.length; // 6
-const SPREAD_ANGLE = 160; // 총 부채꼴 각도 (160도로 약간 좁혀서 양 끝이 잘리지 않게)
+const SPREAD_ANGLE = 160;
 const ANGLE_STEP = SPREAD_ANGLE / (TOTAL - 1);
-const START_OFFSET = SPREAD_ANGLE / 2;   // +80: 왼쪽 끝 카드가 정면(0°)에
-const END_OFFSET = -SPREAD_ANGLE / 2;    // -80: 오른쪽 끝 카드가 정면(0°)에
+const START_OFFSET = SPREAD_ANGLE / 2;
+const END_OFFSET = -SPREAD_ANGLE / 2;
 
-const RADIUS = 760;
-const CARD_W = 480;
-const CARD_H = 290;
+// ── 뷰포트 크기에 따라 카드/반지름 수치 계산 ──────────────────────────────────
+function calcDimensions(vw: number) {
+  // 카드 너비: 뷰포트의 38% (최소 320px, 최대 560px)
+  const cardW = Math.min(560, Math.max(320, vw * 0.38));
+  const cardH = cardW * 0.58;
+  // 반지름: 뷰포트의 68% (최소 460px, 최대 900px)
+  const radius = Math.min(900, Math.max(460, vw * 0.68));
+  return { cardW, cardH, radius };
+}
 
 // ─── 공통 카드 ───────────────────────────────────────────────────────────────
 const NewsletterCard = ({
@@ -75,18 +81,18 @@ const NewsletterCard = ({
         className={`w-full h-3 rounded-full transition-colors duration-500 ${isFront ? 'bg-[#C8432A]/40' : 'bg-white/20'}`}
       />
       <div className="w-3/4 h-2 bg-white/10 rounded-full" />
-      <div className="w-full h-[120px] mt-4 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center">
+      <div className="w-full flex-1 mt-4 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center">
         <Mail
-          className={`w-12 h-12 transition-all duration-500 ${isFront ? 'text-[#C8432A]/60' : 'text-white/20'}`}
+          className={`w-10 h-10 transition-all duration-500 ${isFront ? 'text-[#C8432A]/60' : 'text-white/20'}`}
         />
       </div>
     </div>
-    <div className="w-[62%] h-full p-7 relative flex flex-col justify-center bg-[#1e100d]">
+    <div className="w-[62%] h-full p-6 relative flex flex-col justify-center bg-[#1e100d]">
       <div className="absolute top-4 right-4 px-3 py-1 bg-[#C8432A] rounded-lg">
         <span className="text-[10px] text-white font-bold tracking-wider">{card.tag}</span>
       </div>
       <h4
-        className={`text-2xl font-black mb-2.5 leading-snug transition-colors duration-500 ${isFront ? 'text-[#C8432A]' : 'text-white'}`}
+        className={`text-xl font-black mb-2 leading-snug transition-colors duration-500 ${isFront ? 'text-[#C8432A]' : 'text-white'}`}
       >
         {card.title}
       </h4>
@@ -161,62 +167,58 @@ const MobileCarousel = ({ onSubscribe }: { onSubscribe: () => void }) => {
   );
 };
 
-// ─── 개별 스프레드 카드 (MotionValue 체인으로 완전 보간) ──────────────────────
+// ─── 개별 스프레드 카드 ───────────────────────────────────────────────────────
 const SpreadCard = ({
   item,
   index,
   rotationDeg,
+  cardW,
+  cardH,
+  radius,
   onSubscribe,
   onActivate,
 }: {
   item: (typeof ALL_ITEMS)[number];
   index: number;
   rotationDeg: MotionValue<number>;
+  cardW: number;
+  cardH: number;
+  radius: number;
   onSubscribe: () => void;
   onActivate: (idx: number) => void;
 }) => {
-  const cardBaseAngle = -SPREAD_ANGLE / 2 + index * ANGLE_STEP; // -80° ~ +80°
+  const cardBaseAngle = -SPREAD_ANGLE / 2 + index * ANGLE_STEP;
 
-  // 현재 이 카드의 실제 각도 = 기본 각도 + 전체 회전량
   const actualAngle = useTransform(rotationDeg, (rot) => cardBaseAngle + rot);
 
-  // x, y 위치 (반원 중심점 기준)
   const cardX = useTransform(actualAngle, (angle) => {
     const rad = (angle * Math.PI) / 180;
-    return Math.sin(rad) * RADIUS - CARD_W / 2;
+    return Math.sin(rad) * radius - cardW / 2;
   });
   const cardY = useTransform(actualAngle, (angle) => {
     const rad = (angle * Math.PI) / 180;
-    return -Math.cos(rad) * RADIUS - CARD_H / 2;
+    return -Math.cos(rad) * radius - cardH / 2;
   });
-
-  // 카드 자체는 항상 수평 유지
   const cardRotate = useTransform(actualAngle, (angle) => -angle);
 
-  // 정면과의 거리 기반 scale
   const cardScale = useTransform(actualAngle, (angle) => {
     const dist = Math.abs(angle);
-    if (dist < 15) return 1.08;
-    if (dist < 35) return 0.95;
-    if (dist < 60) return 0.85;
-    return 0.75;
+    if (dist < 15) return 1.06;
+    if (dist < 35) return 0.93;
+    if (dist < 60) return 0.82;
+    return 0.72;
   });
-
-  // 정면과의 거리 기반 opacity
   const cardOpacity = useTransform(actualAngle, (angle) => {
     const dist = Math.abs(angle);
     if (dist < 15) return 1;
     if (dist < 40) return 0.6;
-    if (dist < 70) return 0.4;
-    return 0.2;
+    if (dist < 70) return 0.38;
+    return 0.18;
   });
+  const cardZIndex = useTransform(actualAngle, (angle) =>
+    Math.round(10 - Math.abs(angle) / 10)
+  );
 
-  // zIndex (정면 카드가 위로)
-  const cardZIndex = useTransform(actualAngle, (angle) => {
-    return Math.round(10 - Math.abs(angle) / 10);
-  });
-
-  // isFront 상태 (React state, 렌더링용)
   const [isFront, setIsFront] = useState(index === 0);
   useMotionValueEvent(actualAngle, 'change', (angle) => {
     const front = Math.abs(angle) < 15;
@@ -228,10 +230,10 @@ const SpreadCard = ({
 
   return (
     <motion.div
-      className="absolute cursor-pointer"
+      className="absolute"
       style={{
-        width: CARD_W,
-        height: CARD_H,
+        width: cardW,
+        height: cardH,
         x: cardX,
         y: cardY,
         rotate: cardRotate,
@@ -247,10 +249,10 @@ const SpreadCard = ({
             isFront ? 'border-[#C8432A] bg-[#C8432A]/10' : 'border-white/15'
           }`}
         >
-          <div className="w-20 h-20 bg-[#C8432A] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
-            <ArrowRight className="w-10 h-10" />
+          <div className="w-16 h-16 bg-[#C8432A] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
+            <ArrowRight className="w-8 h-8" />
           </div>
-          <span className="text-2xl font-bold">지금 바로 구독하기</span>
+          <span className="text-xl font-bold">지금 바로 구독하기</span>
         </button>
       ) : (
         <NewsletterCard card={item} isFront={isFront} />
@@ -264,6 +266,22 @@ const DesktopScrollSection = ({ onSubscribe }: { onSubscribe: () => void }) => {
   const targetRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
+  // 뷰포트 크기 기반 수치
+  const [dims, setDims] = useState(() =>
+    typeof window !== 'undefined'
+      ? calcDimensions(window.innerWidth)
+      : { cardW: 480, cardH: 280, radius: 760 }
+  );
+
+  useEffect(() => {
+    const update = () => setDims(calcDimensions(window.innerWidth));
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  const { cardW, cardH, radius } = dims;
+
   const { scrollYProgress } = useScroll({
     target: targetRef,
     offset: ['start start', 'end end'],
@@ -272,19 +290,25 @@ const DesktopScrollSection = ({ onSubscribe }: { onSubscribe: () => void }) => {
   const rawRotation = useTransform(scrollYProgress, [0, 1], [START_OFFSET, END_OFFSET]);
   const rotationDeg = useSpring(rawRotation, { stiffness: 55, damping: 22, mass: 0.8 });
 
+  // 중심점을 화면 하단에서 얼마나 올릴지 (카드 상단이 보이도록)
+  const centerOffsetFromBottom = radius - Math.round(radius * 0.36);
+
   return (
-    <section ref={targetRef} className="relative h-[350vh] bg-[#1a0e0b]">
+    // w-screen + -translate-x-1/2 + left-1/2: 부모 items-center를 벗어나 뷰포트 전체 폭 확보
+    <section
+      ref={targetRef}
+      className="relative h-[350vh] bg-[#1a0e0b] w-screen left-1/2 -translate-x-1/2"
+    >
       <div className="sticky top-0 h-screen flex flex-col overflow-hidden bg-[#1a0e0b]">
 
-        {/* 헤더 영역 */}
-        <div className="relative z-30 pt-16 text-center space-y-2 flex-shrink-0">
+        {/* 헤더 */}
+        <div className="relative z-30 pt-16 text-center space-y-2 flex-shrink-0 px-4">
           <span className="text-[#C8432A] font-extrabold tracking-widest text-xs uppercase">
             Newsletter
           </span>
-          <h3 className="text-5xl xl:text-6xl font-black tracking-tight text-white leading-tight">
+          <h3 className="text-4xl xl:text-6xl font-black tracking-tight text-white leading-tight">
             똑똑하게 앞서가는 AI 리더의 구독 리스트
           </h3>
-          {/* 활성 카드 설명 */}
           <motion.p
             key={activeIndex}
             initial={{ opacity: 0, y: 6 }}
@@ -308,35 +332,41 @@ const DesktopScrollSection = ({ onSubscribe }: { onSubscribe: () => void }) => {
           ))}
         </div>
 
-        {/* 부채꼴 스프레드 영역
-            중심점: 화면 하단 (카드들이 위쪽 반원호에 배치) */}
+        {/* 부채꼴 스프레드 컨테이너 — 중심점을 화면 하단에 위치 */}
         <div
           className="absolute left-1/2"
           style={{
-            bottom: -(RADIUS - 300),
+            bottom: -centerOffsetFromBottom,
             transform: 'translateX(-50%)',
-            width: (RADIUS + CARD_W) * 2,
-            height: RADIUS + CARD_H,
+            width: (radius + cardW) * 2,
+            height: radius + cardH,
+            pointerEvents: 'none',
           }}
         >
           {/* 중심 글로우 */}
           <div
-            className="absolute left-1/2 -translate-x-1/2 w-1 bg-gradient-to-t from-[#C8432A]/40 to-transparent pointer-events-none"
-            style={{ bottom: 0, height: RADIUS * 0.45 }}
+            className="absolute left-1/2 -translate-x-1/2 w-1 bg-gradient-to-t from-[#C8432A]/30 to-transparent pointer-events-none"
+            style={{ bottom: 0, height: radius * 0.42 }}
           />
           <div
             className="absolute left-1/2 -translate-x-1/2 w-48 h-48 rounded-full bg-[#C8432A]/5 blur-3xl pointer-events-none"
-            style={{ bottom: 0 }}
+            style={{ bottom: -20 }}
           />
 
-          {/* 카드 컨테이너 */}
-          <div className="absolute left-1/2 bottom-0" style={{ transform: 'translateX(-50%)' }}>
+          {/* 카드들 */}
+          <div
+            className="absolute left-1/2 bottom-0"
+            style={{ transform: 'translateX(-50%)', pointerEvents: 'auto' }}
+          >
             {ALL_ITEMS.map((item, index) => (
               <SpreadCard
                 key={index}
                 item={item}
                 index={index}
                 rotationDeg={rotationDeg}
+                cardW={cardW}
+                cardH={cardH}
+                radius={radius}
                 onSubscribe={onSubscribe}
                 onActivate={setActiveIndex}
               />
