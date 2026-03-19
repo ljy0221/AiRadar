@@ -26,8 +26,8 @@ const DEFAULT_COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#14b8a6', '#8b5cf6'];
 
 function categoryLabel(cat: NewsListItem['category']): string {
   const map: Record<string, string> = {
-    AI_MODEL: '모델 출시', AI_HARDWARE: '하드웨어', AI_POLICY: '정책/규정',
-    AI_RESEARCH: '기술/연구', AI_BUSINESS: '투자/전략',
+    LLM: '대형 언어 모델', Vision: '비전 AI', Semiconductor: '반도체',
+    ETC: '기타 뉴스'
   };
   return map[cat] ?? cat;
 }

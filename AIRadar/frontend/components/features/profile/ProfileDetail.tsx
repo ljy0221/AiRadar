@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/common/Button';
 import { EditProfileModal } from './EditProfileModal';
+import { NewsletterSubscribeModal } from '@/components/features/home';
 
-// TODO: API 연동 시 아래 mock 제거 후 이 줄 복구
-// import { useUserQuery, useUpdateUserMutation } from '@/hooks/queries/useUserQuery';
+
+import { useUserQuery, useUpdateUserMutation } from '@/hooks/queries/useUserQuery';
 
 // ── AI 관심 키워드 목록 ───────────────────────────────────────────────────────
 const AI_KEYWORDS = [
@@ -39,34 +40,20 @@ const AI_KEYWORDS = [
 
 const CATEGORIES = ['모델/기술', '개발/엔지니어링', '산업/비즈니스', '직군별'] as const;
 
-const MOCK_USER = {
-  id: 1,
-  name: '테스트유저',
-  nickname: '테스트유저',
-  email: 'test@airadar.dev',
-  isNewsletterSubscribed: false,
-  interests: ['llm', 'agent', 'open_source'] as string[],
-};
-
 export const ProfileDetail = () => {
-  // TODO: API 연동 시 아래 두 줄로 교체
-  // const { data: user, isLoading, isError } = useUserQuery();
-  // const updateMutation = useUpdateUserMutation();
-  const [mockUser, setMockUser] = useState(MOCK_USER);
-  const user = mockUser;
-  const isLoading = false;
-  const isError = false;
-  const updateMutation = {
-    isPending: false,
-    mutate: (data: Partial<typeof MOCK_USER>, options?: { onSuccess?: () => void }) => {
-      setMockUser((prev) => ({ ...prev, ...data }));
-      options?.onSuccess?.();
-    },
-  };
+  const { data: user, isLoading, isError } = useUserQuery();
+  const updateMutation = useUpdateUserMutation();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isNewsletterModalOpen, setIsNewsletterModalOpen] = useState(false);
   const [isKeywordEditing, setIsKeywordEditing] = useState(false);
-  const [selectedKeywords, setSelectedKeywords] = useState<string[]>(user.interests);
+  
+  // API에서 주는 interests 정보가 없을 경우를 대비해 빈 배열을 기본값으로 사용합니다.
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>(user?.interests ?? []);
+
+  // user 구조에 interests가 확실히 있다면 이 타이밍에 동기화해줍니다 (단, fetch 완료 후)
+  // 여기서는 단순하게 API 연동으로 돌리는 것을 목표로 하므로, 
+  // 실제 키워드 저장이 어떻게 넘어오느냐에 따라 수정이 필요할 수 있습니다.
 
   if (isLoading) {
     return (
@@ -85,7 +72,13 @@ export const ProfileDetail = () => {
   }
 
   const handleToggleNewsletter = () => {
-    updateMutation.mutate({ isNewsletterSubscribed: !user.isNewsletterSubscribed });
+    if (!user.isNewsletterSubscribed) {
+      setIsNewsletterModalOpen(true);
+    } else {
+      updateMutation.mutate({ isNewsletterSubscribed: false }, {
+        onSuccess: () => alert('뉴스레터 구독이 해지되었습니다.'),
+      });
+    }
   };
 
   const handleSaveProfile = (newData: { nickname: string; password: string }) => {
@@ -109,7 +102,7 @@ export const ProfileDetail = () => {
   };
 
   const handleCancelKeywords = () => {
-    setSelectedKeywords(user.interests);
+    setSelectedKeywords(user?.interests || []);
     setIsKeywordEditing(false);
   };
 
@@ -208,9 +201,9 @@ export const ProfileDetail = () => {
         <div className="space-y-8">
           <div className="bg-white dark:bg-gray-800/50 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700">
             <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">내 관심 키워드 요약</h3>
-            {user.interests.length > 0 ? (
+            {(user.interests || []).length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {user.interests.map((id) => {
+                {(user.interests || []).map((id: string) => {
                   const kw = AI_KEYWORDS.find((k) => k.id === id);
                   return kw ? (
                     <span
@@ -235,6 +228,11 @@ export const ProfileDetail = () => {
         initialData={{ nickname: user.nickname, email: user.email }}
         onSave={handleSaveProfile}
         isLoading={updateMutation.isPending}
+      />
+
+      <NewsletterSubscribeModal 
+        isOpen={isNewsletterModalOpen} 
+        onClose={() => setIsNewsletterModalOpen(false)} 
       />
     </div>
   );

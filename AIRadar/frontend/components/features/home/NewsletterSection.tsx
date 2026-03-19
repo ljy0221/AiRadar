@@ -2,7 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { Mail, User, Briefcase, ChevronDown, ArrowRight, ChevronLeft } from 'lucide-react';
-import { Input, Modal } from '@/components/common';
+import { NewsletterSubscribeModal } from './NewsletterSubscribeModal';
 import {
   motion,
   useScroll,
@@ -266,14 +266,11 @@ const DesktopScrollSection = ({ onSubscribe }: { onSubscribe: () => void }) => {
   const targetRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // 뷰포트 크기 기반 수치
-  const [dims, setDims] = useState(() =>
-    typeof window !== 'undefined'
-      ? calcDimensions(window.innerWidth)
-      : { cardW: 480, cardH: 280, radius: 760 }
-  );
+  // 초기엔 서버사이드(미리 렌더링된) 기본값으로 설정하여 Hydration 에러 방지
+  const [dims, setDims] = useState({ cardW: 480, cardH: 280, radius: 760 });
 
   useEffect(() => {
+    // 컴포넌트 마운트 후(클라이언트 환경) 실제 윈도우 크기로 업데이트
     const update = () => setDims(calcDimensions(window.innerWidth));
     update();
     window.addEventListener('resize', update);
@@ -398,50 +395,7 @@ export const NewsletterSection = () => {
         <DesktopScrollSection onSubscribe={() => setIsModalOpen(true)} />
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <div className="flex flex-col gap-6 py-4 px-4 md:px-6">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-[#C8432A] tracking-tighter mb-1">Join the Intel</h2>
-            <p className="text-gray-400 text-xs">최신 AI 동향을 누구보다 빠르게 받아보세요.</p>
-          </div>
-          <form className="flex flex-col w-full gap-4" onSubmit={handleSubmit}>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Mail className="w-4 h-4 text-gray-500" />
-              </div>
-              <Input type="email" placeholder="you@email.com" className="w-full pl-10 bg-gray-50/50 dark:bg-gray-800/20 border-gray-700 text-sm" required />
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <User className="w-4 h-4 text-gray-500" />
-                </div>
-                <Input type="text" placeholder="닉네임" className="w-full pl-10 bg-gray-50/50 dark:bg-gray-800/20 border-gray-700 text-sm" required />
-              </div>
-              <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Briefcase className="w-4 h-4 text-gray-500" />
-                </div>
-                <select className="w-full pl-10 pr-4 py-2.5 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/20 text-xs focus:outline-none focus:ring-2 focus:ring-[#C8432A] transition-all appearance-none cursor-pointer" required defaultValue="">
-                  <option value="" disabled hidden>직군 선택</option>
-                  <option value="프론트엔드">프론트엔드</option>
-                  <option value="백엔드">백엔드</option>
-                  <option value="데이터/AI">데이터/AI</option>
-                  <option value="기획/PM">기획/PM</option>
-                  <option value="디자인">디자인</option>
-                  <option value="기타">기타</option>
-                </select>
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <ChevronDown className="w-3 h-3 text-gray-500" />
-                </div>
-              </div>
-            </div>
-            <button type="submit" className="w-full py-3.5 text-base bg-[#C8432A] text-white font-bold rounded-lg shadow-lg hover:opacity-90 transition-all active:scale-95">
-              뉴스레터 시작하기
-            </button>
-          </form>
-        </div>
-      </Modal>
+      <NewsletterSubscribeModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </>
   );
 };
