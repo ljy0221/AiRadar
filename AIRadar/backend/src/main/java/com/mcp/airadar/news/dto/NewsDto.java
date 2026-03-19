@@ -3,7 +3,9 @@ package com.mcp.airadar.news.dto;
 import com.mcp.airadar.news.entity.NewsItem;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class NewsDto {
 
@@ -15,7 +17,9 @@ public class NewsDto {
             String category,
             String sentiment,
             BigDecimal score,
-            LocalDateTime publishedAt
+            LocalDateTime publishedAt,
+            String summary,
+            String url
     ) {
         public static ListItem from(NewsItem e) {
             return new ListItem(
@@ -26,10 +30,17 @@ public class NewsDto {
                     e.getCategory(),
                     e.getSentiment(),
                     e.getScore(),
-                    e.getPublishedAt()
+                    e.getPublishedAt(),
+                    e.getSummary(),
+                    e.getUrl()
             );
         }
     }
+
+    public record DailyGroup(
+            LocalDate date,
+            List<ListItem> items
+    ) {}
 
     public record Detail(
             String articleId,
