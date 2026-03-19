@@ -11,6 +11,8 @@ export interface NewsListItem {
   sentiment: Sentiment;
   score: number;
   publishedAt: string; // ISO 8601
+  summary?: string;   // mock API 응답에 포함, 없을 수도 있음
+  url?: string;       // mock API 응답에 포함, 없을 수도 있음
 }
 
 export interface NewsDetail extends NewsListItem {
