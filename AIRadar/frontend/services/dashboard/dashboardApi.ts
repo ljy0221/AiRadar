@@ -15,6 +15,8 @@ export interface KeywordTrend {
   trendScore: number;
   changeRate: number;
   weeklyGrowth: number;
+  description?: string;
+  details?: KeywordDefinition['details'];
 }
 
 export interface ChartData {
