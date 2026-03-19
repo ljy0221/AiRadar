@@ -27,11 +27,10 @@ export interface NewsDetail extends NewsListItem {
 export type Sentiment = 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
 
 export type NewsCategory =
-  | 'AI_MODEL'
-  | 'AI_HARDWARE'
-  | 'AI_POLICY'
-  | 'AI_RESEARCH'
-  | 'AI_BUSINESS';
+  | 'LLM'
+  | 'Vision'
+  | 'Semiconductor'
+  | 'ETC';
 
 export interface NewsListParams {
   region?: 'GLOBAL' | 'DOMESTIC';
