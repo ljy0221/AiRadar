@@ -33,14 +33,14 @@ const generateDaily14Days = (keyword: string, paperBase: number, githubBase: num
     // 3월 3일부터 3월 16일까지 14일 생성
     const day = i + 3;
     const date = `2026-03-${String(day).padStart(2, '0')}`;
-    
+
     // trendMultiplier에 따라 시간이 지날수록 점수가 오르거나 내리는 효과 부여
-    const dayFactor = i * trendMultiplier; 
-    
+    const dayFactor = i * trendMultiplier;
+
     // 렌더링 시마다 값이 바뀌는 Math.random() 대신, 
     // 동일한 날짜(i)에는 동일한 노이즈를 부여하는 Deterministic(결정론적) 계산식 적용
-    const noise = Math.sin(i * 1.5) * 5; 
-    
+    const noise = Math.sin(i * 1.5) * 5;
+
     return {
       keyword,
       date,
