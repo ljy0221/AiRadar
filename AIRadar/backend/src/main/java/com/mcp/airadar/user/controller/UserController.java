@@ -1,6 +1,7 @@
 package com.mcp.airadar.user.controller;
 
 import com.mcp.airadar.user.dto.AddInterestRequest;
+import com.mcp.airadar.user.dto.UpdateProfileRequest;
 import com.mcp.airadar.user.dto.UserInterestDto;
 import com.mcp.airadar.user.dto.UserProfileDto;
 import com.mcp.airadar.user.dto.ViewHistoryDto;
@@ -45,6 +46,13 @@ public class UserController {
             @PathVariable String keyword) {
         userService.deleteInterest(userId, keyword);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping
+    public ResponseEntity<UserProfileDto> updateProfile(
+            @AuthenticationPrincipal UUID userId,
+            @Valid @RequestBody UpdateProfileRequest request) {
+        return ResponseEntity.ok(userService.updateProfile(userId, request));
     }
 
     @GetMapping("/history")
