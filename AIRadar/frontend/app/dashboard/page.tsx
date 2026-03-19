@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { MetricCard, KeywordTrendList, KeywordBarChart, KeywordRadarChart, KeywordDictionary, GithubTrendingCard, PaperListCard, ModelComparison, RankingList } from '@/components/features/dashboard';
+import { MetricCard, KeywordTrendList, KeywordBarChart, KeywordRadarChart, KeywordDictionary, GithubTrendingCard, PaperListCard, ModelComparison, RankingList, GithubTabContents } from '@/components/features/dashboard';
+
 import { TrendingUp, TrendingDown, Activity, ListOrdered, Loader2 } from 'lucide-react';
 import { useDashboardSummary } from '@/hooks/queries/useDashboardData';
 import Loading from '@/app/loading';
 
-type DashboardTab = 'overview' | 'analytics' | 'dictionary';
+type DashboardTab = 'overview' | 'analytics' | 'dictionary' | 'github';
+
 
 export default function DashboardPage() {
   const { data, isLoading, isError } = useDashboardSummary();
@@ -44,7 +46,8 @@ export default function DashboardPage() {
             {[
               { id: 'overview', label: '트렌드 요약' },
               { id: 'analytics', label: '심층 분석' },
-              { id: 'dictionary', label: 'AI 백과' }
+              { id: 'dictionary', label: 'AI 백과' },
+              { id: 'github', label: 'GitHub' }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -116,6 +119,13 @@ export default function DashboardPage() {
           {activeTab === 'dictionary' && (
             <div className="w-full">
               <KeywordDictionary data={data.keywordDictionary} />
+            </div>
+          )}
+
+          {/* Tab Content: GitHub 인사이트 (Github) */}
+          {activeTab === 'github' && (
+            <div className="w-full">
+              <GithubTabContents />
             </div>
           )}
         </div>
