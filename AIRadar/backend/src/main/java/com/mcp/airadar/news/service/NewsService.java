@@ -4,10 +4,15 @@ import com.mcp.airadar.news.dto.NewsDto;
 import com.mcp.airadar.news.entity.NewsItem;
 import com.mcp.airadar.news.repository.NewsRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional(readOnly = true)
@@ -19,18 +24,47 @@ public class NewsService {
         this.newsRepository = newsRepository;
     }
 
-    public Page<NewsDto.ListItem> getNewsList(String region, String category, Pageable pageable) {
-        Page<NewsItem> page;
-        if (region != null && category != null) {
-            page = newsRepository.findByIsActiveTrueAndRegionAndCategoryOrderByPublishedAtDesc(region, category, pageable);
-        } else if (region != null) {
-            page = newsRepository.findByIsActiveTrueAndRegionOrderByPublishedAtDesc(region, pageable);
-        } else if (category != null) {
-            page = newsRepository.findByIsActiveTrueAndCategoryOrderByPublishedAtDesc(category, pageable);
-        } else {
-            page = newsRepository.findByIsActiveTrueOrderByPublishedAtDesc(pageable);
-        }
-        return page.map(NewsDto.ListItem::from);
+    public List<NewsDto.DailyGroup> getNewsList(String region, String category, LocalDate date) {
+        LocalDate baseDate = date != null ? date : LocalDate.now();
+        LocalDateTime startInclusive = date != null
+                ? baseDate.atStartOfDay()
+                : baseDate.minusDays(3).atStartOfDay();
+        LocalDateTime endExclusive = baseDate.plusDays(1).atStartOfDay();
+
+        Comparator<NewsDto.ListItem> itemComparator = (a, b) -> {
+            BigDecimal leftScore = a.score();
+            BigDecimal rightScore = b.score();
+
+            if (leftScore == null && rightScore != null) return 1;
+            if (leftScore != null && rightScore == null) return -1;
+            if (leftScore != null && rightScore != null) {
+                int scoreCompare = rightScore.compareTo(leftScore);
+                if (scoreCompare != 0) return scoreCompare;
+            }
+
+            LocalDateTime leftPublishedAt = a.publishedAt();
+            LocalDateTime rightPublishedAt = b.publishedAt();
+            if (leftPublishedAt == null && rightPublishedAt != null) return 1;
+            if (leftPublishedAt != null && rightPublishedAt == null) return -1;
+            if (leftPublishedAt == null) return 0;
+            return rightPublishedAt.compareTo(leftPublishedAt);
+        };
+
+        Map<LocalDate, List<NewsDto.ListItem>> grouped = newsRepository
+                .findRecentNewsFeed(region, category, startInclusive, endExclusive).stream()
+                .map(NewsDto.ListItem::from)
+                .filter(item -> item.publishedAt() != null)
+                .collect(java.util.stream.Collectors.groupingBy(item -> item.publishedAt().toLocalDate()));
+
+        return grouped.entrySet().stream()
+                .sorted(Map.Entry.<LocalDate, List<NewsDto.ListItem>>comparingByKey().reversed())
+                .map(entry -> new NewsDto.DailyGroup(
+                        entry.getKey(),
+                        entry.getValue().stream()
+                                .sorted(itemComparator)
+                                .toList()
+                ))
+                .toList();
     }
 
     public NewsDto.Detail getNewsDetail(String articleId) {
