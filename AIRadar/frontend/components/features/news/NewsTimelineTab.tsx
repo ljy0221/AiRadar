@@ -15,11 +15,12 @@ function toTimelineItemData(news: NewsListItem): TimelineItemData {
     category: categoryLabel(news.category),
     region: news.region === 'DOMESTIC' ? '국내' : '해외',
     title: news.title,
-    summary: '', // 목록 API에는 summary 없음 → 상세 훅 연동 시 채울 수 있음
+    summary: news.summary ?? '',
     publisher: news.source,
     date: formatDate(news.publishedAt),
     hashtags: [],
     isHot: news.score >= 0.8,
+    url: news.url,
   };
 }
 

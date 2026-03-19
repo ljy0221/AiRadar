@@ -30,11 +30,11 @@ export const EditProfileModal = ({ isOpen, onClose, initialData, onSave, isLoadi
     <Modal isOpen={isOpen} onClose={onClose} title="회원 정보 수정" maxWidth="3xl">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">닉네임</label>
+          <label className="block text-sm font-medium mb-1">이름</label>
           <Input
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
-            placeholder="닉네임을 입력하세요"
+            placeholder="이름을 입력하세요"
             required
           />
         </div>
