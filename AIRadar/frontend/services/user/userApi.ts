@@ -8,10 +8,17 @@ export interface UserInfo {
   isNewsletterSubscribed: boolean;
 }
 
+export interface UpdateUserInput {
+  nickname?: string;
+  email?: string;
+  isNewsletterSubscribed?: boolean;
+}
+
 export const userApi = {
-  // 내 정보 조회
+  // 내 정보 조회 — GET /users/me
   getMe: (): Promise<UserInfo> => api.get('/users/me'),
 
-  // 내 정보 수정
-  updateMe: (data: Partial<UserInfo>): Promise<UserInfo> => api.patch('/users/me', data),
+  // 내 정보 수정 — PUT /users/me
+  updateMe: (data: UpdateUserInput): Promise<UserInfo> => api.put('/users/me', data),
 };
+
