@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
@@ -20,6 +20,7 @@ import {
   X,
   LayoutGrid
 } from 'lucide-react';
+import { useTracking } from '@/hooks/useTracking';
 import type { KeywordDefinition } from '@/services/dashboard/dashboardApi';
 
 interface KeywordDictionaryProps {
@@ -34,6 +35,7 @@ const CATEGORY_MAP = [
 ];
 
 export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
+  const { trackSearch } = useTracking();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,6 +50,15 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
       return matchesSearch && matchesCategory;
     });
   }, [data, searchTerm, activeCategory]);
+
+  // 검색 트래킹 (Debounced)
+  useEffect(() => {
+    if (searchTerm.trim().length < 2) return;
+    const timer = setTimeout(() => {
+      trackSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm, trackSearch]);
 
   const selectedItem = useMemo(() =>
     data.find(d => d.id === selectedId) || null

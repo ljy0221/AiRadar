@@ -56,7 +56,12 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalP
       }
 
       if (res.accessToken) {
-        loginState(res.accessToken);
+        // 회원가입 시에는 명시적 응답이 없으면 false(미완료)로 처리, 로그인 시에는 true(완료)로 처리
+        const isCompleted = res.onboardingCompleted !== undefined 
+          ? res.onboardingCompleted 
+          : (isLoginView ? true : false);
+        
+        loginState(res.accessToken, isCompleted, email);
         onClose();
       }
     } catch (err: any) {
