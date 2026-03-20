@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTracking } from '@/hooks/useTracking';
 
 export const JobSearch = () => {
   const [query, setQuery] = useState('');
@@ -21,8 +22,11 @@ export const JobSearch = () => {
     return () => clearInterval(timer);
   }, []);
 
+  const { trackSearch } = useTracking();
+
   const performSearch = (searchTerm: string) => {
     if (searchTerm.trim()) {
+      trackSearch(searchTerm);
       // 임시 -> frontend-developer로 이동
       router.push(`/jobs/frontend-developer`);
     }

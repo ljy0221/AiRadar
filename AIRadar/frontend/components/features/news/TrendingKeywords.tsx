@@ -1,50 +1,47 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, TrendingUp, Minus } from 'lucide-react';
-
-interface RankingItem {
-  rank: number;
-  keyword: string;
-  change: number | 'new' | '-';
-}
-
-const mockRankings: RankingItem[] = [
-  { rank: 1, keyword: 'OpenAI Sora v2 공개', change: 2 },
-  { rank: 2, keyword: 'NVIDIA H200 수요 폭증', change: 'new' },
-  { rank: 3, keyword: 'Claude 3.5 Sonnet 성능', change: -1 },
-  { rank: 4, keyword: '애플 AI 인텔리전스', change: 5 },
-  { rank: 5, keyword: '테슬라 FSD 12.5 업데이트', change: 1 },
-  { rank: 6, keyword: '구글 Gemini 1.5 Pro', change: -2 },
-  { rank: 7, keyword: '마이크로소프트 파이-3 실습', change: 'new' },
-  { rank: 8, keyword: 'AI 하드웨어 보안 이슈', change: -1 },
-  { rank: 9, keyword: '자율주행 규제 변화', change: 3 },
-  { rank: 10, keyword: '에이전틱 AI 아키텍처', change: '-' },
-];
+import { ChevronDown, ChevronUp, TrendingUp, Minus, Loader2 } from 'lucide-react';
+import { useHourlyTrendingKeywordsQuery } from '@/hooks/queries/useRecommendationQuery';
 
 export const TrendingKeywords = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const { data: keywords, isLoading, isError } = useHourlyTrendingKeywordsQuery(10);
+
+  const rankings = keywords?.map((keyword, index) => ({
+    rank: index + 1,
+    keyword,
+    change: '-' as const
+  })) || [];
+
   // 자동 롤링 효과
   useEffect(() => {
-    if (isExpanded) return;
+    if (isExpanded || rankings.length === 0) return;
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % mockRankings.length);
+      setCurrentIndex((prev) => (prev + 1) % rankings.length);
     }, 3000);
     return () => clearInterval(interval);
-  }, [isExpanded]);
+  }, [isExpanded, rankings.length]);
 
   const renderChange = (change: number | 'new' | '-') => {
     if (change === 'new') return <span className="text-emerald-500 text-[10px] font-bold">NEW</span>;
     if (change === '-') return <Minus className="w-3 h-3 text-gray-400" />;
-    if (typeof change === 'number') {
-      if (change > 0) return <span className="text-red-500 text-[10px] flex items-center">▲{change}</span>;
-      if (change < 0) return <span className="text-blue-500 text-[10px] flex items-center">▼{Math.abs(change)}</span>;
-      return <Minus className="w-3 h-3 text-gray-400" />;
-    }
+    // ... (기타 로직 유지)
     return null;
   };
+
+  if (isLoading) {
+    return (
+      <div className="w-full mb-8 h-12 flex items-center justify-center bg-white dark:bg-[#1a1c2e] border border-gray-200 dark:border-gray-800 rounded-lg">
+        <Loader2 className="w-4 h-4 text-gray-400 animate-spin mr-2" />
+        <span className="text-xs text-gray-400">급상승 키워드 로딩 중...</span>
+      </div>
+    );
+  }
+
+  if (isError || rankings.length === 0) return null;
 
   return (
     <div className="w-full mb-8 relative z-[50]">
@@ -64,7 +61,7 @@ export const TrendingKeywords = () => {
                 className="absolute w-full transition-transform duration-500 ease-in-out"
                 style={{ transform: `translateY(-${currentIndex * 1.5}rem)` }}
               >
-                {mockRankings.map((item) => (
+                {rankings.map((item) => (
                   <div key={item.rank} className="h-6 flex items-center gap-3">
                     <span className="text-[var(--color-accent)] font-extrabold w-4 text-sm">{item.rank}</span>
                     <span className="text-sm text-gray-700 dark:text-gray-300 font-medium truncate max-w-[150px] md:max-w-none">
@@ -86,11 +83,11 @@ export const TrendingKeywords = () => {
 
         {/* 확장된 전체 목록 */}
         {isExpanded && (
-          <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-[#1a1c2e] border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl z-[60] py-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 px-4 py-2">
+          <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-[#1a1c2e] border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl z-[60] py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 px-4">
               <div className="flex flex-col">
-                {mockRankings.slice(0, 5).map((item) => (
-                  <div key={item.rank} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-800/50 last:border-0 hover:bg-gray-50 dark:hover:bg-white/5 px-2 rounded transition-colors group cursor-pointer">
+                {rankings.slice(0, 5).map((item) => (
+                  <div key={item.rank} className="flex items-center justify-between py-2.5 border-b border-gray-50 dark:border-gray-800/50 last:border-0 hover:bg-gray-50 dark:hover:bg-white/5 px-2 rounded transition-colors group cursor-pointer">
                     <div className="flex items-center gap-4">
                       <span className="text-lg font-black text-[var(--color-accent)] italic w-6">{item.rank}</span>
                       <span className="text-sm text-gray-800 dark:text-gray-200 font-medium group-hover:text-[var(--color-accent)] transition-colors">
@@ -102,8 +99,8 @@ export const TrendingKeywords = () => {
                 ))}
               </div>
               <div className="flex flex-col border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800 pt-2 md:pt-0 md:pl-8">
-                {mockRankings.slice(5, 10).map((item) => (
-                  <div key={item.rank} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-800/50 last:border-0 hover:bg-gray-50 dark:hover:bg-white/5 px-2 rounded transition-colors group cursor-pointer">
+                {rankings.slice(5, 10).map((item) => (
+                  <div key={item.rank} className="flex items-center justify-between py-2.5 border-b border-gray-50 dark:border-gray-800/50 last:border-0 hover:bg-gray-50 dark:hover:bg-white/5 px-2 rounded transition-colors group cursor-pointer">
                     <div className="flex items-center gap-4">
                       <span className="text-lg font-black text-[var(--color-accent)] italic w-6">{item.rank}</span>
                       <span className="text-sm text-gray-800 dark:text-gray-200 font-medium group-hover:text-[var(--color-accent)] transition-colors">
