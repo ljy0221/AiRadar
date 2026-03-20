@@ -4,7 +4,6 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.sensors.external_task import ExternalTaskSensor
-from airflow.utils.task_group import TaskGroup
 from airflow.models import DagRun
 from airflow.utils.state import State
 
@@ -33,7 +32,7 @@ with DAG(
     schedule_interval='0 */3 * * *',  # 3시간마다 (AI 서버 처리 시간 고려)
     start_date=datetime(2025, 1, 1),
     catchup=False,
-    max_active_runs=1,    # 동시 실행 1개로 제한 (Spark 12 executor × 2g = OOM 방지)
+    max_active_runs=1,    # 동시 실행 1개로 제한 (Spark OOM 방지)
     tags=['silver', 'batch'],
 ) as dag:
 
@@ -65,18 +64,33 @@ with DAG(
         mode='reschedule',       # slot을 점유하지 않고 대기
     )
 
-    # news / paper / github 를 TaskGroup으로 병렬 실행
-    # 장애 격리: 하나 실패해도 나머지는 계속 실행
-    with TaskGroup('silver_refinement_tasks') as refinement_group:
-        for source in ['news', 'paper', 'github']:
-            SparkSubmitOperator(
-                task_id=f'refine_{source}',
-                application='/opt/spark-jobs/airadar-spark.jar',
-                java_class='com.mcp.airadar.spark.SilverRefinementJob',
-                conn_id='spark_default',
-                application_args=['--date', '{{ ds }}', '--source-type', source],
-                conf=SPARK_CONF,
-            )
+    # news → paper → github 순차 실행 (Spark driver 동시 실행 시 OOM 방지)
+    refine_news = SparkSubmitOperator(
+        task_id='refine_news',
+        application='/opt/spark-jobs/airadar-spark.jar',
+        java_class='com.mcp.airadar.spark.SilverRefinementJob',
+        conn_id='spark_default',
+        application_args=['--date', '{{ ds }}', '--source-type', 'news'],
+        conf=SPARK_CONF,
+    )
+
+    refine_paper = SparkSubmitOperator(
+        task_id='refine_paper',
+        application='/opt/spark-jobs/airadar-spark.jar',
+        java_class='com.mcp.airadar.spark.SilverRefinementJob',
+        conn_id='spark_default',
+        application_args=['--date', '{{ ds }}', '--source-type', 'paper'],
+        conf=SPARK_CONF,
+    )
+
+    refine_github = SparkSubmitOperator(
+        task_id='refine_github',
+        application='/opt/spark-jobs/airadar-spark.jar',
+        java_class='com.mcp.airadar.spark.SilverRefinementJob',
+        conn_id='spark_default',
+        application_args=['--date', '{{ ds }}', '--source-type', 'github'],
+        conf=SPARK_CONF,
+    )
 
     # Silver 처리 완료 후 Materialized View REFRESH
     # CONCURRENTLY: 조회를 막지 않고 갱신 (unique index 필요)
@@ -91,4 +105,4 @@ with DAG(
         execution_timeout=timedelta(minutes=10),
     )
 
-    wait_for_bronze >> refinement_group >> refresh_view
+    wait_for_bronze >> refine_news >> refine_paper >> refine_github >> refresh_view
