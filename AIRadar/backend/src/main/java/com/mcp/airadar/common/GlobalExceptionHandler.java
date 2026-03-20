@@ -7,6 +7,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -52,6 +53,17 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return error(ErrorCode.METHOD_NOT_ALLOWED, request);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiErrorResponse> handleResponseStatus(ResponseStatusException ex, HttpServletRequest request) {
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(ApiErrorResponse.of(
+                        String.valueOf(ex.getStatusCode().value()),
+                        ex.getReason() != null ? ex.getReason() : ex.getMessage(),
+                        Instant.now().toString(),
+                        request.getRequestURI()
+                ));
     }
 
     @ExceptionHandler(Exception.class)
