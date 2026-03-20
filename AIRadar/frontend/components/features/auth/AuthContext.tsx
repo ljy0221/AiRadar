@@ -9,7 +9,8 @@ interface AuthContextType {
   isLoggedIn: boolean;
   isInitialized: boolean;
   onboardingCompleted: boolean;
-  loginState: (accessToken: string, onboardingCompleted: boolean) => void;
+  userEmail: string | null;
+  loginState: (accessToken: string, onboardingCompleted: boolean, email: string) => void;
   logoutState: () => void;
   setOnboardingCompleted: (completed: boolean) => void;
   updateOnboardingState: (completed: boolean) => void;
@@ -20,13 +21,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [onboardingCompleted, setOnboardingCompleted] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('onboardingCompleted');
-      return stored ? stored === 'true' : true; 
-    }
-    return true;
-  });
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(true);
   const queryClient = useQueryClient();
 
   // 초기 로드 시 토큰 확인 및 세션 복구 시도
@@ -43,10 +39,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     window.addEventListener('auth-logout', handleLogoutEvent);
 
     const token = localStorage.getItem('accessToken');
+    const savedEmail = localStorage.getItem('userEmail');
+    
     if (token) {
       setIsLoggedIn(true);
-      // 초기 진입 시에는 이미 온보딩을 했다고 가정하거나, 유저 정보를 다시 가져와서 확인해야 함
-      // 여기서는 일단 true로 두고, 유저 정보 쿼리 결과에 따라 업데이트되게 유도
+      if (savedEmail) {
+        setUserEmail(savedEmail);
+        const stored = localStorage.getItem(`onboarding_completed_${savedEmail}`);
+        if (stored !== null) {
+          setOnboardingCompleted(stored === 'true');
+        } else {
+          // 이메일은 있는데 온보딩 기록이 없으면 미완료(false)로 간주하여 안전하게 모달 노출
+          setOnboardingCompleted(false);
+        }
+      }
       setIsInitialized(true);
     } else {
       // 토큰이 없더라도 쿠키에 Refresh Token이 있을 수 있으므로 재발급 시도
@@ -73,9 +79,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => window.removeEventListener('auth-logout', handleLogoutEvent);
   }, [queryClient]);
 
-  const loginState = (accessToken: string, completed: boolean) => {
+  const loginState = (accessToken: string, completed: boolean, email: string) => {
     localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('onboardingCompleted', String(completed));
+    localStorage.setItem('userEmail', email); // 이메일 저장 추가
+    setUserEmail(email);
+    // 사용자 식별자를 포함한 전용 키로 저장
+    localStorage.setItem(`onboarding_completed_${email}`, String(completed));
+    // 구버전 및 임시 키 데이터 삭제
+    localStorage.removeItem('onboardingCompleted');
+    
     setIsLoggedIn(true);
     setOnboardingCompleted(completed);
     queryClient.invalidateQueries({ queryKey: userQueryKeys.me });
@@ -87,18 +99,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // 사용자별 온보딩 기록은 유지 (나중에 다시 로그인했을 때 스킵하기 위함)
+      // localStorage.removeItem(`onboarding_completed_${userEmail}`); <- 제거하지 않음
+      
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('userEmail'); // 이메일 삭제 추가
       localStorage.removeItem('onboardingCompleted');
       setIsLoggedIn(false);
+      setUserEmail(null);
       setOnboardingCompleted(true);
       queryClient.setQueryData(userQueryKeys.me, null);
-      queryClient.clear(); // 전체 캐시 비우기 (보안상 권장)
+      queryClient.clear(); // 전체 캐시 비우기
     }
   };
 
   const updateOnboardingState = (completed: boolean) => {
     setOnboardingCompleted(completed);
-    localStorage.setItem('onboardingCompleted', String(completed));
+    if (userEmail) {
+      localStorage.setItem(`onboarding_completed_${userEmail}`, String(completed));
+    } else {
+      // 이메일을 모르는 경우(초기 진입 등) 글로벌 키에 백업
+      localStorage.setItem('onboardingCompleted', String(completed));
+    }
   };
 
   return (
@@ -106,6 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isLoggedIn, 
       isInitialized, 
       onboardingCompleted, 
+      userEmail,
       loginState, 
       logoutState,
       setOnboardingCompleted: updateOnboardingState,

@@ -61,7 +61,7 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalP
           ? res.onboardingCompleted 
           : (isLoginView ? true : false);
         
-        loginState(res.accessToken, isCompleted);
+        loginState(res.accessToken, isCompleted, email);
         onClose();
       }
     } catch (err: any) {

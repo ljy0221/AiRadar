@@ -23,7 +23,7 @@ function classNames(...classes: (string | undefined | null | false)[]) {
 
 export const Header = () => {
   const pathname = usePathname();
-  const { isLoggedIn, logoutState } = useAuth();
+  const { isLoggedIn, logoutState, setOnboardingCompleted } = useAuth();
   const { data: user } = useUserQuery();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
@@ -128,6 +128,14 @@ export const Header = () => {
                             <User className="size-5 text-gray-400 group-hover:text-[var(--color-accent)] transition-colors" />
                             마이페이지
                           </PopoverButton>
+                          <PopoverButton
+                            as="button"
+                            onClick={() => setOnboardingCompleted(false)}
+                            className="flex items-center gap-3 w-full px-6 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-all group text-left"
+                          >
+                            <PlusCircle className="size-5 text-gray-400 group-hover:text-[var(--color-accent)] transition-colors" />
+                            관심사 설정
+                          </PopoverButton>
                           <div className="mx-4 my-2 border-t border-gray-100 dark:border-gray-800" />
                           <PopoverButton
                             as="button"
@@ -213,6 +221,14 @@ export const Header = () => {
                 >
                   <User className="size-5" />
                   마이페이지
+                </DisclosureButton>
+                <DisclosureButton
+                  as="button"
+                  onClick={() => setOnboardingCompleted(false)}
+                  className="flex items-center gap-3 w-full text-left rounded-md px-3 h-12 text-base font-medium text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-colors"
+                >
+                  <PlusCircle className="size-5" />
+                  관심사 설정
                 </DisclosureButton>
                 <DisclosureButton
                   as="button"
