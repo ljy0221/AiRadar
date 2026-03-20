@@ -65,6 +65,7 @@ services:
   ai-server:
     build:
       context: ../ai-server
+    image: airadar/ai-server:latest
     container_name: server2-ai-server
     hostname: ai-server
     depends_on:
@@ -93,6 +94,7 @@ services:
   backend:
     build:
       context: ../backend
+    image: airadar/backend:latest
     container_name: server2-backend
     hostname: backend
     depends_on:
@@ -116,6 +118,7 @@ services:
   frontend:
     build:
       context: ../frontend
+    image: airadar/frontend:latest
     container_name: server2-frontend
     hostname: frontend
     depends_on:
