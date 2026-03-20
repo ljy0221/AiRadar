@@ -113,8 +113,10 @@ public class GoldServingJob {
     private static void upsertNews(SparkSession spark, String date,
                                    String jdbcUrl, String user, String password) throws SQLException {
         String silverDeltaPath = silverPath("news");
+        // batch_date 필터 제거 — Gold DAG 실행 시점과 Silver 파티션 날짜 불일치 방지
+        // ON CONFLICT DO UPDATE 로 멱등성 보장
         Dataset<Row> silver = spark.read().format("delta").load(silverDeltaPath)
-            .filter("batch_date = '" + date + "' AND error_log IS NULL")
+            .filter("error_log IS NULL")
             .dropDuplicates("article_id");
 
         System.out.println("[Gold/news] Silver 읽기: " + silver.count() + "건");
@@ -186,8 +188,9 @@ public class GoldServingJob {
     private static void upsertPapers(SparkSession spark, String date,
                                      String jdbcUrl, String user, String password) throws SQLException {
         String silverDeltaPath = silverPath("paper");
+        // batch_date 필터 제거 — Gold DAG 실행 시점과 Silver 파티션 날짜 불일치 방지
         Dataset<Row> silver = spark.read().format("delta").load(silverDeltaPath)
-            .filter("batch_date = '" + date + "' AND error_log IS NULL")
+            .filter("error_log IS NULL")
             .dropDuplicates("paper_id");
 
         System.out.println("[Gold/paper] Silver 읽기: " + silver.count() + "건");
@@ -228,6 +231,7 @@ public class GoldServingJob {
     private static void upsertGithubRepos(SparkSession spark, String date,
                                           String jdbcUrl, String user, String password) throws SQLException {
         String silverDeltaPath = silverPath("github");
+        // github는 일별 스냅샷이므로 날짜 필터 유지
         Dataset<Row> silver = spark.read().format("delta").load(silverDeltaPath)
             .filter("batch_date = '" + date + "' AND error_log IS NULL")
             .dropDuplicates("repo_id");
