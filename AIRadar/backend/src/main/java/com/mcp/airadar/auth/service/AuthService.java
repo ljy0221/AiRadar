@@ -75,6 +75,6 @@ public class AuthService {
     private TokenResponse issueTokens(User user) {
         String accessToken  = jwtTokenProvider.createAccessToken(user.getId(), user.getRole().name());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
-        return TokenResponse.of(accessToken, refreshToken);
+        return TokenResponse.of(accessToken, refreshToken, user.isOnboardingCompleted());
     }
 }

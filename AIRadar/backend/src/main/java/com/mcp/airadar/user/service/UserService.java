@@ -5,6 +5,7 @@ import com.mcp.airadar.auth.entity.User;
 import com.mcp.airadar.auth.repository.UserRepository;
 import com.mcp.airadar.recommendation.repository.SearchLogRepository;
 import com.mcp.airadar.user.dto.AddInterestRequest;
+import com.mcp.airadar.user.dto.OnboardingRequest;
 import com.mcp.airadar.user.dto.UpdateProfileRequest;
 import com.mcp.airadar.user.dto.UserInterestDto;
 import com.mcp.airadar.user.dto.UserProfileDto;
@@ -13,6 +14,7 @@ import com.mcp.airadar.user.entity.UserInterest;
 import com.mcp.airadar.user.repository.UserInterestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,10 +28,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final String PROFILE_KEY = "user:%s:profile";
+
     private final UserRepository userRepository;
     private final UserInterestRepository userInterestRepository;
     private final SearchLogRepository searchLogRepository;
     private final PasswordEncoder passwordEncoder;
+    private final StringRedisTemplate redisTemplate;
 
     public UserProfileDto getProfile(UUID userId) {
         User user = findUser(userId);
@@ -58,6 +63,34 @@ public class UserService {
         } catch (DataIntegrityViolationException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 등록된 관심 키워드입니다: " + request.keyword());
         }
+    }
+
+    /**
+     * 온보딩 완료 처리
+     * - 선택한 키워드를 user_interests에 일괄 저장
+     * - Redis 유저 프로파일에 키워드 가중치 즉시 반영
+     * - users.onboarding_completed = true 업데이트
+     */
+    @Transactional
+    public void completeOnboarding(UUID userId, OnboardingRequest request) {
+        User user = findUser(userId);
+        if (user.isOnboardingCompleted()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 온보딩이 완료된 계정입니다.");
+        }
+
+        String profileKey = PROFILE_KEY.formatted(userId);
+        for (String keyword : request.keywords()) {
+            if (!userInterestRepository.existsByUserIdAndKeyword(userId, keyword)) {
+                userInterestRepository.save(UserInterest.builder()
+                        .userId(userId)
+                        .keyword(keyword)
+                        .build());
+            }
+            // Redis 프로파일에 키워드 가중치 즉시 반영 (기존 값보다 작을 때만 초기화)
+            redisTemplate.opsForHash().putIfAbsent(profileKey, "kw:" + keyword, "1.0");
+        }
+
+        user.completeOnboarding();
     }
 
     @Transactional
