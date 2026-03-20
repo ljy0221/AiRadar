@@ -1,7 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../../../services/auth/authApi';
+import { userQueryKeys } from '../../../hooks/queries/useUserQuery';
 
 interface AuthContextType {
   isLoggedIn: boolean;
@@ -13,6 +15,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const queryClient = useQueryClient();
 
   // 초기 로드 시 토큰 확인 및 세션 복구 시도
   useEffect(() => {
@@ -38,6 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginState = (accessToken: string) => {
     localStorage.setItem('accessToken', accessToken);
     setIsLoggedIn(true);
+    queryClient.invalidateQueries({ queryKey: userQueryKeys.me });
   };
 
   const logoutState = async () => {
@@ -48,6 +52,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       localStorage.removeItem('accessToken');
       setIsLoggedIn(false);
+      queryClient.setQueryData(userQueryKeys.me, null);
+      queryClient.clear(); // 전체 캐시 비우기 (보안상 권장)
     }
   };
 
