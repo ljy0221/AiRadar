@@ -111,7 +111,7 @@ export const KeywordInsightPanel = ({ data, title, subtitle }: { data: KeywordDa
             transition={{ duration: 0.25, ease: 'easeOut' }}
             className="flex flex-col h-full"
           >
-            {/* 1. Detail Header */}
+            {/* 1. Detail Header & Trend Score */}
             <div className="flex justify-between items-start mb-6">
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -126,39 +126,25 @@ export const KeywordInsightPanel = ({ data, title, subtitle }: { data: KeywordDa
                   {selected.description || '최근 검색 빈도가 급격하게 상승 중인 핵심 AI 기술 트렌드 정보입니다.'}
                 </p>
               </div>
-            </div>
 
-            {/* 2. Key Metrics Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-              <div className="p-3 bg-gray-50/50 dark:bg-gray-800/10 rounded-xl border border-gray-100 dark:border-gray-800/50">
+              {/* Trend Score Box */}
+              <div className="w-36 p-3 bg-gray-50/50 dark:bg-gray-800/10 rounded-xl border border-gray-100 dark:border-gray-800/50 shrink-0 ml-4 hidden sm:block">
                 <div className="flex items-center gap-1.5 mb-1.5 opacity-60">
                   <Activity className="w-3.5 h-3.5" />
                   <span className="text-[9px] font-black uppercase tracking-widest">Trend Score</span>
                 </div>
-                <p className="text-lg font-black text-[var(--color-text-primary)]">{selected.trendScore.toFixed(1)}</p>
+                <p className="text-2xl font-black text-[var(--color-text-primary)]">{selected.trendScore.toFixed(1)}</p>
               </div>
-              <div className="p-3 bg-gray-50/50 dark:bg-gray-800/10 rounded-xl border border-gray-100 dark:border-gray-800/50">
+            </div>
+
+            {/* 모바일 화면용 Trend Score (작은 화면에서만 노출) */}
+            <div className="mb-6 flex sm:hidden">
+              <div className="w-36 p-3 bg-gray-50/50 dark:bg-gray-800/10 rounded-xl border border-gray-100 dark:border-gray-800/50">
                 <div className="flex items-center gap-1.5 mb-1.5 opacity-60">
-                  <BarChart3 className="w-3.5 h-3.5" />
-                  <span className="text-[9px] font-black uppercase tracking-widest">Velocity</span>
+                  <Activity className="w-3.5 h-3.5" />
+                  <span className="text-[9px] font-black uppercase tracking-widest">Trend Score</span>
                 </div>
-                <p className={`text-lg font-black ${selected.changeRate > 0 ? 'text-green-500' : 'text-red-400'}`}>
-                  {selected.changeRate > 0 ? '+' : ''}{selected.changeRate}
-                </p>
-              </div>
-              <div className="p-3 bg-gray-50/50 dark:bg-gray-800/10 rounded-xl border border-gray-100 dark:border-gray-800/50">
-                <div className="flex items-center gap-1.5 mb-1.5 opacity-60">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span className="text-[9px] font-black uppercase tracking-widest">Launch</span>
-                </div>
-                <p className="text-[13px] font-bold text-gray-700 dark:text-gray-300">{selected.details?.launchDate || 'N/A'}</p>
-              </div>
-              <div className="p-3 bg-gray-50/50 dark:bg-gray-800/10 rounded-xl border border-gray-100 dark:border-gray-800/50">
-                <div className="flex items-center gap-1.5 mb-1.5 opacity-60">
-                  <Target className="w-3.5 h-3.5" />
-                  <span className="text-[9px] font-black uppercase tracking-widest">Context</span>
-                </div>
-                <p className="text-[13px] font-bold text-gray-700 dark:text-gray-300">{selected.details?.contextWindow || 'N/A'}</p>
+                <p className="text-2xl font-black text-[var(--color-text-primary)]">{selected.trendScore.toFixed(1)}</p>
               </div>
             </div>
 

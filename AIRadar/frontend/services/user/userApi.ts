@@ -6,7 +6,13 @@ export interface UserInfo {
   name: string;
   nickname: string;
   isNewsletterSubscribed: boolean;
-  interests?: string[]; // AI 키워드 목록
+}
+
+export interface InterestItem {
+  keyword: string;
+  weight: number;
+  source: string;
+  createdAt: string;
 }
 
 export interface UpdateUserInput {
@@ -23,5 +29,13 @@ export const userApi = {
 
   // 내 정보 수정 — PUT /users/me
   updateMe: (data: UpdateUserInput): Promise<UserInfo> => api.put('/users/me', data),
-};
 
+  // 관심 키워드 목록 조회 — GET /users/me/interests
+  getInterests: (): Promise<InterestItem[]> => api.get('/users/me/interests'),
+
+  // 관심 키워드 추가 — POST /users/me/interests
+  addInterest: (keyword: string) => api.post('/users/me/interests', { keyword }),
+
+  // 관심 키워드 삭제 — DELETE /users/me/interests/{keyword}
+  removeInterest: (keyword: string) => api.delete(`/users/me/interests/${encodeURIComponent(keyword)}`),
+};
