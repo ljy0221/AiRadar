@@ -3,50 +3,17 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-INFRA_DIR="${REPO_ROOT}/infra"
 JAR_PATH="${REPO_ROOT}/backend/build/libs/airadar-spark.jar"
 JAR_BACKUP="${JAR_PATH}.backup"
-
-if sudo -n true >/dev/null 2>&1; then
-  SUDO="sudo -n"
-elif [ "$(id -u)" -eq 0 ]; then
-  SUDO=""
-else
-  SUDO="sudo"
-fi
-
-cd "${INFRA_DIR}"
-
-if [ ! -f ".env.server1" ]; then
-  echo "[ERROR] .env.server1 not found in ${INFRA_DIR}. Aborting deployment."
-  exit 1
-fi
-
-${SUDO} docker-compose --env-file .env.server1 -f docker-compose.server1.yml config >/dev/null
-
-run_compose() {
-  ${SUDO} docker-compose --env-file .env.server1 -f docker-compose.server1.yml "$@"
-}
-
-cleanup_and_retry() {
-  run_compose stop kafka zookeeper spark-master spark-worker1 airflow crawler || true
-  run_compose rm -f kafka zookeeper spark-master spark-worker1 airflow crawler || true
-  run_compose up -d --remove-orphans
-}
 
 rollback() {
   echo "[Rollback] Restoring previous JAR..."
   if [ -f "${JAR_BACKUP}" ]; then
     cp "${JAR_BACKUP}" "${JAR_PATH}"
-    echo "[Rollback] JAR restored from backup."
+    echo "[Rollback] JAR restored. 다음 Job 실행 시 이전 버전이 적용됩니다."
   else
     echo "[Rollback] No backup found, skipping JAR restore."
   fi
-
-  cd "${INFRA_DIR}"
-  ${SUDO} docker-compose --env-file .env.server1 -f docker-compose.server1.yml config >/dev/null
-  cleanup_and_retry
-  echo "[Rollback] Server1 restarted with previous version."
 }
 
 if [ "${1:-}" = "--rollback" ]; then
@@ -54,18 +21,13 @@ if [ "${1:-}" = "--rollback" ]; then
   exit 0
 fi
 
-if [ -f "${JAR_PATH}" ]; then
-  cp "${JAR_PATH}" "${JAR_BACKUP}"
-  echo "[Deploy] JAR backed up to ${JAR_BACKUP}"
+if [ ! -f "${JAR_PATH}" ]; then
+  echo "[Deploy] JAR not found, building..."
+  cd "${REPO_ROOT}/backend" && ./gradlew shadowJar
 fi
 
-cd "${INFRA_DIR}"
-${SUDO} docker-compose --env-file .env.server1 -f docker-compose.server1.yml config >/dev/null
+cp "${JAR_PATH}" "${JAR_BACKUP}"
+echo "[Deploy] JAR backed up to ${JAR_BACKUP}"
 
-# JAR는 볼륨 마운트로 연결되어 있으므로 spark/airflow만 재시작
-# kafka/zookeeper는 재시작하지 않음 (불필요한 파이프라인 중단 방지)
-if ! run_compose restart spark-master spark-worker1 airflow; then
-  cleanup_and_retry
-fi
-
+echo "[Deploy] JAR 교체 완료. 다음 Job 실행 시 새 JAR이 자동으로 적용됩니다."
 echo "[Deploy] Server1 deployment complete."
