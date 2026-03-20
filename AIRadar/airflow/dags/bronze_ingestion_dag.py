@@ -42,10 +42,10 @@ with DAG(
     tags=['bronze', 'batch'],
 ) as dag:
 
-    # news / github 를 TaskGroup으로 병렬 실행
+    # news / paper / github 를 TaskGroup으로 병렬 실행
     # 장애 격리: 하나 실패해도 나머지는 계속 실행
     with TaskGroup('bronze_ingestion_tasks') as ingestion_group:
-        for source in ['news', 'github']:
+        for source in ['news', 'paper', 'github']:
             SparkSubmitOperator(
                 task_id=f'ingest_{source}',
                 application='/opt/spark-jobs/airadar-spark.jar',
