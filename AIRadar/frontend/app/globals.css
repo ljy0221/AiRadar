@@ -20,7 +20,8 @@
   }
 
   /* 수동 테마 토글 (next-themes가 제어) */
-  :root.dark, .dark {
+  :root.dark,
+  .dark {
     --bg-primary: #0A0B1A;
     --text-primary: #E6EDF3;
     --accent: #66EDFF;
