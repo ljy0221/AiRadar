@@ -38,4 +38,7 @@ export const userApi = {
 
   // 관심 키워드 삭제 — DELETE /users/me/interests/{keyword}
   removeInterest: (keyword: string) => api.delete(`/users/me/interests/${encodeURIComponent(keyword)}`),
+
+  // 온보딩 완료 — POST /users/me/onboarding
+  completeOnboarding: (keywords: string[]): Promise<void> => api.post('/users/me/onboarding', { keywords }),
 };
