@@ -10,6 +10,12 @@ import java.util.List;
 
 public interface GithubRepoDailyRepository extends JpaRepository<GithubRepoDaily, Long> {
 
+    List<GithubRepoDaily> findByRepoIdInAndSnapshotDateBetweenOrderByRepoIdAscSnapshotDateAsc(
+            List<String> repoIds,
+            LocalDate fromDate,
+            LocalDate toDate
+    );
+
     /**
      * 특정 날짜 기준 star_delta_1d 상위 N개 레포 조회.
      * github_repos와 JOIN해 repo_name, description, language를 함께 반환.
