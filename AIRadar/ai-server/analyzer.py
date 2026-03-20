@@ -112,12 +112,32 @@ def _parse_json_response(raw: str) -> list[dict]:
     except json.JSONDecodeError:
         pass
 
-    # 잘린 경우: 마지막으로 완전히 닫힌 객체까지만 추출
-    last_close = text.rfind("},")
-    if last_close == -1:
-        last_close = text.rfind("}")
-    if last_close != -1:
-        trimmed = text[:last_close + 1] + "]"
+    # 잘린 경우: depth 추적으로 완전히 닫힌 객체까지만 추출
+    complete_end = None
+    depth = 0
+    in_string = False
+    escape = False
+    for i, ch in enumerate(text):
+        if escape:
+            escape = False
+            continue
+        if ch == '\\' and in_string:
+            escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0:
+                complete_end = i  # 완전히 닫힌 객체의 마지막 위치
+
+    if complete_end is not None:
+        trimmed = text[:complete_end + 1] + "]"
         try:
             result = json.loads(trimmed)
             logger.warning(f"잘린 JSON 복구 성공: {len(result)}건")
@@ -209,11 +229,11 @@ async def analyze_paper_batch(papers: list[PaperRequest]) -> list[PaperResponse]
         for p in papers
     ]
 
-    user_prompt = f"""다음 {len(papers)}개의 논문을 분석하세요.
-각 논문에 대해 아래 필드를 포함한 JSON 배열로 반환하세요:
-- paper_id (입력값 그대로)
-- keywords: 핵심 기술 키워드 최대 5개 (영어 소문자 list)
-- summary: 3문장 이내 한국어 요약 (string)
+    user_prompt = f"""Analyze the following {len(papers)} papers.
+Return a JSON array with these fields for each paper:
+- paper_id (copy from input)
+- keywords: up to 5 key technical keywords (English lowercase list)
+- summary: 1 sentence English summary (string, max 30 words)
 - category: Vision | NLP | RL | Multimodal | Robotics | ETC
 - research_area: cs.AI | cs.LG | cs.CV | cs.CL | cs.RO | cs.NE
 

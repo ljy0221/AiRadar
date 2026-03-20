@@ -68,6 +68,7 @@ services:
     image: airadar/ai-server:latest
     container_name: server2-ai-server
     hostname: ai-server
+    profiles: ["ai"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -204,9 +205,6 @@ services:
     command: >
       /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
       spark://${SERVER1_PRIVATE_HOST:-localhost}:${SERVER1_SPARK_MASTER_PORT:-17077}
-    depends_on:
-      ai-server:
-        condition: service_healthy
     mem_limit: 4g
     restart: unless-stopped
 
