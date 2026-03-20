@@ -1,7 +1,10 @@
 package com.mcp.airadar.github.dto;
 
+import lombok.Builder;
+
 import java.time.LocalDate;
 
+@Builder
 public record GithubTrendingDto(
         String repoId,
         String repoName,

@@ -58,12 +58,12 @@ public class NewsService {
 
         return grouped.entrySet().stream()
                 .sorted(Map.Entry.<LocalDate, List<NewsDto.ListItem>>comparingByKey().reversed())
-                .map(entry -> new NewsDto.DailyGroup(
-                        entry.getKey(),
-                        entry.getValue().stream()
+                .map(entry -> NewsDto.DailyGroup.builder()
+                        .date(entry.getKey())
+                        .items(entry.getValue().stream()
                                 .sorted(itemComparator)
-                                .toList()
-                ))
+                                .toList())
+                        .build())
                 .toList();
     }
 
