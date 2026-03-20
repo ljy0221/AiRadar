@@ -30,7 +30,7 @@ SPARK_CONF = {
 with DAG(
     dag_id='silver_refinement',
     default_args=default_args,
-    schedule_interval='@hourly',
+    schedule_interval='0 */3 * * *',  # 3시간마다 (AI 서버 처리 시간 고려)
     start_date=datetime(2025, 1, 1),
     catchup=False,
     max_active_runs=1,    # 동시 실행 1개로 제한 (Spark 12 executor × 2g = OOM 방지)
