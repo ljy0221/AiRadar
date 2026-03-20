@@ -373,7 +373,7 @@ public class SilverRefinementJob {
     private static CloseableHttpClient buildHttpClient() {
         RequestConfig config = RequestConfig.custom()
             .setConnectionRequestTimeout(Timeout.ofSeconds(5))
-            .setResponseTimeout(Timeout.ofSeconds(120))
+            .setResponseTimeout(Timeout.ofSeconds(600))
             .build();
         return HttpClients.custom()
             .setDefaultRequestConfig(config)

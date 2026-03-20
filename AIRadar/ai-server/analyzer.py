@@ -181,7 +181,7 @@ async def analyze_paper_batch(papers: list[PaperRequest]) -> list[PaperResponse]
         {
             "paper_id": p.paper_id,
             "title": p.title,
-            "abstract": p.abstract[:800],
+            "abstract": p.abstract[:300],
         }
         for p in papers
     ]
