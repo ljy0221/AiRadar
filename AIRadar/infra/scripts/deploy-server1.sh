@@ -62,7 +62,9 @@ fi
 cd "${INFRA_DIR}"
 ${SUDO} docker-compose --env-file .env.server1 -f docker-compose.server1.yml config >/dev/null
 
-if ! run_compose up -d --remove-orphans; then
+# JAR는 볼륨 마운트로 연결되어 있으므로 spark/airflow만 재시작
+# kafka/zookeeper는 재시작하지 않음 (불필요한 파이프라인 중단 방지)
+if ! run_compose restart spark-master spark-worker1 airflow; then
   cleanup_and_retry
 fi
 
