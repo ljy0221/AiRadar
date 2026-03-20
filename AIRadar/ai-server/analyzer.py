@@ -75,7 +75,7 @@ def _call_local(system: str, user_prompt: str) -> str:
     with torch.no_grad():
         output_ids = model.generate(
             **inputs,
-            max_new_tokens=4096,
+            max_new_tokens=2048,
             temperature=0.1,
             do_sample=True,
             pad_token_id=tokenizer.eos_token_id,
@@ -88,21 +88,44 @@ def _call_local(system: str, user_prompt: str) -> str:
 
 
 def _parse_json_response(raw: str) -> list[dict]:
-    """모델 응답에서 JSON 배열 추출 (마크다운 코드 블록, trailing text 제거 포함)"""
+    """모델 응답에서 JSON 배열 추출 (코드블록, trailing text, 잘린 JSON 모두 처리)"""
     import re
     text = raw.strip()
     logger.debug(f"AI 응답 원문 (첫 200자): {text[:200]}")
+
     # 코드블록 제거
     if text.startswith("```"):
         text = text.split("```", 2)[1]
         if text.startswith("json"):
             text = text[4:]
         text = text.strip()
-    # JSON 배열 부분만 추출 (trailing text 및 불완전한 마지막 객체 제거)
-    match = re.search(r'\[.*\]', text, re.DOTALL)
-    if match:
-        text = match.group(0)
-    return json.loads(text)
+
+    # 배열 시작 위치 찾기
+    start = text.find("[")
+    if start == -1:
+        raise ValueError(f"JSON 배열을 찾을 수 없음: {text[:200]}")
+    text = text[start:]
+
+    # 완전한 JSON 파싱 시도
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # 잘린 경우: 마지막으로 완전히 닫힌 객체까지만 추출
+    last_close = text.rfind("},")
+    if last_close == -1:
+        last_close = text.rfind("}")
+    if last_close != -1:
+        trimmed = text[:last_close + 1] + "]"
+        try:
+            result = json.loads(trimmed)
+            logger.warning(f"잘린 JSON 복구 성공: {len(result)}건")
+            return result
+        except json.JSONDecodeError:
+            pass
+
+    raise ValueError(f"JSON 파싱 실패: {text[:200]}")
 
 
 NEWS_SYSTEM = (
