@@ -1,6 +1,7 @@
 package com.mcp.airadar.user.controller;
 
 import com.mcp.airadar.user.dto.AddInterestRequest;
+import com.mcp.airadar.user.dto.OnboardingRequest;
 import com.mcp.airadar.user.dto.UpdateProfileRequest;
 import com.mcp.airadar.user.dto.UserInterestDto;
 import com.mcp.airadar.user.dto.UserProfileDto;
@@ -58,5 +59,13 @@ public class UserController {
     @GetMapping("/history")
     public ResponseEntity<List<ViewHistoryDto>> getViewHistory(@AuthenticationPrincipal UUID userId) {
         return ResponseEntity.ok(userService.getViewHistory(userId));
+    }
+
+    @PostMapping("/onboarding")
+    public ResponseEntity<Void> completeOnboarding(
+            @AuthenticationPrincipal UUID userId,
+            @Valid @RequestBody OnboardingRequest request) {
+        userService.completeOnboarding(userId, request);
+        return ResponseEntity.ok().build();
     }
 }

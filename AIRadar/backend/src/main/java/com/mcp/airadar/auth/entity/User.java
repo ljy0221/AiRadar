@@ -42,6 +42,9 @@ public class User {
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified;
 
+    @Column(name = "onboarding_completed", nullable = false)
+    private boolean onboardingCompleted;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -74,6 +77,11 @@ public class User {
 
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void completeOnboarding() {
+        this.onboardingCompleted = true;
         this.updatedAt = LocalDateTime.now();
     }
 }
