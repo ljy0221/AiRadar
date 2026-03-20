@@ -137,11 +137,13 @@ pipeline {
             deployStages['Deploy Server2'] = {
               sshagent(credentials: [env.SERVER2_SSH_CREDENTIAL]) {
                 sh """
-                  tar --exclude=.git -czf - . | ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} '
+                  # JAR 및 변경된 설정 파일만 전송 (전체 소스 tar 금지 — Jenkins OOM 유발)
+                  ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} 'mkdir -p ${REPO_DIR}/AIRadar/backend/build/libs ${REPO_DIR}/AIRadar/infra'
+                  scp -o StrictHostKeyChecking=no AIRadar/backend/build/libs/airadar-spark.jar ${SERVER2_HOST}:${REPO_DIR}/AIRadar/backend/build/libs/
+                  scp -o StrictHostKeyChecking=no AIRadar/infra/docker-compose.server2.yml ${SERVER2_HOST}:${REPO_DIR}/AIRadar/infra/
+                  scp -o StrictHostKeyChecking=no AIRadar/infra/scripts/deploy-server2.sh ${SERVER2_HOST}:${REPO_DIR}/AIRadar/infra/scripts/
+                  ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} '
                     set -e
-                    mkdir -p ${REPO_DIR}
-                    sudo rm -rf ${REPO_DIR}/AIRadar/backend/build
-                    tar -xzf - -C ${REPO_DIR}
                     cd ${REPO_DIR}
                     bash AIRadar/infra/scripts/deploy-server2.sh
                   '
@@ -154,11 +156,14 @@ pipeline {
             deployStages['Deploy Server1'] = {
               sshagent(credentials: [env.SERVER1_SSH_CREDENTIAL]) {
                 sh """
-                  tar --exclude=.git -czf - . | ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} '
+                  # JAR 및 변경된 설정 파일만 전송 (전체 소스 tar 금지 — Jenkins OOM 유발)
+                  ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} 'mkdir -p ${REPO_DIR}/AIRadar/backend/build/libs ${REPO_DIR}/AIRadar/infra ${REPO_DIR}/AIRadar/airflow/dags'
+                  scp -o StrictHostKeyChecking=no AIRadar/backend/build/libs/airadar-spark.jar ${SERVER1_HOST}:${REPO_DIR}/AIRadar/backend/build/libs/
+                  scp -o StrictHostKeyChecking=no AIRadar/infra/docker-compose.server1.yml ${SERVER1_HOST}:${REPO_DIR}/AIRadar/infra/
+                  scp -o StrictHostKeyChecking=no AIRadar/infra/scripts/deploy-server1.sh ${SERVER1_HOST}:${REPO_DIR}/AIRadar/infra/scripts/
+                  scp -o StrictHostKeyChecking=no AIRadar/airflow/dags/*.py ${SERVER1_HOST}:${REPO_DIR}/AIRadar/airflow/dags/
+                  ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} '
                     set -e
-                    mkdir -p ${REPO_DIR}
-                    sudo rm -rf ${REPO_DIR}/AIRadar/backend/build
-                    tar -xzf - -C ${REPO_DIR}
                     cd ${REPO_DIR}
                     bash AIRadar/infra/scripts/deploy-server1.sh
                   '
