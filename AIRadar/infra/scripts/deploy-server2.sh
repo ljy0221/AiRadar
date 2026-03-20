@@ -29,8 +29,9 @@ run_compose() {
 }
 
 cleanup_and_retry() {
-  run_compose stop postgres postgres-init redis ai-server backend frontend kafka-ui pgadmin redis-insight spark-worker2 || true
-  run_compose rm -f postgres postgres-init redis ai-server backend frontend kafka-ui pgadmin redis-insight spark-worker2 || true
+  # postgres/redis는 stateful 서비스 — 배포 중 재시작 금지 (Airflow heartbeat 실패 유발)
+  run_compose stop postgres-init ai-server backend frontend kafka-ui pgadmin redis-insight spark-worker2 || true
+  run_compose rm -f postgres-init ai-server backend frontend kafka-ui pgadmin redis-insight spark-worker2 || true
   run_compose up -d --remove-orphans
 }
 

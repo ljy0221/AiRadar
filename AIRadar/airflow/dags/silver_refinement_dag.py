@@ -5,7 +5,6 @@ from airflow.operators.bash import BashOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.utils.task_group import TaskGroup
-from airflow.utils.session import provide_session
 from airflow.models import DagRun
 from airflow.utils.state import State
 
@@ -84,8 +83,10 @@ with DAG(
     refresh_view = BashOperator(
         task_id='refresh_tech_contents_view',
         bash_command=(
-            'psql "$POSTGRES_URL" -c '
-            '"REFRESH MATERIALIZED VIEW CONCURRENTLY public.tech_contents_view;"'
+            'PGPASSWORD="$POSTGRES_PASSWORD" psql '
+            '-h "$POSTGRES_HOST" -p "$POSTGRES_PORT" '
+            '-U "$POSTGRES_USER" -d "$POSTGRES_DB" '
+            '-c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.tech_contents_view;"'
         ),
         execution_timeout=timedelta(minutes=10),
     )
