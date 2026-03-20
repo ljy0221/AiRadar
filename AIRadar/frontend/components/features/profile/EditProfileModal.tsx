@@ -12,30 +12,21 @@ interface EditProfileModalProps {
     nickname: string;
     email: string;
   };
-  onSave: (newData: { nickname: string; password: string }) => void;
+  onSave: (newData: { nickname: string; email: string }) => void;
   isLoading?: boolean;
 }
 
 export const EditProfileModal = ({ isOpen, onClose, initialData, onSave, isLoading }: EditProfileModalProps) => {
   const [nickname, setNickname] = useState(initialData.nickname);
-  const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState(initialData.email);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    if (password && password !== passwordConfirm) {
-      setError('비밀번호가 일치하지 않습니다.');
-      return;
-    }
-
-    onSave({ nickname, password });
+    onSave({ nickname, email });
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="회원 정보 수정" maxWidth="3xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="회원 정보 수정" maxWidth="md">
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* 이름 */}
         <div>
@@ -48,30 +39,17 @@ export const EditProfileModal = ({ isOpen, onClose, initialData, onSave, isLoadi
           />
         </div>
 
-        {/* 새 비밀번호 */}
+        {/* 이메일 */}
         <div>
-          <label className="block text-sm font-medium mb-1">새 비밀번호</label>
+          <label className="block text-sm font-medium mb-1">이메일</label>
           <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="변경할 비밀번호"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="이메일을 입력하세요"
+            required
           />
         </div>
-
-        {/* 비밀번호 확인 */}
-        <div>
-          <label className="block text-sm font-medium mb-1">비밀번호 확인</label>
-          <Input
-            type="password"
-            value={passwordConfirm}
-            onChange={(e) => setPasswordConfirm(e.target.value)}
-            placeholder="비밀번호를 다시 입력하세요"
-          />
-        </div>
-
-        {/* 에러 메시지 */}
-        {error && <p className="text-sm text-red-500">{error}</p>}
 
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
