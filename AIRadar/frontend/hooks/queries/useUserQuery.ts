@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userApi, UpdateUserInput } from '@/services/user/userApi';
+import { useAuth } from '@/components/features/auth/AuthContext';
 
 // ── Query Keys ───────────────────────────────────────────────────────────────
 export const userQueryKeys = {
@@ -9,21 +10,27 @@ export const userQueryKeys = {
 
 // ── GET /users/me ─────────────────────────────────────────────────────────────
 export const useUserQuery = () => {
+  const { isLoggedIn } = useAuth();
+
   return useQuery({
     queryKey: userQueryKeys.me,
     queryFn: userApi.getMe,
     staleTime: 1000 * 60 * 5, // 5분간 fresh 유지
     retry: 1,
+    enabled: isLoggedIn,
   });
 };
 
 // ── GET /users/me/interests ──────────────────────────────────────────────────
 export const useInterestsQuery = () => {
+  const { isLoggedIn } = useAuth();
+
   return useQuery({
     queryKey: userQueryKeys.interests,
     queryFn: userApi.getInterests,
     staleTime: 1000 * 60 * 5,
     retry: 1,
+    enabled: isLoggedIn,
   });
 };
 

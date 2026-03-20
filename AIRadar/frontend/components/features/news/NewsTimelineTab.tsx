@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Loading from '@/app/loading';
 import { TimelineFilter } from './TimelineFilter';
 import { TimelineItem, TimelineItemData } from './TimelineItem';
-import { TrendingKeywords } from './TrendingKeywords';
-import { useNewsListQuery } from '@/hooks/queries/useNewsQuery';
-import type { NewsListItem } from '@/types/news';
+import { useNewsListQuery, useInfiniteNewsQuery } from '@/hooks/queries/useNewsQuery';
+import type { NewsListItem, DailyNewsGroup } from '@/types/news';
 
 // NewsListItem → TimelineItemData 매핑 함수
 function toTimelineItemData(news: NewsListItem): TimelineItemData {
@@ -39,18 +38,6 @@ function formatDate(iso: string): string {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-// 날짜 문자열(YYYY-MM-DD)로 그룹핑
-function groupByDate(items: NewsListItem[]): { dateText: string; items: TimelineItemData[] }[] {
-  const map = new Map<string, TimelineItemData[]>();
-  for (const item of items) {
-    const d = new Date(item.publishedAt);
-    const key = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(toTimelineItemData(item));
-  }
-  return Array.from(map.entries()).map(([dateText, items]) => ({ dateText, items }));
-}
-
 export const NewsTimelineTab = () => {
   const [regionFilter, setRegionFilter] = useState<'all' | 'domestic' | 'international'>('all');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -58,36 +45,75 @@ export const NewsTimelineTab = () => {
   const region =
     regionFilter === 'domestic' ? 'DOMESTIC' : regionFilter === 'international' ? 'GLOBAL' : undefined;
 
-  const { data, isLoading, isError } = useNewsListQuery({ region });
+  // 1) 기본 조회 (최근 4일) : selectedDate가 없을 때 활성화
+  const { 
+    data: recentGroups, 
+    isLoading: isRecentLoading, 
+    isError: isRecentError 
+  } = useNewsListQuery({ region });
 
-  const allGroupedData = data ? groupByDate(data) : [];
+  // 2) 특정 날짜 무한 스크롤 : selectedDate가 있을 때만 활성화
+  const {
+    data: infiniteData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isInfiniteLoading,
+    isError: isInfiniteError
+  } = useInfiniteNewsQuery({ region, date: selectedDate || undefined });
 
-  // 가용한 날짜 문자열(YYYY-MM-DD 형식) 추출
+  // 날짜 기반으로 그룹화 병합 처리
+  const mergedGroups = useMemo<DailyNewsGroup[]>(() => {
+    if (!selectedDate) {
+      if (!recentGroups) return [];
+      // 일별 7개로 제한
+      return recentGroups.map(group => ({
+        ...group,
+        items: group.items.slice(0, 7)
+      }));
+    }
+    
+    if (!infiniteData) return [];
+    
+    const flattened = infiniteData.pages.flat();
+    const map = new Map<string, NewsListItem[]>();
+    
+    for (const group of flattened) {
+      if (!map.has(group.date)) map.set(group.date, []);
+      map.get(group.date)!.push(...group.items);
+    }
+    
+    return Array.from(map.entries()).map(([date, items]) => ({ date, items }));
+  }, [selectedDate, recentGroups, infiniteData]);
+
+  // 달력 모달 등에서 활성화할 수 있는 전체 가용 날짜 리스트 (기본 조회 데이터 기준)
   const availableDates = useMemo(() => 
-    data ? Array.from(new Set(data.map(item => item.publishedAt.split('T')[0]))) : [],
-    [data]
+    recentGroups ? recentGroups.map(group => group.date) : [],
+    [recentGroups]
   );
 
-  // 선택된 날짜가 있으면, 'YYYY-MM-DD' 형식의 날짜와 매칭되는 그룹만 필터링
-  // data 내부의 publishedAt이 ISO 문자열이므로 T 이전 부분으로 판별
-  const groupedData = selectedDate
-    ? allGroupedData.map(group => {
-      const filteredItems = group.items.filter(item => {
-        // 원래 data[]와 group.items가 분리되어 있으므로 item 자체에 원본 날짜가 필요할 수 있으나,
-        // 여기서는 group.dateText 포맷("YYYY년 M월 D일")을 파싱하거나, 단순하게 날짜 문자열 변환으로 우회합니다.
-        // 또는 data를 순회하며 필터링 후 다시 groupByDate를 호출하는 것이 안전합니다.
-        return true;
-      });
-      return { ...group, items: filteredItems };
-    }).filter(group => group.items.length > 0)
-    : allGroupedData;
+  // 무한 스크롤 Intersection Observer 세팅
+  const observerRef = useRef<HTMLDivElement | null>(null);
 
-  // 개선된 필터링: 원본 데이터 자체를 날짜로 필터링한 후 그룹화
-  const filteredData = selectedDate && data
-    ? data.filter(item => item.publishedAt.startsWith(selectedDate))
-    : data;
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const target = entries[0];
+      if (target.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    [fetchNextPage, hasNextPage, isFetchingNextPage]
+  );
 
-  const finalGroupedData = filteredData ? groupByDate(filteredData) : [];
+  useEffect(() => {
+    const observer = new IntersectionObserver(handleObserver, { threshold: 0.1 });
+    if (observerRef.current) observer.observe(observerRef.current);
+    
+    return () => observer.disconnect();
+  }, [handleObserver, selectedDate]);
+
+  const isLoading = selectedDate ? isInfiniteLoading : isRecentLoading;
+  const isError = selectedDate ? isInfiniteError : isRecentError;
 
   if (isLoading) {
     return <Loading />;
@@ -113,26 +139,57 @@ export const NewsTimelineTab = () => {
         />
 
         <div className="mt-8 flex flex-col gap-10">
-          {finalGroupedData.map((group, gIdx) => (
-            <div key={gIdx} className="relative">
+          {mergedGroups.map((group, gIdx) => (
+            <div key={group.date || gIdx} className="relative">
               {/* 날짜 헤더 영역 */}
               <div className="flex items-center gap-3 mb-6 relative z-10">
                 <div className="w-4 h-4 rounded-full bg-[var(--color-accent)] opacity-80" />
                 <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200">
-                  {group.dateText}
+                  {group.date.replace(/-/g, '.')}
                 </h3>
+                
+                {/* 4일치 기본 화면에서 '더보기' 버튼: 클릭 시 해당 일자 상세 필터(selectedDate)로 전환 */}
+                {!selectedDate && (
+                  <button 
+                    onClick={() => setSelectedDate(group.date)}
+                    className="ml-auto text-[13px] font-bold text-gray-400 hover:text-[var(--color-accent)] transition-colors"
+                  >
+                    이 날짜 뉴스 전체 보기 →
+                  </button>
+                )}
               </div>
 
               {/* 해당 날짜의 뉴스 아이템 리스트 래퍼 (왼쪽 세로선 포함) */}
               <div className="relative border-l-2 border-gray-200 dark:border-gray-800 ml-2">
                 <div className="flex flex-col gap-4">
                   {group.items.map((item, iIdx) => (
-                    <TimelineItem key={iIdx} data={item} />
+                    <TimelineItem key={item.articleId || iIdx} data={toTimelineItemData(item)} />
                   ))}
                 </div>
               </div>
             </div>
           ))}
+
+          {/* 특정 날짜 선택 시 무한스크롤용 옵저버 타겟 */}
+          {selectedDate && (
+            <div ref={observerRef} className="w-full h-10 flex justify-center items-center mt-6">
+              {isFetchingNextPage && (
+                <div className="flex items-center gap-2 text-gray-400 text-sm font-medium">
+                  <div className="w-4 h-4 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+                  뉴스를 더 불러오는 중...
+                </div>
+              )}
+              {!hasNextPage && mergedGroups.length > 0 && !isFetchingNextPage && (
+                <p className="text-xs text-gray-400 font-bold">마지막 뉴스입니다.</p>
+              )}
+            </div>
+          )}
+          
+          {mergedGroups.length === 0 && (
+             <div className="w-full flex justify-center py-20 text-gray-400 text-sm">
+               조회된 뉴스가 없습니다.
+             </div>
+          )}
         </div>
       </div>
     </div>

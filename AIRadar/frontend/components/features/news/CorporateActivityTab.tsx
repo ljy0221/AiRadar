@@ -94,6 +94,7 @@ function groupNewsByCompany(newsList: NewsListItem[]) {
         date: formatDate(n.publishedAt),
         category: categoryLabel(n.category),
         title: n.title,
+        url: n.url,
       })),
     };
   });
@@ -103,13 +104,13 @@ function groupNewsByCompany(newsList: NewsListItem[]) {
 }
 
 export const CorporateActivityTab = () => {
-  const { data, isLoading, isError } = useNewsListQuery();
+  const { data: dailyGroups, isLoading, isError } = useNewsListQuery();
 
   if (isLoading) {
     return <Loading />;
   }
 
-  if (isError || !data) {
+  if (isError || !dailyGroups) {
     return (
       <div className="w-full flex justify-center py-20">
         <p className="text-sm text-red-500">데이터를 불러오는 데 실패했습니다.</p>
@@ -117,7 +118,9 @@ export const CorporateActivityTab = () => {
     );
   }
 
-  const corporateData = groupNewsByCompany(data);
+  // API가 반환하는 일자별 그룹(DailyNewsGroup) 안의 뉴스 아이템들을 모두 하나로 평탄화(flatten)합니다.
+  const allNewsItems = dailyGroups.flatMap(group => group.items);
+  const corporateData = groupNewsByCompany(allNewsItems);
 
   return (
     <div className="w-full flex justify-center py-6">
