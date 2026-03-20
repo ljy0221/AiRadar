@@ -88,14 +88,20 @@ def _call_local(system: str, user_prompt: str) -> str:
 
 
 def _parse_json_response(raw: str) -> list[dict]:
-    """모델 응답에서 JSON 배열 추출 (마크다운 코드 블록 제거 포함)"""
+    """모델 응답에서 JSON 배열 추출 (마크다운 코드 블록, trailing text 제거 포함)"""
+    import re
     text = raw.strip()
     logger.debug(f"AI 응답 원문 (첫 200자): {text[:200]}")
+    # 코드블록 제거
     if text.startswith("```"):
         text = text.split("```", 2)[1]
         if text.startswith("json"):
             text = text[4:]
         text = text.strip()
+    # JSON 배열 부분만 추출 (trailing text 및 불완전한 마지막 객체 제거)
+    match = re.search(r'\[.*\]', text, re.DOTALL)
+    if match:
+        text = match.group(0)
     return json.loads(text)
 
 

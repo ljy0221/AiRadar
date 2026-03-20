@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -34,13 +35,25 @@ def health():
     return {"status": "ok"}
 
 
+_NEWS_CHUNK_SIZE = int(os.getenv("NEWS_CHUNK_SIZE", "2"))
+_PAPER_CHUNK_SIZE = int(os.getenv("PAPER_CHUNK_SIZE", "3"))
+
+
+def _chunks(lst, size):
+    for i in range(0, len(lst), size):
+        yield lst[i:i + size]
+
+
 @app.post("/analyze/news/batch", response_model=list[NewsResponse])
 async def analyze_news(articles: list[NewsRequest]):
     if not articles:
         return []
+    results = []
     try:
         async with _semaphore:
-            return await analyze_news_batch(articles)
+            for chunk in _chunks(articles, _NEWS_CHUNK_SIZE):
+                results.extend(await analyze_news_batch(chunk))
+        return results
     except Exception as e:
         logger.error(f"뉴스 배치 분석 실패: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -50,9 +63,12 @@ async def analyze_news(articles: list[NewsRequest]):
 async def analyze_papers(papers: list[PaperRequest]):
     if not papers:
         return []
+    results = []
     try:
         async with _semaphore:
-            return await analyze_paper_batch(papers)
+            for chunk in _chunks(papers, _PAPER_CHUNK_SIZE):
+                results.extend(await analyze_paper_batch(chunk))
+        return results
     except Exception as e:
         logger.error(f"논문 배치 분석 실패: {e}")
         raise HTTPException(status_code=500, detail=str(e))
