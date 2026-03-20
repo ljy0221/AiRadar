@@ -51,12 +51,24 @@ public class GithubService {
 
         LocalDate snapshotDate = githubRepoRepository.findLatestSnapshotDateOnOrBefore(requestedDate);
         if (snapshotDate == null) {
-            return new GithubOverviewDto(requestedDate, null, safeDailyWindow, safeMonthlyWindow, List.of());
+            return GithubOverviewDto.builder()
+                    .requestedDate(requestedDate)
+                    .snapshotDate(null)
+                    .dailyWindow(safeDailyWindow)
+                    .monthlyWindow(safeMonthlyWindow)
+                    .repos(List.of())
+                    .build();
         }
 
         List<GithubRepo> trendingRepos = githubRepoRepository.findTopTrendingBySnapshotDate(snapshotDate, safeLimit);
         if (trendingRepos.isEmpty()) {
-            return new GithubOverviewDto(requestedDate, snapshotDate, safeDailyWindow, safeMonthlyWindow, List.of());
+            return GithubOverviewDto.builder()
+                    .requestedDate(requestedDate)
+                    .snapshotDate(snapshotDate)
+                    .dailyWindow(safeDailyWindow)
+                    .monthlyWindow(safeMonthlyWindow)
+                    .repos(List.of())
+                    .build();
         }
 
         List<String> repoIds = trendingRepos.stream()
@@ -79,7 +91,13 @@ public class GithubService {
                 .map(repo -> toTrendingRepoDto(repo, historyByRepo.getOrDefault(repo.getRepoId(), List.of()), dailyFromDate, safeMonthlyWindow))
                 .toList();
 
-        return new GithubOverviewDto(requestedDate, snapshotDate, safeDailyWindow, safeMonthlyWindow, repoDtos);
+        return GithubOverviewDto.builder()
+                .requestedDate(requestedDate)
+                .snapshotDate(snapshotDate)
+                .dailyWindow(safeDailyWindow)
+                .monthlyWindow(safeMonthlyWindow)
+                .repos(repoDtos)
+                .build();
     }
 
     /**
@@ -95,15 +113,15 @@ public class GithubService {
 
         return githubRepoDailyRepository.findTrendingByDate(snapshotDate, safeLimit)
                 .stream()
-                .map(row -> new GithubTrendingDto(
-                        (String) row[0],
-                        (String) row[1],
-                        (String) row[2],
-                        (String) row[3],
-                        row[4] != null ? ((Number) row[4]).longValue() : null,
-                        row[5] != null ? ((Number) row[5]).intValue() : null,
-                        row[6] != null ? ((java.sql.Date) row[6]).toLocalDate() : null
-                ))
+                .map(row -> GithubTrendingDto.builder()
+                        .repoId((String) row[0])
+                        .repoName((String) row[1])
+                        .description((String) row[2])
+                        .language((String) row[3])
+                        .stars(row[4] != null ? ((Number) row[4]).longValue() : null)
+                        .starDelta1d(row[5] != null ? ((Number) row[5]).intValue() : null)
+                        .snapshotDate(row[6] != null ? ((java.sql.Date) row[6]).toLocalDate() : null)
+                        .build())
                 .toList();
     }
 
@@ -120,18 +138,18 @@ public class GithubService {
         List<GithubActivityPointDto> dailyPoints = buildDailyPoints(history, dailyFromDate);
         List<GithubActivityPointDto> monthlyPoints = buildMonthlyPoints(history, monthlyWindow);
 
-        return new GithubTrendingRepoDto(
-                repo.getRepoId(),
-                repo.getRepoName(),
-                repo.getDescription(),
-                repo.getLanguage(),
-                repo.getStars(),
-                repo.getForks(),
-                repo.getWeeklyCommits(),
-                repo.getStarDelta7d(),
-                dailyPoints,
-                monthlyPoints
-        );
+        return GithubTrendingRepoDto.builder()
+                .repoId(repo.getRepoId())
+                .repoName(repo.getRepoName())
+                .description(repo.getDescription())
+                .language(repo.getLanguage())
+                .stars(repo.getStars())
+                .forks(repo.getForks())
+                .weeklyCommits(repo.getWeeklyCommits())
+                .starDelta7d(repo.getStarDelta7d())
+                .daily(dailyPoints)
+                .monthly(monthlyPoints)
+                .build();
     }
 
     private List<GithubActivityPointDto> buildDailyPoints(List<GithubRepoDaily> history, LocalDate dailyFromDate) {
@@ -162,13 +180,13 @@ public class GithubService {
         List<GithubActivityPointDto> result = new ArrayList<>();
 
         for (GithubRepoDaily point : points) {
-            result.add(new GithubActivityPointDto(
-                    point.getSnapshotDate().format(labelFormatter),
-                    point.getSnapshotDate(),
-                    point.getStars(),
-                    point.getForks(),
-                    point.getOpenIssues()
-            ));
+            result.add(GithubActivityPointDto.builder()
+                    .label(point.getSnapshotDate().format(labelFormatter))
+                    .snapshotDate(point.getSnapshotDate())
+                    .stars(point.getStars())
+                    .forks(point.getForks())
+                    .openIssues(point.getOpenIssues())
+                    .build());
         }
 
         return result;
@@ -178,13 +196,13 @@ public class GithubService {
         List<GithubActivityPointDto> result = new ArrayList<>();
 
         for (GithubRepoDaily point : points) {
-            result.add(new GithubActivityPointDto(
-                    point.getSnapshotDate().format(MONTHLY_LABEL_FORMAT),
-                    point.getSnapshotDate(),
-                    point.getStars(),
-                    point.getForks(),
-                    point.getOpenIssues()
-            ));
+            result.add(GithubActivityPointDto.builder()
+                    .label(point.getSnapshotDate().format(MONTHLY_LABEL_FORMAT))
+                    .snapshotDate(point.getSnapshotDate())
+                    .stars(point.getStars())
+                    .forks(point.getForks())
+                    .openIssues(point.getOpenIssues())
+                    .build());
         }
 
         return result;

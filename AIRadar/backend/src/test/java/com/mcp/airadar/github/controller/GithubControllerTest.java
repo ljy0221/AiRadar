@@ -41,24 +41,36 @@ class GithubControllerTest {
     @DisplayName("given query params when get github overview then returns wrapped response")
     void givenQueryParams_whenGetGithubOverview_thenReturnsWrappedResponse() throws Exception {
         // given
-        GithubOverviewDto dto = new GithubOverviewDto(
-                LocalDate.of(2026, 3, 20),
-                LocalDate.of(2026, 3, 19),
-                7,
-                7,
-                List.of(new GithubTrendingRepoDto(
-                        "mattpocock/skills",
-                        "mattpocock/skills",
-                        "My personal directory of skills",
-                        "TypeScript",
-                        10_000L,
-                        1_000L,
-                        20,
-                        500,
-                        List.of(new GithubActivityPointDto("03-19", LocalDate.of(2026, 3, 19), 10_000L, 1_000L, 12)),
-                        List.of(new GithubActivityPointDto("26-03", LocalDate.of(2026, 3, 19), 10_000L, 1_000L, 12))
-                ))
-        );
+        GithubOverviewDto dto = GithubOverviewDto.builder()
+                .requestedDate(LocalDate.of(2026, 3, 20))
+                .snapshotDate(LocalDate.of(2026, 3, 19))
+                .dailyWindow(7)
+                .monthlyWindow(7)
+                .repos(List.of(GithubTrendingRepoDto.builder()
+                        .repoId("mattpocock/skills")
+                        .repoName("mattpocock/skills")
+                        .description("My personal directory of skills")
+                        .language("TypeScript")
+                        .stars(10_000L)
+                        .forks(1_000L)
+                        .weeklyCommits(20)
+                        .starDelta7d(500)
+                        .daily(List.of(GithubActivityPointDto.builder()
+                                .label("03-19")
+                                .snapshotDate(LocalDate.of(2026, 3, 19))
+                                .stars(10_000L)
+                                .forks(1_000L)
+                                .openIssues(12)
+                                .build()))
+                        .monthly(List.of(GithubActivityPointDto.builder()
+                                .label("26-03")
+                                .snapshotDate(LocalDate.of(2026, 3, 19))
+                                .stars(10_000L)
+                                .forks(1_000L)
+                                .openIssues(12)
+                                .build()))
+                        .build()))
+                .build();
 
         when(githubService.getGithubOverview(eq(LocalDate.of(2026, 3, 20)), eq(3), eq(7), eq(7))).thenReturn(dto);
 
@@ -81,15 +93,15 @@ class GithubControllerTest {
     void givenDefaultParams_whenGetGithubTrending_thenReturnsWrappedListResponse() throws Exception {
         // given
         when(githubService.getTrendingRepos(isNull(), eq(10)))
-                .thenReturn(List.of(new GithubTrendingDto(
-                        "mattpocock/skills",
-                        "mattpocock/skills",
-                        "My personal directory of skills",
-                        "TypeScript",
-                        10_000L,
-                        500,
-                        LocalDate.of(2026, 3, 19)
-                )));
+                .thenReturn(List.of(GithubTrendingDto.builder()
+                        .repoId("mattpocock/skills")
+                        .repoName("mattpocock/skills")
+                        .description("My personal directory of skills")
+                        .language("TypeScript")
+                        .stars(10_000L)
+                        .starDelta1d(500)
+                        .snapshotDate(LocalDate.of(2026, 3, 19))
+                        .build()));
 
         // when then
         mockMvc.perform(get("/api/v1/github/trending"))
