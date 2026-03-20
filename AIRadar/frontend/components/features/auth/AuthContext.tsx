@@ -7,6 +7,7 @@ import { userQueryKeys } from '../../../hooks/queries/useUserQuery';
 
 interface AuthContextType {
   isLoggedIn: boolean;
+  isInitialized: boolean;
   loginState: (accessToken: string) => void;
   logoutState: () => void;
 }
@@ -15,13 +16,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const queryClient = useQueryClient();
 
   // 초기 로드 시 토큰 확인 및 세션 복구 시도
   useEffect(() => {
+    const handleLogoutEvent = () => {
+      localStorage.removeItem('accessToken');
+      setIsLoggedIn(false);
+      queryClient.setQueryData(userQueryKeys.me, null);
+      queryClient.clear();
+    };
+
+    window.addEventListener('auth-logout', handleLogoutEvent);
+
     const token = localStorage.getItem('accessToken');
     if (token) {
       setIsLoggedIn(true);
+      setIsInitialized(true);
     } else {
       // 토큰이 없더라도 쿠키에 Refresh Token이 있을 수 있으므로 재발급 시도
       authApi.refresh()
@@ -34,9 +46,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .catch(() => {
           setIsLoggedIn(false);
           localStorage.removeItem('accessToken');
+        })
+        .finally(() => {
+          setIsInitialized(true);
         });
     }
-  }, []);
+
+    return () => window.removeEventListener('auth-logout', handleLogoutEvent);
+  }, [queryClient]);
 
   const loginState = (accessToken: string) => {
     localStorage.setItem('accessToken', accessToken);
@@ -58,7 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, loginState, logoutState }}>
+    <AuthContext.Provider value={{ isLoggedIn, isInitialized, loginState, logoutState }}>
       {children}
     </AuthContext.Provider>
   );

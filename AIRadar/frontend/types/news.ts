@@ -35,6 +35,12 @@ export type NewsCategory =
 export interface NewsListParams {
   region?: 'GLOBAL' | 'DOMESTIC';
   category?: NewsCategory;
+  date?: string; // yyyy-MM-dd
   page?: number;
   size?: number;
+}
+
+export interface DailyNewsGroup {
+  date: string;
+  items: NewsListItem[];
 }
