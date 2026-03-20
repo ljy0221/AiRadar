@@ -44,13 +44,13 @@ public class SecurityConfig {
                                 "/api/v1/mock/**").permitAll()
 
                         // 트렌딩 조회 — 비로그인 포함 공개
-                        .requestMatchers(HttpMethod.GET, "/api/v1/recommendations/trending/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/v1/recommendations/trending",
+                                "/api/v1/recommendations/trending/**").permitAll()
 
-                        // 검색 이벤트 — 비로그인도 트렌딩 반영 허용
+                        // 이벤트 API — 검색/기사조회는 비로그인도 허용 (userId null 처리됨)
                         .requestMatchers(HttpMethod.POST, "/api/v1/events/search").permitAll()
-
-                        // nginx를 통해 들어오는 API 전체 허용
-                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/events/article-view").permitAll()
 
                         // 나머지는 인증 필요
                         .anyRequest().authenticated()
