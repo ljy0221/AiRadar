@@ -92,8 +92,8 @@ shadowJar {
     archiveClassifier = ''
     archiveVersion = ''
     mergeServiceFiles()  // META-INF/services 병합 (Delta Lake 카탈로그 등록에 필요)
-    // compileOnly(Spark/Hadoop)를 Fat JAR에 포함
-    configurations = [project.configurations.compileClasspath]
+    // compileOnly(Spark/Hadoop) + runtimeOnly(postgresql 등)를 Fat JAR에 포함
+    configurations = [project.configurations.compileClasspath, project.configurations.runtimeClasspath]
 }
 
 // -----------------------------------------------------------------------------
