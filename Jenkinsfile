@@ -90,14 +90,14 @@ pipeline {
       }
     }
 
-    stage('Test') {
+    stage('Build') {
       steps {
         dir('AIRadar/backend') {
           sh '''
             chmod +x ./gradlew
-            ./gradlew test --no-daemon --continue \
+            ./gradlew clean test shadowJar bootJar --no-daemon \
               -Dorg.gradle.caching=true \
-              2>&1 | tee test-output.log
+              2>&1 | tee build-output.log
           '''
         }
       }
@@ -105,17 +105,6 @@ pipeline {
         always {
           junit allowEmptyResults: true,
                 testResults: 'AIRadar/backend/build/test-results/**/*.xml'
-        }
-      }
-    }
-
-    stage('Build') {
-      steps {
-        dir('AIRadar/backend') {
-          sh '''
-            ./gradlew clean shadowJar bootJar --no-daemon \
-              -Dorg.gradle.caching=true
-          '''
         }
       }
     }
