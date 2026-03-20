@@ -24,6 +24,7 @@ public interface GithubRepoRepository extends JpaRepository<GithubRepo, String> 
             SELECT *
             FROM github_repos
             WHERE snapshot_date = :date
+              AND COALESCE(ai_relevance, FALSE) = TRUE
             ORDER BY COALESCE(star_delta_7d, -2147483648) DESC, stars DESC, repo_id ASC
             LIMIT :limit
             """, nativeQuery = true)
