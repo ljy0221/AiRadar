@@ -12,7 +12,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/dashboard")
+@RequestMapping("/api/v1/dashboard")
 public class DashboardController {
 
     private final DashboardService dashboardService;
@@ -23,15 +23,13 @@ public class DashboardController {
 
     @GetMapping("/keywords")
     public ResponseEntity<List<KeywordTrendDto>> getKeywordTrends(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
-    ) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(dashboardService.getKeywordTrends(date));
     }
 
     @GetMapping("/lifecycle")
     public ResponseEntity<List<LifecycleDto>> getLifecycle(
-            @RequestParam(required = false) String status
-    ) {
+            @RequestParam(required = false) String status) {
         return ResponseEntity.ok(dashboardService.getLifecycle(status));
     }
 
