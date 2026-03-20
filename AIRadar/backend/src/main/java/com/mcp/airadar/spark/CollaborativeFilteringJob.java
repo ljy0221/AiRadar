@@ -70,6 +70,8 @@ public class CollaborativeFilteringJob {
             .appName("CollaborativeFilteringJob-" + date)
             .master(System.getenv().getOrDefault("SPARK_MASTER", "local[*]"))
             .config("spark.ui.enabled", "false")
+            .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+            .config("spark.sql.autoBroadcastJoinThreshold", "-1")
             .getOrCreate();
 
         spark.sparkContext().setLogLevel("WARN");
@@ -201,7 +203,8 @@ public class CollaborativeFilteringJob {
             return;
         }
 
-        // 7. Staging 테이블 경유 Upsert
+        // 7. 만료 데이터 정리 후 Staging 경유 Upsert
+        cleanupExpired(jdbcUrl, dbUser, password);
         writeToStaging(recommendations, jdbcUrl, dbUser, password);
         upsertFromStaging(jdbcUrl, dbUser, password);
 
@@ -211,6 +214,16 @@ public class CollaborativeFilteringJob {
     // -------------------------------------------------------------------------
     // Staging 쓰기 및 Upsert
     // -------------------------------------------------------------------------
+
+    private static void cleanupExpired(String jdbcUrl, String dbUser, String password) {
+        try (Connection conn = DriverManager.getConnection(jdbcUrl, dbUser, password);
+             Statement stmt = conn.createStatement()) {
+            int deleted = stmt.executeUpdate("DELETE FROM user_recommendations WHERE expires_at < NOW()");
+            System.out.printf("[ALS] 만료 추천 %d건 삭제%n", deleted);
+        } catch (Exception e) {
+            System.err.println("[ALS] 만료 데이터 정리 실패 (무시): " + e.getMessage());
+        }
+    }
 
     private static void writeToStaging(Dataset<Row> df,
                                         String jdbcUrl, String dbUser, String password) {

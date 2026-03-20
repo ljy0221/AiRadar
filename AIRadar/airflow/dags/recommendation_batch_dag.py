@@ -87,7 +87,7 @@ with DAG(
     run_recommendation_job = SparkSubmitOperator(
         task_id='run_recommendation_batch',
         application='/opt/spark-jobs/airadar-spark.jar',
-        java_class='com.mcp.airadar.spark.UserRecommendationBatchJob',
+        java_class='com.mcp.airadar.spark.CollaborativeFilteringJob',
         conn_id='spark_default',
         application_args=['--date', '{{ ds }}'],
         conf=SPARK_CONF,
