@@ -63,7 +63,11 @@ fi
 cd "${INFRA_DIR}"
 ${SUDO} docker-compose --env-file .env.server2 -f docker-compose.server2.yml config >/dev/null
 
-run_compose build --build-arg CACHEBUST="$(date +%s)" backend frontend
+run_compose build --no-cache backend frontend
+
+# build 후 명시적으로 stop → rm → up (up -d만으로는 이미지 교체가 보장되지 않음)
+run_compose stop backend frontend ai-server spark-worker2 || true
+run_compose rm -f backend frontend ai-server spark-worker2 || true
 
 if ! run_compose up -d --remove-orphans; then
   cleanup_and_retry
