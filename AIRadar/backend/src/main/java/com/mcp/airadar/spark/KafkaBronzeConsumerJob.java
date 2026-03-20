@@ -65,7 +65,7 @@ public class KafkaBronzeConsumerJob {
         System.getenv().getOrDefault("KAFKA_TOPIC_PREFIX", "airader.raw");
 
     private static final String KAFKA_STARTING_OFFSETS =
-        System.getenv().getOrDefault("KAFKA_STARTING_OFFSETS", "latest");
+        System.getenv().getOrDefault("KAFKA_STARTING_OFFSETS", "earliest");
 
     // -------------------------------------------------------------------------
     // Kafka 메시지 파싱 스키마 (크롤링 서버 CrawledArticle 구조)
