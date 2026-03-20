@@ -14,7 +14,7 @@ default_args = {
     "retry_delay": timedelta(minutes=5),
     "email_on_failure": False,
     "depends_on_past": False,
-    "execution_timeout": timedelta(minutes=25),
+    "execution_timeout": timedelta(minutes=45),
 }
 
 
@@ -25,11 +25,11 @@ def _trigger_github_crawl() -> None:
         "domain": "github_archive",
         "provider": "github_trending_archive",
         "max_articles": 120,
-        "github_window_minutes": 30,
+        "github_window_minutes": 180,
         "github_top_n": 20,
         "github_pr_per_repo": 3,
     }
-    resp = requests.post(url, json=payload, timeout=300)
+    resp = requests.post(url, json=payload, timeout=600)
     resp.raise_for_status()
     data = resp.json()
     print(
@@ -47,7 +47,7 @@ def _trigger_github_crawl() -> None:
 with DAG(
     dag_id="crawl_github_to_kafka",
     default_args=default_args,
-    schedule_interval="*/30 * * * *",
+    schedule_interval="0 */3 * * *",
     start_date=datetime(2025, 1, 1),
     catchup=False,
     max_active_runs=1,    # 동시 실행 1개로 제한 (크롤링 서버 과부하 방지)
