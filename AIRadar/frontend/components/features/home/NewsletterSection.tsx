@@ -70,11 +70,10 @@ const NewsletterCard = ({
   isFront: boolean;
 }) => (
   <div
-    className={`w-full h-full bg-[#1e100d] rounded-3xl border-2 overflow-hidden flex flex-row transition-all duration-500 group ${
-      isFront
+    className={`w-full h-full bg-[#1e100d] rounded-3xl border-2 overflow-hidden flex flex-row transition-all duration-500 group ${isFront
         ? 'border-[#C8432A]/70 shadow-[0_0_60px_rgba(200,67,42,0.35)]'
         : 'border-white/10 shadow-xl'
-    }`}
+      }`}
   >
     <div className="w-[38%] h-full bg-gradient-to-br from-[#3D251E] to-[#1e100d] p-6 relative flex flex-col gap-3 overflow-hidden">
       <div
@@ -245,9 +244,8 @@ const SpreadCard = ({
       {isCTA ? (
         <button
           onClick={onSubscribe}
-          className={`w-full h-full rounded-3xl border-4 border-dashed flex flex-col items-center justify-center gap-4 transition-all text-white group ${
-            isFront ? 'border-[#C8432A] bg-[#C8432A]/10' : 'border-white/15'
-          }`}
+          className={`w-full h-full rounded-3xl border-4 border-dashed flex flex-col items-center justify-center gap-4 transition-all text-white group ${isFront ? 'border-[#C8432A] bg-[#C8432A]/10' : 'border-white/15'
+            }`}
         >
           <div className="w-16 h-16 bg-[#C8432A] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
             <ArrowRight className="w-8 h-8" />
@@ -322,9 +320,8 @@ const DesktopScrollSection = ({ onSubscribe }: { onSubscribe: () => void }) => {
           {ALL_ITEMS.map((_, i) => (
             <div
               key={i}
-              className={`h-1.5 rounded-full transition-all duration-500 ${
-                i === activeIndex ? 'w-8 bg-[#C8432A]' : 'w-2 bg-white/20'
-              }`}
+              className={`h-1.5 rounded-full transition-all duration-500 ${i === activeIndex ? 'w-8 bg-[#C8432A]' : 'w-2 bg-white/20'
+                }`}
             />
           ))}
         </div>

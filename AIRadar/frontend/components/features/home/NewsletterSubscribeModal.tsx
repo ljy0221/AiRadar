@@ -7,13 +7,18 @@ import { Input, Modal } from '@/components/common';
 interface NewsletterSubscribeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export const NewsletterSubscribeModal = ({ isOpen, onClose }: NewsletterSubscribeModalProps) => {
+export const NewsletterSubscribeModal = ({ isOpen, onClose, onSuccess }: NewsletterSubscribeModalProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     alert('구독이 완료되었습니다! 매주 유익한 인사이트를 전해드릴게요.');
-    onClose();
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      onClose();
+    }
   };
 
   return (
