@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcp.airadar.news.repository.NewsRepository;
 import com.mcp.airadar.recommendation.dto.RecommendationDto;
+import com.mcp.airadar.recommendation.entity.UserRecommendation;
+import com.mcp.airadar.recommendation.repository.UserRecommendationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -12,9 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -43,6 +47,7 @@ public class RecommendationService {
 
     private final StringRedisTemplate redisTemplate;
     private final NewsRepository newsRepository;
+    private final UserRecommendationRepository userRecommendationRepository;
     private final ObjectMapper objectMapper;
 
     /**
@@ -60,34 +65,65 @@ public class RecommendationService {
             return cached.stream().limit(cappedSize).toList();
         }
 
-        // 2. 유저 프로파일 조회
+        // 2. ALS 배치 추천 결과 조회 (유효 기간 내)
+        List<UserRecommendation> alsRecs = userRecommendationRepository
+                .findValidByUserId(userId, LocalDateTime.now());
+
+        // 3. 유저 프로파일 기반 키워드 매칭 후보 조회 (최근 7일)
         List<String> topKeywords = getTopKeywordsFromProfile(userId);
-        if (topKeywords.isEmpty()) {
-            // Cold start — 인기 기사 fallback
+        List<com.mcp.airadar.news.entity.NewsItem> keywordCandidates = List.of();
+        if (!topKeywords.isEmpty()) {
+            String pgArrayLiteral = toPgArrayLiteral(topKeywords);
+            keywordCandidates = newsRepository.findByKeywordsOverlap(
+                    pgArrayLiteral,
+                    LocalDateTime.now().minusDays(7),
+                    cappedSize * CANDIDATE_MULTIPLIER
+            );
+        }
+
+        // ALS 결과도 키워드 후보도 없으면 Cold start fallback
+        if (alsRecs.isEmpty() && keywordCandidates.isEmpty()) {
             return getColdStartFeed(cappedSize);
         }
 
-        // 3. 키워드 매칭 후보 조회 (최근 7일)
-        String pgArrayLiteral = toPgArrayLiteral(topKeywords);
-        List<com.mcp.airadar.news.entity.NewsItem> candidates = newsRepository.findByKeywordsOverlap(
-                pgArrayLiteral,
-                LocalDateTime.now().minusDays(7),
-                cappedSize * CANDIDATE_MULTIPLIER
-        );
+        // 4. ALS + 키워드 매칭 결합 재랭킹
+        //    ALS articleId 목록으로 DB 조회 (score 활용)
+        Map<String, Double> alsScoreMap = alsRecs.stream()
+                .collect(Collectors.toMap(
+                        UserRecommendation::getArticleId,
+                        r -> r.getScore().doubleValue(),
+                        (a, b) -> a  // 중복 시 첫 번째 유지
+                ));
 
-        if (candidates.isEmpty()) {
-            return getColdStartFeed(cappedSize);
+        // 키워드 매칭 후보에 ALS 기사 추가 (중복 제거)
+        Set<String> seenIds = keywordCandidates.stream()
+                .map(com.mcp.airadar.news.entity.NewsItem::getArticleId)
+                .collect(Collectors.toSet());
+
+        List<com.mcp.airadar.news.entity.NewsItem> alsCandidates = List.of();
+        if (!alsRecs.isEmpty()) {
+            List<String> alsArticleIds = alsRecs.stream()
+                    .map(UserRecommendation::getArticleId)
+                    .filter(id -> !seenIds.contains(id))
+                    .toList();
+            if (!alsArticleIds.isEmpty()) {
+                alsCandidates = newsRepository.findAllById(alsArticleIds);
+            }
         }
 
-        // 4. 프로파일 가중치로 재랭킹
+        List<com.mcp.airadar.news.entity.NewsItem> allCandidates = new ArrayList<>(keywordCandidates);
+        allCandidates.addAll(alsCandidates);
+
         Map<String, Double> profileWeights = getProfileKeywordWeights(userId);
-        List<RecommendationDto.NewsItem> ranked = candidates.stream()
+
+        List<RecommendationDto.NewsItem> ranked = allCandidates.stream()
                 .sorted((a, b) -> Double.compare(
-                        calculateRelevanceScore(b, profileWeights),
-                        calculateRelevanceScore(a, profileWeights)
+                        calculateCombinedScore(b, profileWeights, alsScoreMap),
+                        calculateCombinedScore(a, profileWeights, alsScoreMap)
                 ))
                 .limit(cappedSize)
-                .map(item -> RecommendationDto.NewsItem.from(item, "KEYWORD_MATCH"))
+                .map(item -> RecommendationDto.NewsItem.from(item,
+                        alsScoreMap.containsKey(item.getArticleId()) ? "ALS" : "KEYWORD_MATCH"))
                 .toList();
 
         // 5. 캐시 저장 (30분)
@@ -153,12 +189,17 @@ public class RecommendationService {
     }
 
     /**
-     * 기사와 유저 프로파일의 관련성 점수 계산
+     * ALS + 키워드 매칭 결합 점수 계산
      *
-     * score = 키워드 가중치 합(0.5) + 최신성 감쇠(0.3) + AI 분석 score(0.2)
+     * score = ALS score(0.4) + 키워드 가중치 합(0.3) + 최신성 감쇠(0.2) + AI 분석 score(0.1)
+     * ALS 결과가 없는 기사는 키워드 매칭 가중치(0.5) + 최신성(0.3) + AI score(0.2)
      */
-    private double calculateRelevanceScore(com.mcp.airadar.news.entity.NewsItem article,
-                                           Map<String, Double> profileWeights) {
+    private double calculateCombinedScore(com.mcp.airadar.news.entity.NewsItem article,
+                                          Map<String, Double> profileWeights,
+                                          Map<String, Double> alsScoreMap) {
+        double alsScore = alsScoreMap.getOrDefault(article.getArticleId(), 0.0);
+        boolean hasAls = alsScoreMap.containsKey(article.getArticleId());
+
         double keywordScore = 0.0;
         if (article.getKeywords() != null) {
             keywordScore = Arrays.stream(article.getKeywords())
@@ -166,7 +207,6 @@ public class RecommendationService {
                     .sum();
         }
 
-        // 최신성: 발행 후 시간이 지날수록 감쇠 (24시간 기준 약 0.79)
         double recencyScore = 0.0;
         if (article.getPublishedAt() != null) {
             long hoursOld = Duration.between(article.getPublishedAt(), LocalDateTime.now()).toHours();
@@ -175,7 +215,11 @@ public class RecommendationService {
 
         double qualityScore = article.getScore() != null ? article.getScore().doubleValue() : 0.5;
 
-        return keywordScore * 0.5 + recencyScore * 0.3 + qualityScore * 0.2;
+        if (hasAls) {
+            return alsScore * 0.4 + keywordScore * 0.3 + recencyScore * 0.2 + qualityScore * 0.1;
+        } else {
+            return keywordScore * 0.5 + recencyScore * 0.3 + qualityScore * 0.2;
+        }
     }
 
     private List<RecommendationDto.NewsItem> getColdStartFeed(int size) {
