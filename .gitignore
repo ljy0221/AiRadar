@@ -93,3 +93,5 @@ HELP.md
 __pycache__/
 *.pyc
 AIRadar/infra/docs/troubleshooting-log-2026-03-17.md
+AIRadar/ai-server/venv/*
+AIRadar/ai-server/key/J14B104T.pem

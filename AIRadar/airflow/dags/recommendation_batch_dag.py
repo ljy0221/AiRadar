@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.operators.python import PythonOperator
+from airflow.exceptions import AirflowSkipException
 
 default_args = {
     'owner': 'ai-radar',
@@ -52,10 +53,10 @@ def check_min_event_count(**context):
             """)
             count = cur.fetchone()[0]
 
-        if count < 100:
-            raise ValueError(
+        if count < 10:
+            raise AirflowSkipException(
                 f"[Rec Batch] 이벤트 수 부족 ({count}건) — ALS 학습 skip. "
-                "100건 이상 쌓이면 자동 재시작됩니다."
+                "10건 이상 쌓이면 자동 재시작됩니다."
             )
 
         context['ti'].xcom_push(key='event_count', value=count)

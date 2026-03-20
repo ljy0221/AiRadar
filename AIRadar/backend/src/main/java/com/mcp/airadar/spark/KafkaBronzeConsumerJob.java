@@ -301,8 +301,9 @@ public class KafkaBronzeConsumerJob {
             array(col("msg.author")).as("authors"), // SilverRefinementJob이 배열로 읽음
             col("msg.published_at").as("published_at"),
             col("kafka_timestamp").as("crawled_at"),
-            when(col("msg.published_at").isNotNull(), to_date(col("msg.published_at")))
-                .otherwise(current_date()).as("batch_date")
+            // batch_date는 논문 발행일(published_at)이 아닌 수집 시점(kafka_timestamp) 기준
+            // arxiv 논문 published_at은 수일~수주 전 날짜이므로 Silver Job의 --date와 불일치 발생
+            to_date(col("kafka_timestamp")).as("batch_date")
         ).filter(col("paper_id").isNotNull());
     }
 
