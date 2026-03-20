@@ -37,21 +37,21 @@ class DashboardControllerTest {
     private DashboardService dashboardService;
 
     @Test
-    @DisplayName("GET /api/dashboard/keywords returns wrapped success response")
+    @DisplayName("GET /api/v1/dashboard/keywords returns wrapped success response")
     void getKeywordTrends_returns200() throws Exception {
         KeywordTrendDto dto = new KeywordTrendDto(
                 "RAG", LocalDate.now(), "NEWS", 50, 10, BigDecimal.valueOf(0.7)
         );
         when(dashboardService.getKeywordTrends(isNull())).thenReturn(List.of(dto));
 
-        mockMvc.perform(get("/api/dashboard/keywords"))
+        mockMvc.perform(get("/api/v1/dashboard/keywords"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].keyword").value("RAG"));
     }
 
     @Test
-    @DisplayName("GET /api/dashboard/lifecycle returns wrapped success response")
+    @DisplayName("GET /api/v1/dashboard/lifecycle returns wrapped success response")
     void getLifecycle_returns200() throws Exception {
         LifecycleDto dto = new LifecycleDto(
                 "RAG", "GROWING", null, null,
@@ -60,14 +60,14 @@ class DashboardControllerTest {
         );
         when(dashboardService.getLifecycle(isNull())).thenReturn(List.of(dto));
 
-        mockMvc.perform(get("/api/dashboard/lifecycle"))
+        mockMvc.perform(get("/api/v1/dashboard/lifecycle"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].keyword").value("RAG"))
                 .andExpect(jsonPath("$.data[0].status").value("GROWING"));
     }
 
     @Test
-    @DisplayName("GET /api/dashboard/jobs returns wrapped success response")
+    @DisplayName("GET /api/v1/dashboard/jobs returns wrapped success response")
     void getJobRisks_returns200() throws Exception {
         JobRiskDto dto = new JobRiskDto(
                 "AI Engineer", "description", "MEDIUM",
@@ -76,7 +76,7 @@ class DashboardControllerTest {
         );
         when(dashboardService.getJobRisks()).thenReturn(List.of(dto));
 
-        mockMvc.perform(get("/api/dashboard/jobs"))
+        mockMvc.perform(get("/api/v1/dashboard/jobs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].jobType").value("AI Engineer"));
     }

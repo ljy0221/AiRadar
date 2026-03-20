@@ -138,10 +138,15 @@ pipeline {
               sshagent(credentials: [env.SERVER2_SSH_CREDENTIAL]) {
                 sh """
                   # JAR 및 변경된 설정 파일만 전송 (전체 소스 tar 금지 — Jenkins OOM 유발)
-                  ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} 'mkdir -p ${REPO_DIR}/AIRadar/backend/build/libs ${REPO_DIR}/AIRadar/infra'
+                  ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} 'mkdir -p ${REPO_DIR}/AIRadar/backend/build/libs ${REPO_DIR}/AIRadar/infra/scripts ${REPO_DIR}/AIRadar/frontend'
                   scp -o StrictHostKeyChecking=no AIRadar/backend/build/libs/airadar-spark.jar ${SERVER2_HOST}:${REPO_DIR}/AIRadar/backend/build/libs/
+                  scp -o StrictHostKeyChecking=no AIRadar/backend/build/libs/Airadar.jar ${SERVER2_HOST}:${REPO_DIR}/AIRadar/backend/build/libs/
+                  scp -o StrictHostKeyChecking=no AIRadar/backend/Dockerfile ${SERVER2_HOST}:${REPO_DIR}/AIRadar/backend/
                   scp -o StrictHostKeyChecking=no AIRadar/infra/docker-compose.server2.yml ${SERVER2_HOST}:${REPO_DIR}/AIRadar/infra/
                   scp -o StrictHostKeyChecking=no AIRadar/infra/scripts/deploy-server2.sh ${SERVER2_HOST}:${REPO_DIR}/AIRadar/infra/scripts/
+                  # frontend 소스 전송 (빌드 컨텍스트 갱신, node_modules/.next 제외)
+                  ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} 'rm -rf ${REPO_DIR}/AIRadar/frontend && mkdir -p ${REPO_DIR}/AIRadar/frontend'
+                  scp -o StrictHostKeyChecking=no -r AIRadar/frontend/ ${SERVER2_HOST}:${REPO_DIR}/AIRadar/
                   ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} '
                     set -e
                     cd ${REPO_DIR}
