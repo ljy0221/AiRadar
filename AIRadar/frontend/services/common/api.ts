@@ -50,8 +50,11 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    const hasToken = typeof window !== 'undefined' && localStorage.getItem('accessToken');
+
     // 401 Unauthorized 에러 시 토큰 재발급 시도 (무한 루프 방지를 위해 _retry 체크)
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // 원래 토큰이 있었던 경우에만(로그인 세션 만료) 리프레시를 시도함
+    if (error.response?.status === 401 && !originalRequest._retry && hasToken) {
       originalRequest._retry = true;
 
       try {
@@ -68,6 +71,16 @@ api.interceptors.response.use(
         // 리프레시 토큰도 만료된 경우 로그아웃 처리 등이 필요함
         localStorage.removeItem('accessToken');
         return Promise.reject(refreshError);
+      }
+    }
+
+    if (
+      (error.response?.status === 401 && !hasToken) ||
+      (error.response?.status === 500 && originalRequest.url?.includes('/users/me'))
+    ) {
+      localStorage.removeItem('accessToken');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth-logout'));
       }
     }
 

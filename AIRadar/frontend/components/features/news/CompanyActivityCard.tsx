@@ -1,10 +1,12 @@
+import { ExternalLink } from 'lucide-react';
+
 interface CompanyActivity {
   id: string;
   name: string;
   initial: string;
   color: string;
   progress: number;
-  activities: { date: string; title: string; category: string }[];
+  activities: { date: string; title: string; category: string; url?: string }[];
 }
 
 export const CompanyActivityCard = ({ company }: { company: CompanyActivity }) => {
@@ -52,9 +54,16 @@ export const CompanyActivityCard = ({ company }: { company: CompanyActivity }) =
                     {act.category}
                   </span>
                 </div>
-                <p className="text-gray-800 dark:text-gray-200 font-medium">
-                  {act.title}
-                </p>
+                <div className="text-gray-800 dark:text-gray-200 font-medium mt-0.5">
+                  {act.url ? (
+                    <a href={act.url} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--color-accent)] hover:underline flex items-center gap-1.5 group">
+                      {act.title}
+                      <ExternalLink className="w-3.5 h-3.5 text-gray-400 group-hover:text-[var(--color-accent)]" />
+                    </a>
+                  ) : (
+                    <span>{act.title}</span>
+                  )}
+                </div>
               </div>
             </div>
           ))}

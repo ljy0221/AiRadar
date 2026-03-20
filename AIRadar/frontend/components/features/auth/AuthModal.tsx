@@ -60,8 +60,9 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalP
         onClose();
       }
     } catch (err: any) {
-      console.error('Auth error:', err);
-      setError(err.response?.data?.message || '인증에 실패했습니다. 다시 시도해 주세요.');
+      console.error('Auth error full object:', err.response?.data);
+      const serverMessage = err.response?.data?.message || err.response?.data?.error?.message;
+      setError(serverMessage || '인증에 실패했습니다. 입력 정보를 확인해 주세요.');
     } finally {
       setIsLoading(false);
     }
