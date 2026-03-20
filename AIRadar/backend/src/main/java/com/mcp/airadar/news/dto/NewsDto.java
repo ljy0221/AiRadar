@@ -1,6 +1,7 @@
 package com.mcp.airadar.news.dto;
 
 import com.mcp.airadar.news.entity.NewsItem;
+import lombok.Builder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -9,6 +10,7 @@ import java.util.List;
 
 public class NewsDto {
 
+    @Builder
     public record ListItem(
             String articleId,
             String title,
@@ -22,26 +24,28 @@ public class NewsDto {
             String url
     ) {
         public static ListItem from(NewsItem e) {
-            return new ListItem(
-                    e.getArticleId(),
-                    e.getTitle(),
-                    e.getSource(),
-                    e.getRegion(),
-                    e.getCategory(),
-                    e.getSentiment(),
-                    e.getScore(),
-                    e.getPublishedAt(),
-                    e.getSummary(),
-                    e.getUrl()
-            );
+            return ListItem.builder()
+                    .articleId(e.getArticleId())
+                    .title(e.getTitle())
+                    .source(e.getSource())
+                    .region(e.getRegion())
+                    .category(e.getCategory())
+                    .sentiment(e.getSentiment())
+                    .score(e.getScore())
+                    .publishedAt(e.getPublishedAt())
+                    .summary(e.getSummary())
+                    .url(e.getUrl())
+                    .build();
         }
     }
 
+    @Builder
     public record DailyGroup(
             LocalDate date,
             List<ListItem> items
     ) {}
 
+    @Builder
     public record Detail(
             String articleId,
             String title,
@@ -59,22 +63,22 @@ public class NewsDto {
             LocalDateTime publishedAt
     ) {
         public static Detail from(NewsItem e) {
-            return new Detail(
-                    e.getArticleId(),
-                    e.getTitle(),
-                    e.getContent(),
-                    e.getUrl(),
-                    e.getSource(),
-                    e.getCountryCode(),
-                    e.getRegion(),
-                    e.getSentiment(),
-                    e.getKeywords(),
-                    e.getScore(),
-                    e.getSummary(),
-                    e.getCategory(),
-                    e.getViewCount(),
-                    e.getPublishedAt()
-            );
+            return Detail.builder()
+                    .articleId(e.getArticleId())
+                    .title(e.getTitle())
+                    .content(e.getContent())
+                    .url(e.getUrl())
+                    .source(e.getSource())
+                    .countryCode(e.getCountryCode())
+                    .region(e.getRegion())
+                    .sentiment(e.getSentiment())
+                    .keywords(e.getKeywords())
+                    .score(e.getScore())
+                    .summary(e.getSummary())
+                    .category(e.getCategory())
+                    .viewCount(e.getViewCount())
+                    .publishedAt(e.getPublishedAt())
+                    .build();
         }
     }
 }

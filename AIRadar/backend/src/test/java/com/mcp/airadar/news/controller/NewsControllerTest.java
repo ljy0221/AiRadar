@@ -38,48 +38,53 @@ class NewsControllerTest {
     private NewsService newsService;
 
     private NewsDto.ListItem sampleListItem() {
-        return new NewsDto.ListItem(
-                "article-001",
-                "sample title",
-                "TechCrunch",
-                "GLOBAL",
-                "LLM",
-                "POSITIVE",
-                BigDecimal.valueOf(0.85),
-                LocalDateTime.of(2026, 3, 19, 8, 30),
-                "sample summary",
-                "https://example.com/news/article-001"
-        );
+        return NewsDto.ListItem.builder()
+                .articleId("article-001")
+                .title("sample title")
+                .source("TechCrunch")
+                .region("GLOBAL")
+                .category("LLM")
+                .sentiment("POSITIVE")
+                .score(BigDecimal.valueOf(0.85))
+                .publishedAt(LocalDateTime.of(2026, 3, 19, 8, 30))
+                .summary("sample summary")
+                .url("https://example.com/news/article-001")
+                .build();
     }
 
     private NewsDto.DailyGroup sampleDailyGroup() {
-        return new NewsDto.DailyGroup(LocalDate.of(2026, 3, 19), List.of(sampleListItem()));
+        return NewsDto.DailyGroup.builder()
+                .date(LocalDate.of(2026, 3, 19))
+                .items(List.of(sampleListItem()))
+                .build();
     }
 
     private NewsDto.Detail sampleDetail() {
-        return new NewsDto.Detail(
-                "article-001",
-                "sample detail title",
-                "content body",
-                "https://example.com",
-                "TechCrunch",
-                "US",
-                "GLOBAL",
-                "POSITIVE",
-                new String[]{"RAG", "LLM"},
-                BigDecimal.valueOf(0.85),
-                "summary",
-                "LLM",
-                100L,
-                LocalDateTime.of(2026, 3, 19, 8, 30)
-        );
+        return NewsDto.Detail.builder()
+                .articleId("article-001")
+                .title("sample detail title")
+                .content("content body")
+                .url("https://example.com")
+                .source("TechCrunch")
+                .countryCode("US")
+                .region("GLOBAL")
+                .sentiment("POSITIVE")
+                .keywords(new String[]{"RAG", "LLM"})
+                .score(BigDecimal.valueOf(0.85))
+                .summary("summary")
+                .category("LLM")
+                .viewCount(100L)
+                .publishedAt(LocalDateTime.of(2026, 3, 19, 8, 30))
+                .build();
     }
 
     @Test
-    @DisplayName("GET /api/v1/news returns wrapped success response")
-    void getNewsList_returns200() throws Exception {
+    @DisplayName("given default params when get news list then returns wrapped success response")
+    void givenDefaultParams_whenGetNewsList_thenReturnsWrappedSuccessResponse() throws Exception {
+        // given
         when(newsService.getNewsList(isNull(), isNull(), isNull())).thenReturn(List.of(sampleDailyGroup()));
 
+        // when then
         mockMvc.perform(get("/api/v1/news"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -90,11 +95,13 @@ class NewsControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/news with region and date keeps wrapped payload")
-    void getNewsList_withRegionAndDate() throws Exception {
+    @DisplayName("given region and date when get news list then keeps wrapped payload")
+    void givenRegionAndDate_whenGetNewsList_thenKeepsWrappedPayload() throws Exception {
+        // given
         when(newsService.getNewsList(eq("GLOBAL"), isNull(), eq(LocalDate.of(2026, 3, 19))))
                 .thenReturn(List.of(sampleDailyGroup()));
 
+        // when then
         mockMvc.perform(get("/api/v1/news")
                         .param("region", "GLOBAL")
                         .param("date", "2026-03-19"))
@@ -103,10 +110,12 @@ class NewsControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/news/{id} returns wrapped detail response")
-    void getNewsDetail_found() throws Exception {
+    @DisplayName("given article id when get news detail then returns wrapped detail response")
+    void givenArticleId_whenGetNewsDetail_thenReturnsWrappedDetailResponse() throws Exception {
+        // given
         when(newsService.getNewsDetail("article-001")).thenReturn(sampleDetail());
 
+        // when then
         mockMvc.perform(get("/api/v1/news/article-001"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.path").value("/api/v1/news/article-001"))
@@ -115,10 +124,12 @@ class NewsControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/news/{id} returns wrapped error response on not found")
-    void getNewsDetail_notFound() throws Exception {
+    @DisplayName("given missing article id when get news detail then returns wrapped error response")
+    void givenMissingArticleId_whenGetNewsDetail_thenReturnsWrappedErrorResponse() throws Exception {
+        // given
         when(newsService.getNewsDetail("no-such")).thenThrow(new EntityNotFoundException("not found"));
 
+        // when then
         mockMvc.perform(get("/api/v1/news/no-such"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
