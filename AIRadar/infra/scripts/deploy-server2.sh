@@ -30,9 +30,10 @@ run_compose() {
 
 cleanup_and_retry() {
   # postgres/redis는 stateful 서비스 — 배포 중 재시작 금지 (Airflow heartbeat 실패 유발)
+  # docker-compose 1.29.2 ContainerConfig 버그 회피 — up 시 서비스 명시적 지정
   run_compose stop postgres-init ai-server backend frontend kafka-ui pgadmin redis-insight spark-worker2 || true
   run_compose rm -f postgres-init ai-server backend frontend kafka-ui pgadmin redis-insight spark-worker2 || true
-  run_compose up -d --remove-orphans
+  run_compose up -d postgres-init ai-server backend frontend kafka-ui pgadmin redis-insight spark-worker2
 }
 
 rollback() {
@@ -69,7 +70,8 @@ run_compose build --no-cache backend frontend
 run_compose stop backend frontend ai-server spark-worker2 || true
 run_compose rm -f backend frontend ai-server spark-worker2 || true
 
-if ! run_compose up -d --remove-orphans; then
+# docker-compose 1.29.2 ContainerConfig 버그 회피 — postgres/redis 제외하고 명시적 서비스만 up
+if ! run_compose up -d postgres-init ai-server backend frontend kafka-ui pgadmin redis-insight spark-worker2; then
   cleanup_and_retry
 fi
 
