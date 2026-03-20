@@ -14,13 +14,14 @@ ext {
 }
 
 configurations {
+    // Spark Job Fat JAR 전용 설정 — bootJar에는 포함되지 않음
+    sparkCompile.extendsFrom implementation
+
     all {
         // Logback 제거 후 Log4j2로 통합 (Spark와의 호환성)
         exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
 
         resolutionStrategy {
-            // [중요] Spark 3.5와 JPA 간의 ANTLR 버전 충돌 해결
-            force 'org.antlr:antlr4-runtime:4.9.3'
             // [중요] 모든 모듈의 Jackson 버전을 통일하여 Serialization 에러 방지
             force 'com.fasterxml.jackson.core:jackson-databind:2.15.3'
         }
@@ -38,16 +39,16 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-    // 2. Data Lake (Delta Lake & Spark)
-    implementation "org.apache.spark:spark-sql_${scalaVersion}:${sparkVersion}"
-    implementation "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
-    implementation "org.apache.spark:spark-mllib_${scalaVersion}:${sparkVersion}"
-    implementation "io.delta:delta-spark_${scalaVersion}:${deltaVersion}"
-    implementation "javax.servlet:javax.servlet-api:3.1.0" // Spark SQL UDF에서 필요 (Spark 3.5+)
+    // 2. Data Lake (Delta Lake & Spark) — compileOnly: bootJar 제외, shadowJar에만 포함
+    compileOnly "org.apache.spark:spark-sql_${scalaVersion}:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-mllib_${scalaVersion}:${sparkVersion}"
+    compileOnly "io.delta:delta-spark_${scalaVersion}:${deltaVersion}"
+    compileOnly "javax.servlet:javax.servlet-api:3.1.0"
 
-    // 3. S3A (MinIO 연동) — SparkSession 생성 시 클래스패스에 있어야 S3AFileSystem 로드 가능
-    implementation "org.apache.hadoop:hadoop-aws:${hadoopVersion}"
-    implementation "com.amazonaws:aws-java-sdk-bundle:1.12.262"
+    // 3. S3A (MinIO 연동) — compileOnly: bootJar 제외
+    compileOnly "org.apache.hadoop:hadoop-aws:${hadoopVersion}"
+    compileOnly "com.amazonaws:aws-java-sdk-bundle:1.12.262"
 
     // 4. Database & Cache
     runtimeOnly 'org.postgresql:postgresql'
@@ -55,8 +56,7 @@ dependencies {
     implementation 'org.flywaydb:flyway-database-postgresql'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis' // 실시간 트렌드용
 
-    // 4-1. Spark 로컬 실행 — javax.servlet (Spark UI 클래스 로딩에 필요, jakarta와 별개)
-    runtimeOnly 'javax.servlet:javax.servlet-api:3.1.0'
+    // 4-1. Spark 로컬 실행 — javax.servlet (compileOnly로 이미 선언됨)
 
     // 5. Utils & Client
     compileOnly 'org.projectlombok:lombok'
@@ -92,6 +92,8 @@ shadowJar {
     archiveClassifier = ''
     archiveVersion = ''
     mergeServiceFiles()  // META-INF/services 병합 (Delta Lake 카탈로그 등록에 필요)
+    // compileOnly(Spark/Hadoop)를 Fat JAR에 포함
+    configurations = [project.configurations.compileClasspath]
 }
 
 // -----------------------------------------------------------------------------
