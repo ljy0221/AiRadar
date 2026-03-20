@@ -71,6 +71,19 @@ public class BronzeIngestionJob {
         DataTypes.createStructField("batch_date",   DataTypes.DateType,      false),
     });
 
+    // Bronze 스키마: paper — Silver이 읽는 컬럼과 일치
+    private static final StructType PAPER_BRONZE_SCHEMA = DataTypes.createStructType(new StructField[]{
+        DataTypes.createStructField("paper_id",     DataTypes.StringType,    false),
+        DataTypes.createStructField("title",        DataTypes.StringType,    true),
+        DataTypes.createStructField("abstract",     DataTypes.StringType,    true),  // crawling body 필드
+        DataTypes.createStructField("url",          DataTypes.StringType,    true),
+        DataTypes.createStructField("source",       DataTypes.StringType,    true),
+        DataTypes.createStructField("authors",      DataTypes.createArrayType(DataTypes.StringType), true),
+        DataTypes.createStructField("published_at", DataTypes.StringType,    true),
+        DataTypes.createStructField("crawled_at",   DataTypes.TimestampType, true),
+        DataTypes.createStructField("batch_date",   DataTypes.DateType,      false),
+    });
+
     // Bronze 스키마: github — Silver이 읽는 컬럼과 일치
     private static final StructType GITHUB_BRONZE_SCHEMA = DataTypes.createStructType(new StructField[]{
         DataTypes.createStructField("repo_id",        DataTypes.StringType,    false),
@@ -130,12 +143,16 @@ public class BronzeIngestionJob {
                 rows = crawlNews(date);
                 schema = NEWS_BRONZE_SCHEMA;
             }
+            case "paper" -> {
+                rows = crawlPaper(date);
+                schema = PAPER_BRONZE_SCHEMA;
+            }
             case "github" -> {
                 rows = crawlGithub(date);
                 schema = GITHUB_BRONZE_SCHEMA;
             }
             default -> throw new IllegalArgumentException("지원하지 않는 source-type: " + sourceType
-                + " (지원: news, github)");
+                + " (지원: news, paper, github)");
         }
 
         if (rows.isEmpty()) {
@@ -213,6 +230,66 @@ public class BronzeIngestionJob {
             textOrNull(item, "source"),        // source
             textOrNull(item, "author"),        // author
             textOrNull(item, "published_at"),  // published_at
+            crawledAt,                        // crawled_at
+            batchDate                         // batch_date
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // 논문 수집 — arxiv_api
+    // -------------------------------------------------------------------------
+
+    private static List<Row> crawlPaper(String date) {
+        Timestamp crawledAt = Timestamp.from(Instant.now());
+        Date batchDate = Date.valueOf(date);
+
+        ObjectNode req = MAPPER.createObjectNode();
+        req.put("domain", "paper");
+        req.put("provider", "arxiv_api");
+        req.put("max_articles", 200);
+
+        JsonNode items;
+        try {
+            items = callCrawlJobs(req);
+        } catch (Exception e) {
+            System.err.println("[Bronze] paper 수집 실패: " + e.getMessage());
+            return new ArrayList<>();
+        }
+
+        System.out.println("[Bronze] paper 수집: " + items.size() + "건");
+        List<Row> result = new ArrayList<>();
+        for (JsonNode item : items) {
+            result.add(toPaperRow(item, crawledAt, batchDate));
+        }
+        return result;
+    }
+
+    private static Row toPaperRow(JsonNode item, Timestamp crawledAt, Date batchDate) {
+        String url = textOrNull(item, "url");
+
+        // authors: extra 필드 없으면 author 단일 문자열을 배열로 변환
+        String[] authors;
+        JsonNode extraNode = item.path("extra");
+        JsonNode authorsNode = extraNode.path("authors");
+        if (authorsNode.isArray() && authorsNode.size() > 0) {
+            List<String> authorList = new ArrayList<>();
+            for (JsonNode a : authorsNode) authorList.add(a.asText());
+            authors = authorList.toArray(new String[0]);
+        } else {
+            String authorStr = textOrNull(item, "author");
+            authors = (authorStr != null && !authorStr.isBlank())
+                ? new String[]{authorStr}
+                : new String[]{};
+        }
+
+        return RowFactory.create(
+            sha1(url),                        // paper_id
+            textOrNull(item, "title"),         // title
+            textOrNull(item, "body"),          // abstract (crawling의 body 필드)
+            url,                              // url
+            textOrNull(item, "source"),        // source
+            authors,                          // authors
+            textOrNull(item, "published_at"), // published_at
             crawledAt,                        // crawled_at
             batchDate                         // batch_date
         );
