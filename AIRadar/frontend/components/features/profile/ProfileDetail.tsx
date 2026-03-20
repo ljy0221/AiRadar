@@ -4,56 +4,33 @@ import { useState } from 'react';
 import { Button } from '@/components/common/Button';
 import { EditProfileModal } from './EditProfileModal';
 import { NewsletterSubscribeModal } from '@/components/features/home';
+import { X } from 'lucide-react';
 
-
-import { useUserQuery, useUpdateUserMutation } from '@/hooks/queries/useUserQuery';
-
-// ── AI 관심 키워드 목록 ───────────────────────────────────────────────────────
-const AI_KEYWORDS = [
-  // 모델/기술
-  { id: 'llm',         label: 'LLM',           category: '모델/기술' },
-  { id: 'gpt',         label: 'GPT',            category: '모델/기술' },
-  { id: 'claude',      label: 'Claude',         category: '모델/기술' },
-  { id: 'gemini',      label: 'Gemini',         category: '모델/기술' },
-  { id: 'multimodal',  label: '멀티모달',        category: '모델/기술' },
-  { id: 'rag',         label: 'RAG',            category: '모델/기술' },
-  { id: 'finetune',    label: '파인튜닝',        category: '모델/기술' },
-  { id: 'agent',       label: 'AI 에이전트',     category: '모델/기술' },
-  // 개발/엔지니어링
-  { id: 'mlops',       label: 'MLOps',          category: '개발/엔지니어링' },
-  { id: 'inference',   label: '추론 최적화',     category: '개발/엔지니어링' },
-  { id: 'vector_db',   label: '벡터DB',          category: '개발/엔지니어링' },
-  { id: 'prompt',      label: '프롬프트 엔지니어링', category: '개발/엔지니어링' },
-  { id: 'open_source', label: '오픈소스 AI',     category: '개발/엔지니어링' },
-  // 산업/비즈니스
-  { id: 'ai_policy',   label: 'AI 정책/규제',    category: '산업/비즈니스' },
-  { id: 'startup',     label: 'AI 스타트업',     category: '산업/비즈니스' },
-  { id: 'hardware',    label: 'AI 반도체',       category: '산업/비즈니스' },
-  { id: 'robotics',    label: '로보틱스',        category: '산업/비즈니스' },
-  { id: 'generative',  label: '생성형 AI',       category: '산업/비즈니스' },
-  // 직군별
-  { id: 'ai_fe',       label: 'AI × 프론트엔드', category: '직군별' },
-  { id: 'ai_be',       label: 'AI × 백엔드',     category: '직군별' },
-  { id: 'ai_data',     label: 'AI × 데이터',     category: '직군별' },
-  { id: 'ai_design',   label: 'AI × 디자인',     category: '직군별' },
-];
-
-const CATEGORIES = ['모델/기술', '개발/엔지니어링', '산업/비즈니스', '직군별'] as const;
+import {
+  useUserQuery,
+  useInterestsQuery,
+  useUpdateUserMutation,
+  useAddInterestMutation,
+  useRemoveInterestMutation
+} from '@/hooks/queries/useUserQuery';
 
 export const ProfileDetail = () => {
-  const { data: user, isLoading, isError } = useUserQuery();
+  const { data: user, isLoading: isUserLoading, isError } = useUserQuery();
+  const { data: interestItems, isLoading: isInterestsLoading } = useInterestsQuery();
+
   const updateMutation = useUpdateUserMutation();
+  const addInterestMutation = useAddInterestMutation();
+  const removeInterestMutation = useRemoveInterestMutation();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isNewsletterModalOpen, setIsNewsletterModalOpen] = useState(false);
-  const [isKeywordEditing, setIsKeywordEditing] = useState(false);
-  
-  // API에서 주는 interests 정보가 없을 경우를 대비해 빈 배열을 기본값으로 사용합니다.
-  const [selectedKeywords, setSelectedKeywords] = useState<string[]>(user?.interests ?? []);
 
-  // user 구조에 interests가 확실히 있다면 이 타이밍에 동기화해줍니다 (단, fetch 완료 후)
-  // 여기서는 단순하게 API 연동으로 돌리는 것을 목표로 하므로, 
-  // 실제 키워드 저장이 어떻게 넘어오느냐에 따라 수정이 필요할 수 있습니다.
+  const [newKeyword, setNewKeyword] = useState('');
+
+  const isLoading = isUserLoading || isInterestsLoading;
+
+  // 서버에서 받은 InterestItem 배열에서 keyword 문자열만 추출
+  const currentInterests = interestItems?.map((item) => item.keyword) || [];
 
   if (isLoading) {
     return (
@@ -89,21 +66,24 @@ export const ProfileDetail = () => {
     });
   };
 
-  const toggleKeyword = (id: string) => {
-    setSelectedKeywords((prev) =>
-      prev.includes(id) ? prev.filter((k) => k !== id) : [...prev, id]
-    );
-  };
+  const handleAddKeyword = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newKeyword.trim();
+    if (!trimmed) return;
 
-  const handleSaveKeywords = () => {
-    updateMutation.mutate({ interests: selectedKeywords }, {
-      onSuccess: () => setIsKeywordEditing(false),
+    // 이중 등록 방지
+    if (currentInterests.includes(trimmed)) {
+      setNewKeyword('');
+      return;
+    }
+
+    addInterestMutation.mutate(trimmed, {
+      onSuccess: () => setNewKeyword('')
     });
   };
 
-  const handleCancelKeywords = () => {
-    setSelectedKeywords(user?.interests || []);
-    setIsKeywordEditing(false);
+  const handleRemoveKeyword = (keyword: string) => {
+    removeInterestMutation.mutate(keyword);
   };
 
   return (
@@ -143,55 +123,58 @@ export const ProfileDetail = () => {
             </div>
           </div>
 
-          {/* 관심 키워드 카드 */}
+          {/* 관심 키워드 폼 (개편됨) */}
           <div className="bg-white dark:bg-gray-800/50 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">관심 AI 키워드</h3>
-                <p className="text-gray-400 text-xs mt-1">선택한 키워드 기반으로 맞춤 콘텐츠를 추천해 드립니다.</p>
-              </div>
-              {!isKeywordEditing ? (
-                <Button variant="outline" onClick={() => setIsKeywordEditing(true)}>
-                  수정
-                </Button>
-              ) : (
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleCancelKeywords}>취소</Button>
-                  <Button onClick={handleSaveKeywords}>저장</Button>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">관심 AI 키워드</h3>
+              <p className="text-gray-400 text-xs mt-1">등록하신 키워드를 기반으로 맞춤 콘텐츠를 추천해 드립니다.</p>
+            </div>
+
+            <form onSubmit={handleAddKeyword} className="flex gap-2 mb-8">
+              <input
+                type="text"
+                value={newKeyword}
+                onChange={(e) => setNewKeyword(e.target.value)}
+                placeholder="관심 키워드를 입력하세요"
+                className="flex-1 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 focus:border-[var(--color-accent)] transition-all"
+                maxLength={100}
+                disabled={addInterestMutation.isPending}
+              />
+              <Button
+                type="submit"
+                disabled={!newKeyword.trim() || addInterestMutation.isPending}
+                className="px-6"
+              >
+                {addInterestMutation.isPending ? '추가 중...' : '추가'}
+              </Button>
+            </form>
+
+            <div className="flex flex-wrap gap-2">
+              {currentInterests.map((keyword: string) => (
+                <div
+                  key={keyword}
+                  className="flex items-center gap-1.5 pl-4 pr-1.5 py-1.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-full group transition-colors hover:border-gray-300 dark:hover:border-gray-600"
+                >
+                  <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                    {keyword}
+                  </span>
+                  <button
+                    onClick={() => handleRemoveKeyword(keyword)}
+                    disabled={removeInterestMutation.isPending}
+                    className="p-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
+              ))}
+
+              {currentInterests.length === 0 && (
+                <p className="text-sm text-gray-400 text-center w-full py-4">등록된 관심 키워드가 없습니다.</p>
               )}
             </div>
 
-            <div className="space-y-6">
-              {CATEGORIES.map((cat) => (
-                <div key={cat}>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">{cat}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {AI_KEYWORDS.filter((kw) => kw.category === cat).map((kw) => {
-                      const selected = selectedKeywords.includes(kw.id);
-                      return (
-                        <button
-                          key={kw.id}
-                          onClick={() => isKeywordEditing && toggleKeyword(kw.id)}
-                          disabled={!isKeywordEditing}
-                          className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 ${
-                            selected
-                              ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white shadow-sm'
-                              : 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
-                          } ${isKeywordEditing ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
-                        >
-                          {kw.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* 선택 개수 표시 */}
             <p className="mt-6 text-xs text-gray-400 text-right">
-              {selectedKeywords.length}개 선택됨
+              {currentInterests.length}개 등록됨
             </p>
           </div>
 
@@ -201,22 +184,19 @@ export const ProfileDetail = () => {
         <div className="space-y-8">
           <div className="bg-white dark:bg-gray-800/50 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700">
             <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">내 관심 키워드 요약</h3>
-            {(user.interests || []).length > 0 ? (
+            {currentInterests.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {(user.interests || []).map((id: string) => {
-                  const kw = AI_KEYWORDS.find((k) => k.id === id);
-                  return kw ? (
-                    <span
-                      key={id}
-                      className="px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/20"
-                    >
-                      {kw.label}
-                    </span>
-                  ) : null;
-                })}
+                {currentInterests.map((keyword: string) => (
+                  <span
+                    key={keyword}
+                    className="px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/20"
+                  >
+                    {keyword}
+                  </span>
+                ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400">선택된 키워드가 없습니다.</p>
+              <p className="text-sm text-gray-400">등록된 키워드가 없습니다.</p>
             )}
           </div>
         </div>
@@ -230,9 +210,9 @@ export const ProfileDetail = () => {
         isLoading={updateMutation.isPending}
       />
 
-      <NewsletterSubscribeModal 
-        isOpen={isNewsletterModalOpen} 
-        onClose={() => setIsNewsletterModalOpen(false)} 
+      <NewsletterSubscribeModal
+        isOpen={isNewsletterModalOpen}
+        onClose={() => setIsNewsletterModalOpen(false)}
       />
     </div>
   );
