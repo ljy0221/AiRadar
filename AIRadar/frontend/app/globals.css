@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* 수동 다크모드(.dark) 토글을 위한 커스텀 variant (Tailwind v4) */
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --color-bg-primary: var(--bg-primary);
@@ -19,17 +19,8 @@
     --accent: #D16D6D;
   }
 
-  /* 다크 모드*/
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg-primary: #0A0B1A;
-      --text-primary: #E6EDF3;
-      --accent: #66EDFF;
-    }
-  }
-
-  /* 수동 테마 토글 */
-  .dark {
+  /* 수동 테마 토글 (next-themes가 제어) */
+  :root.dark, .dark {
     --bg-primary: #0A0B1A;
     --text-primary: #E6EDF3;
     --accent: #66EDFF;

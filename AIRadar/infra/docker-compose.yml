@@ -199,6 +199,10 @@ services:
       AIRFLOW__CELERY__RESULT_BACKEND: redis://redis:6379/0
       AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
       POSTGRES_URL: "postgresql://${POSTGRES_USER:-airadar}:${POSTGRES_PASSWORD:-airadar_secret}@postgres:5432/${POSTGRES_DB:-airadar}"
+      
+      AIRFLOW__WEBSERVER__BASE_URL: "https://j14b104a.p.ssafy.io/airflow"
+      AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "True"
+      AIRFLOW__WEBSERVER__PROXY_FIX_X_PREFIX: "1"
 
   # ── 크롤링 서버 ───────────────────────────────────────────────────────────────
   crawling-server:
