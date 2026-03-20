@@ -13,7 +13,7 @@ def get_model() -> SentenceTransformer:
     global _model
     if _model is None:
         logger.info(f"임베딩 모델 로딩: {MODEL_NAME}")
-        _model = SentenceTransformer(MODEL_NAME)
+        _model = SentenceTransformer(MODEL_NAME, device="cpu")
         logger.info("임베딩 모델 로딩 완료")
     return _model
 
