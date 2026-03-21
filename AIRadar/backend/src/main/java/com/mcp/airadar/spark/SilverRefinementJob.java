@@ -23,7 +23,10 @@ import java.sql.Date;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import static com.mcp.airadar.spark.utils.SparkUtils.bronzePath;
 import static com.mcp.airadar.spark.utils.SparkUtils.configureS3A;
@@ -63,6 +66,56 @@ public class SilverRefinementJob {
     private static final int AI_BATCH_SIZE = Integer.parseInt(
         System.getenv().getOrDefault("AI_BATCH_SIZE", "10")
     );
+
+    private static final Set<String> AI_TOPIC_KEYWORDS = Set.of(
+        "ai",
+        "ml",
+        "llm",
+        "artificial-intelligence",
+        "machine-learning",
+        "deep-learning",
+        "generative-ai",
+        "computer-vision",
+        "nlp",
+        "transformer",
+        "rag",
+        "agent",
+        "agentic",
+        "multi-agent",
+        "vision-language",
+        "diffusion",
+        "gpt",
+        "claude",
+        "langchain",
+        "openai"
+    );
+
+    private static final String[] AI_TEXT_KEYWORDS = {
+        "artificial intelligence",
+        "machine learning",
+        "deep learning",
+        "generative ai",
+        "generative-ai",
+        "computer vision",
+        "computer-vision",
+        "natural language processing",
+        "vision language",
+        "vision-language",
+        "large language model",
+        "large language models",
+        "multi agent",
+        "multi-agent",
+        "agentic",
+        "retrieval augmented generation",
+        "openai",
+        "langchain",
+        "transformer",
+        "diffusion",
+        "gpt",
+        "claude"
+    };
+
+    private static final Pattern AI_WORD_PATTERN = Pattern.compile("\\b(ai|ml|llm|nlp|rag)\\b");
 
     // Silver 스키마: news (embedding은 ai-server가 content_embeddings 테이블에 직접 저장)
     private static final StructType NEWS_SILVER_SCHEMA = DataTypes.createStructType(new StructField[]{
@@ -337,6 +390,7 @@ public class SilverRefinementJob {
     private static Row cleanGithub(Row row, Date batchDate) {
         String repoId = safeGet(row, "repo_id");
         boolean aiRelevance = detectAiRelevance(
+            safeGet(row, "repo_name"),
             safeGet(row, "description"),
             safeGetArray(row, "topics")
         );
@@ -359,11 +413,34 @@ public class SilverRefinementJob {
     }
 
     /** description/topics에 AI 관련 키워드가 있으면 true */
-    private static boolean detectAiRelevance(String description, String[] topics) {
-        String text = ((description != null ? description : "") + " "
-            + String.join(" ", topics != null ? topics : new String[]{})).toLowerCase();
-        return text.contains("ai") || text.contains("ml") || text.contains("llm")
-            || text.contains("machine learning") || text.contains("deep learning");
+    private static boolean detectAiRelevance(String repoName, String description, String[] topics) {
+        if (topics != null) {
+            for (String topic : topics) {
+                if (topic == null || topic.isBlank()) {
+                    continue;
+                }
+                String normalizedTopic = topic.trim().toLowerCase(Locale.ROOT);
+                if (AI_TOPIC_KEYWORDS.contains(normalizedTopic)) {
+                    return true;
+                }
+            }
+        }
+
+        String text = ((repoName != null ? repoName : "") + " "
+            + (description != null ? description : "") + " "
+            + String.join(" ", topics != null ? topics : new String[]{})).toLowerCase(Locale.ROOT);
+
+        if (AI_WORD_PATTERN.matcher(text).find()) {
+            return true;
+        }
+
+        for (String keyword : AI_TEXT_KEYWORDS) {
+            if (text.contains(keyword)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // -------------------------------------------------------------------------

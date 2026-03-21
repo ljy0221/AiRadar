@@ -26,6 +26,7 @@ public interface GithubRepoDailyRepository extends JpaRepository<GithubRepoDaily
             FROM github_repo_daily d
             JOIN github_repos r ON r.repo_id = d.repo_id
             WHERE d.snapshot_date = :date
+              AND COALESCE(r.ai_relevance, FALSE) = TRUE
               AND d.star_delta_1d IS NOT NULL
             ORDER BY d.star_delta_1d DESC
             LIMIT :lim

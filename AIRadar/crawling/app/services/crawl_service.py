@@ -68,7 +68,7 @@ class CrawlService:
                         max_articles=req.max_articles,
                         window_minutes=github_window_minutes,
                         top_n=req.github_top_n,
-                        pr_per_repo=req.github_pr_per_repo,
+                        min_stars=req.github_min_stars,
                     )
                 finally:
                     crawler.close()
