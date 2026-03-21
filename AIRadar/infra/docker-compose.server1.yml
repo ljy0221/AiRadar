@@ -194,7 +194,8 @@ services:
       - jenkins-home:/var/jenkins_home
       - ../..:/workspace
     environment:
-      JAVA_OPTS: "-Djenkins.install.runSetupWizard=true -Xmx768m"
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=true -Xmx768m -Dhudson.model.FullDuplexHttpChannel.DISABLE=true"
+      JENKINS_OPTS: "--prefix=/jenkins"
     mem_limit: 4g
     restart: unless-stopped
 
