@@ -21,11 +21,14 @@ public interface GithubRepoRepository extends JpaRepository<GithubRepo, String> 
     LocalDate findLatestSnapshotDateOnOrBefore(@Param("date") LocalDate date);
 
     @Query(value = """
-            SELECT *
-            FROM github_repos
-            WHERE snapshot_date = :date
-              AND COALESCE(ai_relevance, FALSE) = TRUE
-            ORDER BY COALESCE(star_delta_7d, -2147483648) DESC, stars DESC, repo_id ASC
+            SELECT r.*
+            FROM github_repos r
+            LEFT JOIN github_repo_daily d
+                ON d.repo_id = r.repo_id
+               AND d.snapshot_date = r.snapshot_date
+            WHERE r.snapshot_date = :date
+              AND COALESCE(r.ai_relevance, FALSE) = TRUE
+            ORDER BY COALESCE(d.star_delta_1d, -2147483648) DESC, r.stars DESC, r.repo_id ASC
             LIMIT :limit
             """, nativeQuery = true)
     List<GithubRepo> findTopTrendingBySnapshotDate(@Param("date") LocalDate date, @Param("limit") int limit);
