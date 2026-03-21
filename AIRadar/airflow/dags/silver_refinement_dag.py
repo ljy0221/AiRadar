@@ -35,8 +35,10 @@ with DAG(
     max_active_runs=1,    # 동시 실행 1개로 제한 (Spark OOM 방지)
     tags=['silver', 'batch'],
     params={
-        # 한 번 실행당 처리할 최대 건수. 0 또는 미지정 시 전체 처리.
+        # 한 번 실행당 처리할 최대 건수. 0 이면 전체 처리.
         'limit': 200,
+        # True 이면 기존 Silver를 replaceWhere로 덮어쓰며 전체 재분석 (companies 등 갱신 목적)
+        'reprocess': False,
     },
 ) as dag:
 
@@ -78,6 +80,7 @@ with DAG(
             '--date', '{{ ds }}',
             '--source-type', 'news',
             '--limit', '{{ params.limit }}',
+            '--reprocess', '{{ params.reprocess }}',
         ],
         conf=SPARK_CONF,
     )
@@ -91,6 +94,7 @@ with DAG(
             '--date', '{{ ds }}',
             '--source-type', 'paper',
             '--limit', '{{ params.limit }}',
+            '--reprocess', '{{ params.reprocess }}',
         ],
         conf=SPARK_CONF,
     )
@@ -104,6 +108,7 @@ with DAG(
             '--date', '{{ ds }}',
             '--source-type', 'github',
             '--limit', '{{ params.limit }}',
+            '--reprocess', '{{ params.reprocess }}',
         ],
         conf=SPARK_CONF,
     )

@@ -18,6 +18,7 @@ class NewsResponse(BaseModel):
     summary: str
     category: str
     region: Literal["DOMESTIC", "GLOBAL"]
+    companies: list[str] = []
 
 
 class PaperRequest(BaseModel):

@@ -174,6 +174,7 @@ public class SilverRefinementJob {
         String date = getArg(args, "--date");
         String sourceType = getArg(args, "--source-type");
         String limitStr = getArg(args, "--limit");
+        boolean reprocess = "true".equalsIgnoreCase(getArg(args, "--reprocess"));
 
         if (date == null || sourceType == null) {
             throw new IllegalArgumentException("필수 인자 누락: --date, --source-type");
@@ -196,18 +197,19 @@ public class SilverRefinementJob {
         spark.sparkContext().setLogLevel("WARN");
 
         try {
-            processBronzeToSilver(spark, date, sourceType, limit);
+            processBronzeToSilver(spark, date, sourceType, limit, reprocess);
         } finally {
             spark.stop();
         }
     }
 
-    private static void processBronzeToSilver(SparkSession spark, String date, String sourceType, int limit) {
+    private static void processBronzeToSilver(SparkSession spark, String date, String sourceType, int limit, boolean reprocess) {
         String bronzePath = bronzePath(sourceType);
         String silverPath = System.getenv().getOrDefault("SILVER_BASE_PATH", "/tmp/silver")
             + "/" + sourceType;
 
         System.out.println("[Silver] 처리 시작: source=" + sourceType + ", date=" + date
+            + (reprocess ? ", mode=REPROCESS(replaceWhere)" : "")
             + (limit > 0 ? ", limit=" + limit : ", limit=전체"));
         System.out.println("[Silver] Bronze 경로: " + bronzePath);
 
@@ -220,19 +222,21 @@ public class SilverRefinementJob {
         long bronzeTotal = allBronze.count();
         System.out.println("[Silver] Bronze 총 건수: " + bronzeTotal);
 
-        // 이미 Silver에 처리된 ID를 제외 — anti-join으로 미처리분만 추출
-        Dataset<Row> unprocessed = excludeAlreadyProcessed(spark, allBronze, silverPath, sourceType, date);
-
-        long unprocessedCount = unprocessed.count();
-        System.out.println("[Silver] 미처리 건수: " + unprocessedCount);
-
-        if (unprocessedCount == 0) {
-            System.out.println("[Silver] 처리할 미처리 건수 없음 — 종료");
-            return;
+        Dataset<Row> toProcess;
+        if (reprocess) {
+            // --reprocess: anti-join 없이 전체 재분석 (companies 등 필드 갱신 목적)
+            toProcess = (limit > 0) ? allBronze.limit(limit) : allBronze;
+        } else {
+            // 일반 모드: 이미 Silver에 처리된 ID를 제외 — anti-join으로 미처리분만 추출
+            Dataset<Row> unprocessed = excludeAlreadyProcessed(spark, allBronze, silverPath, sourceType, date);
+            long unprocessedCount = unprocessed.count();
+            System.out.println("[Silver] 미처리 건수: " + unprocessedCount);
+            if (unprocessedCount == 0) {
+                System.out.println("[Silver] 처리할 미처리 건수 없음 — 종료");
+                return;
+            }
+            toProcess = (limit > 0) ? unprocessed.limit(limit) : unprocessed;
         }
-
-        // --limit 적용: 미처리분 중 최대 limit개만 처리
-        Dataset<Row> toProcess = (limit > 0) ? unprocessed.limit(limit) : unprocessed;
 
         // Skew 방지: AI 서버 동시 처리 가능 수에 맞춰 파티션 균등 분산
         int aiConcurrency = Integer.parseInt(
@@ -244,17 +248,26 @@ public class SilverRefinementJob {
         newSilver.cache();
         long newCount = newSilver.count();
 
-        // 기존 Silver와 병합: 이미 처리된 것 + 이번에 새로 처리한 것
-        // replaceWhere 대신 append → 기존 처리분 보존
-        newSilver.write()
-            .format("delta")
-            .mode(SaveMode.Append)
-            .partitionBy("batch_date")
-            .save(silverPath);
+        if (reprocess) {
+            // replaceWhere Overwrite — 해당 날짜 파티션 전체 교체 (멱등성 보장)
+            newSilver.write()
+                .format("delta")
+                .mode(SaveMode.Overwrite)
+                .option("replaceWhere", "batch_date = '" + date + "'")
+                .partitionBy("batch_date")
+                .save(silverPath);
+            System.out.println("[Silver] 재처리 완료: " + newCount + "건 → " + silverPath);
+        } else {
+            // Append — 기존 처리분 보존, 미처리분만 추가
+            newSilver.write()
+                .format("delta")
+                .mode(SaveMode.Append)
+                .partitionBy("batch_date")
+                .save(silverPath);
+            System.out.println("[Silver] 완료: 이번 처리=" + newCount + "건 → " + silverPath);
+        }
 
         newSilver.unpersist();
-        System.out.println("[Silver] 완료: 이번 처리=" + newCount + "건, 미처리 잔여="
-            + (unprocessedCount - newCount) + "건 → " + silverPath);
     }
 
     /**

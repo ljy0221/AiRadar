@@ -180,6 +180,7 @@ async def analyze_news_batch(articles: list[NewsRequest]) -> list[NewsResponse]:
 - summary: 2문장 이내 한국어 요약 (string)
 - category: LLM | Vision | NLP | RL | Multimodal | Robotics | Semiconductor | Cloud | ETC
 - region: "DOMESTIC" | "GLOBAL"
+- companies: 기사에 언급된 기업명 list (예: ["OpenAI", "Google", "삼성전자"]), 없으면 빈 배열
 
 기사 목록:
 {json.dumps(items, ensure_ascii=False)}
@@ -214,6 +215,7 @@ async def analyze_news_batch(articles: list[NewsRequest]) -> list[NewsResponse]:
             summary=s.get("summary", ""),
             category=s.get("category", "ETC"),
             region=s.get("region", "GLOBAL"),
+            companies=s.get("companies", []),
         )
         for s in structured
     ]
