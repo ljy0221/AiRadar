@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+INFRA_DIR="${REPO_ROOT}/infra"
 JAR_PATH="${REPO_ROOT}/backend/build/libs/airadar-spark.jar"
 JAR_BACKUP="${JAR_PATH}.backup"
 
@@ -10,7 +11,7 @@ rollback() {
   echo "[Rollback] Restoring previous JAR..."
   if [ -f "${JAR_BACKUP}" ]; then
     cp "${JAR_BACKUP}" "${JAR_PATH}"
-    echo "[Rollback] JAR restored. 다음 Job 실행 시 이전 버전이 적용됩니다."
+    echo "[Rollback] JAR restored."
   else
     echo "[Rollback] No backup found, skipping JAR restore."
   fi
@@ -29,5 +30,9 @@ fi
 cp "${JAR_PATH}" "${JAR_BACKUP}"
 echo "[Deploy] JAR backed up to ${JAR_BACKUP}"
 
-echo "[Deploy] JAR 교체 완료. 다음 Job 실행 시 새 JAR이 자동으로 적용됩니다."
+# crawler 재빌드 및 재시작
+echo "[Deploy] Rebuilding crawler..."
+cd "${INFRA_DIR}"
+docker compose -f docker-compose.server1.yml up -d --build --no-deps crawler
+
 echo "[Deploy] Server1 deployment complete."
