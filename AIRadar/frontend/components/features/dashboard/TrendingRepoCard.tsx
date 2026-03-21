@@ -1,55 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { Star, GitFork, TrendingUp, TrendingDown, BookOpen, Flame } from 'lucide-react';
+import { Star, GitFork, TrendingUp, TrendingDown, Flame } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { GithubRepo } from '@/types/github';
-
-// 임시 Mock 데이터 생성 (각 레포지토리마다 동일한 형태의 다른 데이터 렌더링용)
-const generateMockData = (seed: number) => {
-  const daily: any[] = [];
-  const monthly: any[] = [];
-
-  // Daily
-  let baseStars = seed * 1000;
-  for (let i = 11; i <= 18; i++) {
-    baseStars += Math.floor(Math.random() * 500);
-    daily.push({
-      date: `03-${i}`,
-      stars: baseStars,
-      forks: Math.floor(baseStars * 0.1),
-      merged_prs: Math.floor(baseStars * 0.05),
-      issues: Math.floor(baseStars * 0.02),
-    });
-  }
-
-  // Monthly
-  let mBaseStars = seed * 500;
-  const months = ['09', '10', '11', '12', '01', '02', '03'];
-  months.forEach(m => {
-    mBaseStars += Math.floor(Math.random() * 5000) + 1000;
-    monthly.push({
-      date: `25-${m}`,
-      stars: mBaseStars,
-      forks: Math.floor(mBaseStars * 0.1),
-      merged_prs: Math.floor(mBaseStars * 0.05),
-      issues: Math.floor(mBaseStars * 0.02),
-    });
-  });
-
-  return { daily, monthly };
-};
 
 const CHART_COLORS = {
   stars: '#facc15', // yellow-400
   forks: '#9ca3af', // gray-400
-  merged_prs: '#818cf8', // indigo-400
-  issues: '#f87171', // red-400
 };
 
 export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: number }) => {
   const [chartTab, setChartTab] = useState<'daily' | 'monthly'>('daily');
-  const mockData = generateMockData(rank);
 
   const getLanguageColor = (lang: string) => {
     switch (lang.toLowerCase()) {
@@ -63,7 +25,7 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
     }
   };
 
-  const currentData = chartTab === 'daily' ? mockData.daily : mockData.monthly;
+  const currentData = chartTab === 'daily' ? repo.daily : repo.monthly;
 
   return (
     <div className="bg-white dark:bg-[#1a1c2e] p-6 lg:p-8 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col lg:flex-row gap-8 lg:gap-12">
@@ -104,10 +66,16 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
 
         <div className="mt-auto pt-6 border-t border-gray-100 dark:border-gray-800">
           <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">최근 7일 트렌드</p>
-          <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold ${repo.starDelta7d >= 0 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'}`}>
-            {repo.starDelta7d >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-            {repo.starDelta7d >= 0 ? '+' : ''}{repo.starDelta7d.toLocaleString()} 스타
-          </div>
+          {repo.starDelta7d !== null ? (
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold ${repo.starDelta7d >= 0 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'}`}>
+              {repo.starDelta7d >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+              {repo.starDelta7d >= 0 ? '+' : ''}{repo.starDelta7d.toLocaleString()} 스타
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold bg-gray-50 dark:bg-gray-800 text-gray-400">
+              <span className="text-xs">데이터 집계 중</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -140,7 +108,7 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={currentData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(156, 163, 175, 0.2)" />
-              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} dy={10} />
+              <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} dy={10} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} tickFormatter={(value) => value >= 1000 ? `${value / 1000}k` : value} />
               <Tooltip
                 contentStyle={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border)', borderRadius: '8px', color: 'var(--color-text-primary)' }}
@@ -149,8 +117,6 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
               <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
               <Line type="monotone" dataKey="stars" name="스타" stroke={CHART_COLORS.stars} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
               <Line type="monotone" dataKey="forks" name="포크" stroke={CHART_COLORS.forks} strokeWidth={2} dot={{ r: 2 }} />
-              <Line type="monotone" dataKey="merged_prs" name="병합된 PR" stroke={CHART_COLORS.merged_prs} strokeWidth={2} dot={{ r: 2 }} />
-              <Line type="monotone" dataKey="issues" name="이슈" stroke={CHART_COLORS.issues} strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>

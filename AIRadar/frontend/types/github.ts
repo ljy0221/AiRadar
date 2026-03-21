@@ -1,27 +1,43 @@
 // types/github.ts
-// GitHub Archive 관련 TypeScript 타입 정의
-// 백엔드 SilverSchemas.GITHUB_SILVER_SCHEMA 기반
+
+export interface GithubDailyActivity {
+  label: string;
+  snapshotDate: string;
+  stars: number | null;
+  forks: number | null;
+}
+
+export interface GithubMonthlyActivity {
+  label: string;
+  snapshotDate: string;
+  stars: number | null;
+  forks: number | null;
+}
 
 export interface GithubRepo {
-  repoId: string;         // 'org/repo' 형식 (예: 'microsoft/BitNet')
+  repoId: string;
   repoName: string;
   description: string;
   language: string;
-  topics: string[];
   stars: number;
   forks: number;
-  openIssues: number;
-  weeklyCommits: number;
-  starDelta7d: number;    // 7일간 스타 증감 (양수=성장, 음수=감소)
-  aiRelevance: boolean;
-  keywords: string[];
-  batchDate: string;      // 'YYYY-MM-DD'
+  starDelta7d: number | null;
+  daily: GithubDailyActivity[];
+  monthly: GithubMonthlyActivity[];
+}
+
+export interface GithubApiResponse {
+  requestedDate: string;
+  snapshotDate: string;
+  dailyWindow: number;
+  monthlyWindow: number;
+  repos: GithubRepo[];
 }
 
 export interface GithubListParams {
-  language?: string;
-  aiOnly?: boolean;
-  sortBy?: 'stars' | 'starDelta7d' | 'weeklyCommits';
-  page?: number;
-  size?: number;
+  date?: string;
+  limit?: number;
+  dailyWindow?: number;
+  monthlyWindow?: number;
 }
+
