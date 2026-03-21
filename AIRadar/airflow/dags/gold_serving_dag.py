@@ -9,7 +9,7 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
     'email_on_failure': False,
     'depends_on_past': False,
-    'execution_timeout': timedelta(hours=1),
+    'execution_timeout': timedelta(hours=12),  # 로컬 AI 서버 기준 충분한 여유
 }
 
 SPARK_CONF = {
@@ -25,7 +25,7 @@ SPARK_CONF = {
 with DAG(
     dag_id='gold_serving',
     default_args=default_args,
-    schedule_interval='0 */3 * * *',  # silver_refinement와 동일 주기
+    schedule_interval=None,  # 수동 트리거만
     start_date=datetime(2025, 1, 1),
     catchup=False,
     max_active_runs=1,
