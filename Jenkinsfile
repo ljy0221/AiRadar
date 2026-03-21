@@ -166,6 +166,7 @@ pipeline {
                   scp -o StrictHostKeyChecking=no AIRadar/backend/build/libs/airadar-spark.jar ${SERVER1_HOST}:${REPO_DIR}/AIRadar/backend/build/libs/
                   scp -o StrictHostKeyChecking=no AIRadar/infra/docker-compose.server1.yml ${SERVER1_HOST}:${REPO_DIR}/AIRadar/infra/
                   scp -o StrictHostKeyChecking=no AIRadar/infra/scripts/deploy-server1.sh ${SERVER1_HOST}:${REPO_DIR}/AIRadar/infra/scripts/
+                  ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} 'rm -f ${REPO_DIR}/AIRadar/airflow/dags/*.py'
                   scp -o StrictHostKeyChecking=no AIRadar/airflow/dags/*.py ${SERVER1_HOST}:${REPO_DIR}/AIRadar/airflow/dags/
                   ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} '
                     set -e

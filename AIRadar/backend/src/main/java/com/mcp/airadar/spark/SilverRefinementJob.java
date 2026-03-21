@@ -36,7 +36,6 @@ import static com.mcp.airadar.spark.utils.SparkUtils.safeGetArray;
 import static com.mcp.airadar.spark.utils.SparkUtils.safeInt;
 import static com.mcp.airadar.spark.utils.SparkUtils.safeLong;
 
-import static com.mcp.airadar.spark.models.SilverSchemas.*;
 
 /**
  * Bronze → Silver 정제 Job
@@ -174,10 +173,15 @@ public class SilverRefinementJob {
     public static void main(String[] args) {
         String date = getArg(args, "--date");
         String sourceType = getArg(args, "--source-type");
+        String limitStr = getArg(args, "--limit");
 
         if (date == null || sourceType == null) {
             throw new IllegalArgumentException("필수 인자 누락: --date, --source-type");
         }
+
+        // --limit 미지정 또는 0 이하 시 전체 처리 (기존 동작 유지)
+        int limit = (limitStr != null) ? Integer.parseInt(limitStr) : -1;
+        if (limit == 0) limit = -1;
 
         SparkSession.Builder builder = SparkSession.builder()
             .appName("SilverRefinementJob-" + sourceType + "-" + date)
@@ -192,47 +196,96 @@ public class SilverRefinementJob {
         spark.sparkContext().setLogLevel("WARN");
 
         try {
-            processBronzeToSilver(spark, date, sourceType);
+            processBronzeToSilver(spark, date, sourceType, limit);
         } finally {
             spark.stop();
         }
     }
 
-    private static void processBronzeToSilver(SparkSession spark, String date, String sourceType) {
+    private static void processBronzeToSilver(SparkSession spark, String date, String sourceType, int limit) {
         String bronzePath = bronzePath(sourceType);
         String silverPath = System.getenv().getOrDefault("SILVER_BASE_PATH", "/tmp/silver")
             + "/" + sourceType;
 
-        System.out.println("[Silver] 처리 시작: source=" + sourceType + ", date=" + date);
+        System.out.println("[Silver] 처리 시작: source=" + sourceType + ", date=" + date
+            + (limit > 0 ? ", limit=" + limit : ", limit=전체"));
         System.out.println("[Silver] Bronze 경로: " + bronzePath);
 
-        Dataset<Row> bronze = spark.read()
+        // 해당 날짜의 Bronze 전체 로드
+        Dataset<Row> allBronze = spark.read()
             .format("delta")
             .load(bronzePath)
             .where("batch_date = '" + date + "'");
+
+        long bronzeTotal = allBronze.count();
+        System.out.println("[Silver] Bronze 총 건수: " + bronzeTotal);
+
+        // 이미 Silver에 처리된 ID를 제외 — anti-join으로 미처리분만 추출
+        Dataset<Row> unprocessed = excludeAlreadyProcessed(spark, allBronze, silverPath, sourceType, date);
+
+        long unprocessedCount = unprocessed.count();
+        System.out.println("[Silver] 미처리 건수: " + unprocessedCount);
+
+        if (unprocessedCount == 0) {
+            System.out.println("[Silver] 처리할 미처리 건수 없음 — 종료");
+            return;
+        }
+
+        // --limit 적용: 미처리분 중 최대 limit개만 처리
+        Dataset<Row> toProcess = (limit > 0) ? unprocessed.limit(limit) : unprocessed;
 
         // Skew 방지: AI 서버 동시 처리 가능 수에 맞춰 파티션 균등 분산
         int aiConcurrency = Integer.parseInt(
             System.getenv().getOrDefault("AI_SERVER_CONCURRENCY", "10")
         );
-        Dataset<Row> repartitioned = bronze.repartition(aiConcurrency);
+        Dataset<Row> repartitioned = toProcess.repartition(aiConcurrency);
 
-        Dataset<Row> silver = analyzePartitions(spark, repartitioned, sourceType, date);
+        Dataset<Row> newSilver = analyzePartitions(spark, repartitioned, sourceType, date);
+        newSilver.cache();
+        long newCount = newSilver.count();
 
-        // count와 write 양쪽에서 재계산하지 않도록 cache
-        silver.cache();
-        long count = silver.count();
-
-        // Overwrite로 멱등성 보장 — Delta 트랜잭션으로 원자적 커밋
-        silver.write()
+        // 기존 Silver와 병합: 이미 처리된 것 + 이번에 새로 처리한 것
+        // replaceWhere 대신 append → 기존 처리분 보존
+        newSilver.write()
             .format("delta")
-            .mode(SaveMode.Overwrite)
-            .option("replaceWhere", "batch_date = '" + date + "'")
+            .mode(SaveMode.Append)
             .partitionBy("batch_date")
             .save(silverPath);
 
-        silver.unpersist();
-        System.out.println("[Silver] 완료: " + count + "건 → " + silverPath);
+        newSilver.unpersist();
+        System.out.println("[Silver] 완료: 이번 처리=" + newCount + "건, 미처리 잔여="
+            + (unprocessedCount - newCount) + "건 → " + silverPath);
+    }
+
+    /**
+     * Bronze에서 이미 Silver에 적재된 ID를 제외하고 미처리분만 반환.
+     * Silver 경로가 아직 없으면(첫 실행) Bronze 전체를 반환.
+     */
+    private static Dataset<Row> excludeAlreadyProcessed(
+            SparkSession spark, Dataset<Row> bronze,
+            String silverPath, String sourceType, String date) {
+
+        String idCol = switch (sourceType) {
+            case "news"   -> "article_id";
+            case "paper"  -> "paper_id";
+            case "github" -> "repo_id";
+            default -> throw new IllegalArgumentException("알 수 없는 source-type: " + sourceType);
+        };
+
+        try {
+            Dataset<Row> existingSilver = spark.read()
+                .format("delta")
+                .load(silverPath)
+                .where("batch_date = '" + date + "'")
+                .select(idCol);
+
+            // anti-join: Bronze에 있지만 Silver에 없는 것만
+            return bronze.join(existingSilver, bronze.col(idCol).equalTo(existingSilver.col(idCol)), "left_anti");
+        } catch (Exception e) {
+            // Silver 경로 미존재(첫 실행) — Bronze 전체 반환
+            System.out.println("[Silver] Silver 경로 미존재 또는 읽기 실패, 전체 처리: " + e.getMessage());
+            return bronze;
+        }
     }
 
     private static Dataset<Row> analyzePartitions(

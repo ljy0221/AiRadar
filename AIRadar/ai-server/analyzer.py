@@ -75,7 +75,7 @@ def _call_local(system: str, user_prompt: str) -> str:
     with torch.no_grad():
         output_ids = model.generate(
             **inputs,
-            max_new_tokens=2048,
+            max_new_tokens=512,
             temperature=0.1,
             do_sample=True,
             pad_token_id=tokenizer.eos_token_id,

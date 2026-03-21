@@ -34,6 +34,10 @@ with DAG(
     catchup=False,
     max_active_runs=1,    # 동시 실행 1개로 제한 (Spark OOM 방지)
     tags=['silver', 'batch'],
+    params={
+        # 한 번 실행당 처리할 최대 건수. 0 또는 미지정 시 전체 처리.
+        'limit': 200,
+    },
 ) as dag:
 
     def get_latest_bronze_execution_date(execution_date, **kwargs):
@@ -70,7 +74,11 @@ with DAG(
         application='/opt/spark-jobs/airadar-spark.jar',
         java_class='com.mcp.airadar.spark.SilverRefinementJob',
         conn_id='spark_default',
-        application_args=['--date', '{{ ds }}', '--source-type', 'news'],
+        application_args=[
+            '--date', '{{ ds }}',
+            '--source-type', 'news',
+            '--limit', '{{ params.limit }}',
+        ],
         conf=SPARK_CONF,
     )
 
@@ -79,7 +87,11 @@ with DAG(
         application='/opt/spark-jobs/airadar-spark.jar',
         java_class='com.mcp.airadar.spark.SilverRefinementJob',
         conn_id='spark_default',
-        application_args=['--date', '{{ ds }}', '--source-type', 'paper'],
+        application_args=[
+            '--date', '{{ ds }}',
+            '--source-type', 'paper',
+            '--limit', '{{ params.limit }}',
+        ],
         conf=SPARK_CONF,
     )
 
@@ -88,7 +100,11 @@ with DAG(
         application='/opt/spark-jobs/airadar-spark.jar',
         java_class='com.mcp.airadar.spark.SilverRefinementJob',
         conn_id='spark_default',
-        application_args=['--date', '{{ ds }}', '--source-type', 'github'],
+        application_args=[
+            '--date', '{{ ds }}',
+            '--source-type', 'github',
+            '--limit', '{{ params.limit }}',
+        ],
         conf=SPARK_CONF,
     )
 
