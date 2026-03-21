@@ -42,7 +42,7 @@ def crawl_capabilities() -> dict:
         },
         "github_archive_targets": {
             "github_api": ["ai_repositories"],
-            "github_trending_archive": ["trending_repo", "repo_pr_document"],
+            "github_trending_archive": ["trending_repo"],
         },
     }
 
