@@ -12,7 +12,6 @@ public record GithubTrendingRepoDto(
         String language,
         Long stars,
         Long forks,
-        Integer weeklyCommits,
         Integer starDelta7d,
         List<GithubActivityPointDto> daily,
         List<GithubActivityPointDto> monthly

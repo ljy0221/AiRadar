@@ -145,7 +145,6 @@ public class GithubService {
                 .language(repo.getLanguage())
                 .stars(repo.getStars())
                 .forks(repo.getForks())
-                .weeklyCommits(repo.getWeeklyCommits())
                 .starDelta7d(repo.getStarDelta7d())
                 .daily(dailyPoints)
                 .monthly(monthlyPoints)
