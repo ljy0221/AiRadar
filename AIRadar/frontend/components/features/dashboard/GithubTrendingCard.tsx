@@ -1,8 +1,8 @@
 import { TrendingUp, TrendingDown, Star, GitFork, Flame } from 'lucide-react';
-import { useTrendingReposQuery } from '@/hooks/queries/useGithubQuery';
+import { useGithubReposQuery } from '@/hooks/queries/useGithubQuery';
 
 export const GithubTrendingCard = () => {
-  const { data: repos, isLoading, isError } = useTrendingReposQuery(5);
+  const { data, isLoading, isError } = useGithubReposQuery({ limit: 5 });
 
   if (isLoading) {
     return (
@@ -10,7 +10,7 @@ export const GithubTrendingCard = () => {
     );
   }
 
-  if (isError || !repos) {
+  if (isError || !data?.repos) {
     return (
       <div className="bg-white dark:bg-[#1a1c2e] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-center h-32">
         <p className="text-sm text-red-500">GitHub 데이터를 불러오는 데 실패했습니다.</p>
@@ -29,7 +29,7 @@ export const GithubTrendingCard = () => {
       </div>
 
       <div className="flex flex-col divide-y divide-gray-100 dark:divide-gray-800">
-        {repos.map((repo, idx) => (
+        {data.repos.map((repo, idx) => (
           <div key={repo.repoId} className="flex items-start gap-4 py-3 first:pt-0 last:pb-0">
             {/* 순위 */}
             <span className="text-2xl font-black text-gray-200 dark:text-gray-700 w-8 text-center shrink-0">
@@ -38,7 +38,7 @@ export const GithubTrendingCard = () => {
 
             {/* 정보 */}
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
+              <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate hover:text-[var(--color-accent)] cursor-pointer">
                 {repo.repoName}
               </p>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
