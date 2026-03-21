@@ -39,6 +39,8 @@ with DAG(
         'limit': 200,
         # True 이면 기존 Silver를 replaceWhere로 덮어쓰며 전체 재분석 (companies 등 갱신 목적)
         'reprocess': False,
+        # 처리할 날짜. 미지정 시 {{ ds }} (DAG 실행일) 사용.
+        'date': '',
     },
 ) as dag:
 
@@ -77,7 +79,7 @@ with DAG(
         java_class='com.mcp.airadar.spark.SilverRefinementJob',
         conn_id='spark_default',
         application_args=[
-            '--date', '{{ ds }}',
+            '--date', '{{ params.date if params.date else ds }}',
             '--source-type', 'news',
             '--limit', '{{ params.limit }}',
             '--reprocess', '{{ params.reprocess }}',
@@ -91,7 +93,7 @@ with DAG(
         java_class='com.mcp.airadar.spark.SilverRefinementJob',
         conn_id='spark_default',
         application_args=[
-            '--date', '{{ ds }}',
+            '--date', '{{ params.date if params.date else ds }}',
             '--source-type', 'paper',
             '--limit', '{{ params.limit }}',
             '--reprocess', '{{ params.reprocess }}',
@@ -105,7 +107,7 @@ with DAG(
         java_class='com.mcp.airadar.spark.SilverRefinementJob',
         conn_id='spark_default',
         application_args=[
-            '--date', '{{ ds }}',
+            '--date', '{{ params.date if params.date else ds }}',
             '--source-type', 'github',
             '--limit', '{{ params.limit }}',
             '--reprocess', '{{ params.reprocess }}',
