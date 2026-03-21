@@ -161,13 +161,14 @@ pipeline {
             deployStages['Deploy Server1'] = {
               sshagent(credentials: [env.SERVER1_SSH_CREDENTIAL]) {
                 sh """
-                  # JAR 및 변경된 설정 파일만 전송 (전체 소스 tar 금지 — Jenkins OOM 유발)
-                  ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} 'mkdir -p ${REPO_DIR}/AIRadar/backend/build/libs ${REPO_DIR}/AIRadar/infra ${REPO_DIR}/AIRadar/airflow/dags'
+                  ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} 'mkdir -p ${REPO_DIR}/AIRadar/backend/build/libs ${REPO_DIR}/AIRadar/infra/scripts ${REPO_DIR}/AIRadar/airflow/dags ${REPO_DIR}/AIRadar/crawling'
                   scp -o StrictHostKeyChecking=no AIRadar/backend/build/libs/airadar-spark.jar ${SERVER1_HOST}:${REPO_DIR}/AIRadar/backend/build/libs/
                   scp -o StrictHostKeyChecking=no AIRadar/infra/docker-compose.server1.yml ${SERVER1_HOST}:${REPO_DIR}/AIRadar/infra/
                   scp -o StrictHostKeyChecking=no AIRadar/infra/scripts/deploy-server1.sh ${SERVER1_HOST}:${REPO_DIR}/AIRadar/infra/scripts/
                   ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} 'rm -f ${REPO_DIR}/AIRadar/airflow/dags/*.py'
                   scp -o StrictHostKeyChecking=no AIRadar/airflow/dags/*.py ${SERVER1_HOST}:${REPO_DIR}/AIRadar/airflow/dags/
+                  ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} 'rm -rf ${REPO_DIR}/AIRadar/crawling && mkdir -p ${REPO_DIR}/AIRadar/crawling'
+                  scp -o StrictHostKeyChecking=no -r AIRadar/crawling/ ${SERVER1_HOST}:${REPO_DIR}/AIRadar/
                   ssh -o StrictHostKeyChecking=no ${SERVER1_HOST} '
                     set -e
                     cd ${REPO_DIR}
@@ -177,8 +178,12 @@ pipeline {
               }
             }
           }
-
-          parallel deployStages
+          if (deployStages['Deploy Server1']) {
+            deployStages['Deploy Server1'].call()
+          }
+          if (deployStages['Deploy Server2']) {
+            deployStages['Deploy Server2'].call()
+          }
         }
       }
     }
