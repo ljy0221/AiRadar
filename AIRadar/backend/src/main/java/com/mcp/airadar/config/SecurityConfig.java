@@ -41,7 +41,7 @@ public class SecurityConfig {
                         // 기존 뉴스/검색/대시보드 API 공개 유지
                         .requestMatchers("/api/v1/news/**", "/api/v1/papers/**",
                                 "/api/v1/search/**", "/api/v1/dashboard/**",
-                                "/api/v1/github/**",
+                                "/api/v1/github/**", "/api/v1/mail/**",
                                 "/api/v1/mock/**").permitAll()
 
                         // 트렌딩 조회 — 비로그인 포함 공개
