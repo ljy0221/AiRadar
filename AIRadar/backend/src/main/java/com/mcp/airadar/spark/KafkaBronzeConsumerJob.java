@@ -274,8 +274,9 @@ public class KafkaBronzeConsumerJob {
             col("msg.author").as("author"),
             col("msg.published_at").as("published_at"),
             col("kafka_timestamp").as("crawled_at"),
-            when(col("msg.published_at").isNotNull(), to_date(col("msg.published_at")))
-                .otherwise(current_date()).as("batch_date")
+            // batch_date = 수집 시점(kafka_timestamp) 기준
+            // published_at 기준으로 하면 과거 기사가 계속 같은 파티션에 중복 누적됨
+            to_date(col("kafka_timestamp")).as("batch_date")
         ).filter(col("article_id").isNotNull());
     }
 
