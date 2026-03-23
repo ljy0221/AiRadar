@@ -94,47 +94,47 @@ class NewsServiceTest {
     @Test
     @DisplayName("given no company param when get company news then returns five supported companies")
     void getCompanyNewsReturnsSupportedCompanies() {
-        when(newsRepository.findCompanyNews("openai", 10)).thenReturn(List.of(sampleItem));
-        when(newsRepository.findCompanyNews("microsoft", 10)).thenReturn(List.of());
-        when(newsRepository.findCompanyNews("google", 10)).thenReturn(List.of());
-        when(newsRepository.findCompanyNews("naver", 10)).thenReturn(List.of());
-        when(newsRepository.findCompanyNews("kakao", 10)).thenReturn(List.of());
+        when(newsRepository.findCompanyNews("{\"openai\",\"OpenAI\"}", 10)).thenReturn(List.of(sampleItem));
+        when(newsRepository.findCompanyNews("{\"microsoft\",\"Microsoft\"}", 10)).thenReturn(List.of());
+        when(newsRepository.findCompanyNews("{\"google\",\"Google\",\"deepmind\",\"DeepMind\"}", 10)).thenReturn(List.of());
+        when(newsRepository.findCompanyNews("{\"naver\",\"Naver\",\"NAVER\"}", 10)).thenReturn(List.of());
+        when(newsRepository.findCompanyNews("{\"kakao\",\"Kakao\",\"KAKAO\"}", 10)).thenReturn(List.of());
 
         List<NewsDto.CompanyNewsGroup> result = newsService.getCompanyNews(null, null);
 
         assertThat(result).hasSize(5);
         assertThat(result.get(0).company()).isEqualTo("openai");
         assertThat(result.get(0).items()).hasSize(1);
-        verify(newsRepository).findCompanyNews("openai", 10);
-        verify(newsRepository).findCompanyNews("microsoft", 10);
-        verify(newsRepository).findCompanyNews("google", 10);
-        verify(newsRepository).findCompanyNews("naver", 10);
-        verify(newsRepository).findCompanyNews("kakao", 10);
+        verify(newsRepository).findCompanyNews("{\"openai\",\"OpenAI\"}", 10);
+        verify(newsRepository).findCompanyNews("{\"microsoft\",\"Microsoft\"}", 10);
+        verify(newsRepository).findCompanyNews("{\"google\",\"Google\",\"deepmind\",\"DeepMind\"}", 10);
+        verify(newsRepository).findCompanyNews("{\"naver\",\"Naver\",\"NAVER\"}", 10);
+        verify(newsRepository).findCompanyNews("{\"kakao\",\"Kakao\",\"KAKAO\"}", 10);
     }
 
     @Test
     @DisplayName("given company and too large limit when get company news then caps at ten")
     void getCompanyNewsCapsLimitAtTen() {
-        when(newsRepository.findCompanyNews("naver", 10)).thenReturn(List.of(sampleItem));
+        when(newsRepository.findCompanyNews("{\"naver\",\"Naver\",\"NAVER\"}", 10)).thenReturn(List.of(sampleItem));
 
         List<NewsDto.CompanyNewsGroup> result = newsService.getCompanyNews("naver", 99);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).company()).isEqualTo("naver");
         assertThat(result.get(0).items()).hasSize(1);
-        verify(newsRepository).findCompanyNews("naver", 10);
+        verify(newsRepository).findCompanyNews("{\"naver\",\"Naver\",\"NAVER\"}", 10);
     }
 
     @Test
     @DisplayName("given uppercase company when get company news then normalizes key")
     void getCompanyNewsNormalizesCompany() {
-        when(newsRepository.findCompanyNews("openai", 5)).thenReturn(List.of(sampleItem));
+        when(newsRepository.findCompanyNews("{\"openai\",\"OpenAI\"}", 5)).thenReturn(List.of(sampleItem));
 
         List<NewsDto.CompanyNewsGroup> result = newsService.getCompanyNews("OpenAI", 5);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).company()).isEqualTo("openai");
-        verify(newsRepository).findCompanyNews("openai", 5);
+        verify(newsRepository).findCompanyNews("{\"openai\",\"OpenAI\"}", 5);
     }
 
     @Test

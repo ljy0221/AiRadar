@@ -91,7 +91,7 @@ public class NewsService {
     }
 
     private NewsDto.CompanyNewsGroup toCompanyNewsGroup(String companyName, int limit) {
-        List<NewsDto.ListItem> items = newsRepository.findCompanyNews(companyName, limit).stream()
+        List<NewsDto.ListItem> items = newsRepository.findCompanyNews(toPostgresTextArray(companyAliases(companyName)), limit).stream()
                 .map(NewsDto.ListItem::from)
                 .toList();
 
@@ -114,5 +114,22 @@ public class NewsService {
             throw new EntityNotFoundException("Unsupported company: " + company);
         }
         return normalized;
+    }
+
+    private List<String> companyAliases(String companyName) {
+        return switch (companyName) {
+            case "openai" -> List.of("openai", "OpenAI");
+            case "microsoft" -> List.of("microsoft", "Microsoft");
+            case "google" -> List.of("google", "Google", "deepmind", "DeepMind");
+            case "naver" -> List.of("naver", "Naver", "NAVER");
+            case "kakao" -> List.of("kakao", "Kakao", "KAKAO");
+            default -> List.of(companyName);
+        };
+    }
+
+    private String toPostgresTextArray(List<String> values) {
+        return "{" + values.stream()
+                .map(value -> "\"" + value.replace("\"", "\\\"") + "\"")
+                .collect(java.util.stream.Collectors.joining(",")) + "}";
     }
 }
