@@ -44,6 +44,7 @@ class PaperControllerTest {
                 .authors(new String[]{"Vaswani"})
                 .researchArea("cs.CL")
                 .category("NLP")
+                .summary("Transformer 아키텍처 제안 논문")
                 .publishedAt(LocalDateTime.of(2026, 3, 19, 9, 0))
                 .build();
     }
@@ -81,7 +82,8 @@ class PaperControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.path").value("/api/v1/papers"))
                 .andExpect(jsonPath("$.data[0].date").value("2026-03-19"))
-                .andExpect(jsonPath("$.data[0].items[0].paperId").value("paper-001"));
+                .andExpect(jsonPath("$.data[0].items[0].paperId").value("paper-001"))
+                .andExpect(jsonPath("$.data[0].items[0].summary").value("Transformer 아키텍처 제안 논문"));
     }
 
     @Test
