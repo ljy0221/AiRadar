@@ -58,18 +58,34 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) throw new Error('No refresh token available');
+
         const refreshUrl = `${BASE_URL}/auth/refresh`;
         console.log('🔄 Attempting Refresh:', refreshUrl);
-        const response: any = await axios.post(refreshUrl, {}, { withCredentials: true });
-        const { accessToken } = response.data;
+        
+        // 리프레시 토큰을 본문에 담아 요청 (백엔드 규격)
+        const response: any = await axios.post(refreshUrl, { refreshToken }, { withCredentials: true });
+        
+        // 백엔드 공통 응답 포맷 대응 ({ success, data: { accessToken, refreshToken } })
+        const tokenData = response.data.data || response.data;
+        const { accessToken, refreshToken: newRefreshToken } = tokenData;
 
-        localStorage.setItem('accessToken', accessToken);
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-
-        return api(originalRequest);
+        if (accessToken) {
+          localStorage.setItem('accessToken', accessToken);
+          if (newRefreshToken) {
+            localStorage.setItem('refreshToken', newRefreshToken);
+          }
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          return api(originalRequest);
+        }
       } catch (refreshError) {
-        // 리프레시 토큰도 만료된 경우 로그아웃 처리 등이 필요함
+        // 리프레시 토큰도 만료된 경우 로그아웃 처리
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('auth-logout'));
+        }
         return Promise.reject(refreshError);
       }
     }
