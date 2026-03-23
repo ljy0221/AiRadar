@@ -2,6 +2,7 @@ package com.mcp.airadar.recommendation.controller;
 
 import com.mcp.airadar.recommendation.dto.ArticleActionRequest;
 import com.mcp.airadar.recommendation.dto.ArticleViewRequest;
+import com.mcp.airadar.recommendation.dto.PaperViewRequest;
 import com.mcp.airadar.recommendation.dto.SearchEventRequest;
 import com.mcp.airadar.recommendation.service.UserEventService;
 import jakarta.validation.Valid;
@@ -74,6 +75,18 @@ public class EventController {
             @AuthenticationPrincipal UUID userId,
             @Valid @RequestBody ArticleActionRequest request) {
         userEventService.onArticleBookmarked(userId, request.articleId());
+        return ResponseEntity.accepted().build();
+    }
+
+    /**
+     * 논문 조회 이벤트 — 30초 이상 체류 시 프로파일 반영
+     * [AUTH 필요]
+     */
+    @PostMapping("/paper-view")
+    public ResponseEntity<Void> paperView(
+            @AuthenticationPrincipal UUID userId,
+            @Valid @RequestBody PaperViewRequest request) {
+        userEventService.onPaperViewed(userId, request.paperId(), request.dwellTimeSeconds());
         return ResponseEntity.accepted().build();
     }
 }

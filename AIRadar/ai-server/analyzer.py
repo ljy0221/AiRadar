@@ -149,15 +149,15 @@ def _parse_json_response(raw: str) -> list[dict]:
 
 
 NEWS_SYSTEM = (
-    "당신은 IT/AI 기술 뉴스 분석 전문가입니다. "
-    "주어진 뉴스 기사들을 분석하여 정확히 JSON 배열로만 응답하세요. "
-    "다른 텍스트 없이 JSON 배열만 출력하세요."
+    "You are an expert IT/AI technology news analyst. "
+    "Analyze the given news articles and respond with a JSON array only. "
+    "Output only the JSON array with no additional text."
 )
 
 PAPER_SYSTEM = (
-    "당신은 AI/ML 논문 분석 전문가입니다. "
-    "주어진 논문들을 분석하여 정확히 JSON 배열로만 응답하세요. "
-    "다른 텍스트 없이 JSON 배열만 출력하세요."
+    "You are an expert AI/ML research paper analyst. "
+    "Analyze the given papers and respond with a JSON array only. "
+    "Output only the JSON array with no additional text."
 )
 
 
@@ -171,21 +171,37 @@ async def analyze_news_batch(articles: list[NewsRequest]) -> list[NewsResponse]:
         for a in articles
     ]
 
-    user_prompt = f"""다음 {len(articles)}개의 뉴스 기사를 분석하세요.
-각 기사에 대해 아래 필드를 포함한 JSON 배열로 반환하세요:
-- article_id (입력값 그대로)
+    user_prompt = f"""Analyze the following {len(articles)} news articles.
+Return a JSON array of objects. Each object must have exactly these keys:
+
+Example format:
+[
+  {{
+    "article_id": "id-from-input",
+    "sentiment": "POSITIVE",
+    "keywords": ["ai", "llm", "openai"],
+    "score": 0.9,
+    "summary": "A brief summary of the article.",
+    "category": "LLM",
+    "region": "GLOBAL",
+    "companies": ["OpenAI", "Google"]
+  }}
+]
+
+Rules:
+- article_id: copy exactly from input
 - sentiment: "POSITIVE" | "NEGATIVE" | "NEUTRAL"
-- keywords: 핵심 AI/기술 키워드 최대 5개 (영어 소문자 list)
-- score: AI/기술 관련도 0.0~1.0 (float)
-- summary: 2문장 이내 한국어 요약 (string)
+- keywords: up to 5 English lowercase strings
+- score: float 0.0~1.0, AI/tech relevance
+- summary: 1-2 sentences in English
 - category: LLM | Vision | NLP | RL | Multimodal | Robotics | Semiconductor | Cloud | ETC
 - region: "DOMESTIC" | "GLOBAL"
-- companies: 기사에 언급된 기업명 list (예: ["OpenAI", "Google", "삼성전자"]), 없으면 빈 배열
+- companies: official company names (e.g. "Samsung Electronics"), empty array if none
 
-기사 목록:
+Articles:
 {json.dumps(items, ensure_ascii=False)}
 
-응답 형식: JSON 배열만 출력"""
+Output only the JSON array, no other text."""
 
     import time
     logger.info(f"[뉴스] LLM 추론 시작 ({len(articles)}건)")
@@ -239,10 +255,10 @@ Return a JSON array with these fields for each paper:
 - category: Vision | NLP | RL | Multimodal | Robotics | ETC
 - research_area: cs.AI | cs.LG | cs.CV | cs.CL | cs.RO | cs.NE
 
-논문 목록:
+Papers:
 {json.dumps(items, ensure_ascii=False)}
 
-응답 형식: JSON 배열만 출력"""
+Output only the JSON array."""
 
     import time
     logger.info(f"[논문] LLM 추론 시작 ({len(papers)}건)")

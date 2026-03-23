@@ -40,4 +40,19 @@ public class RecommendationController {
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(recommendationService.getPersonalizedFeed(userId, size));
     }
+
+    /**
+     * 개인화 논문 피드
+     * GET /api/v1/recommendations/papers
+     *
+     * [AUTH 필요] — 비로그인 시 401
+     *
+     * @param size 반환할 논문 수 (기본 20, 최대 50)
+     */
+    @GetMapping("/papers")
+    public ResponseEntity<List<RecommendationDto.PaperItem>> getPersonalizedPapers(
+            @AuthenticationPrincipal UUID userId,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(recommendationService.getPersonalizedPapers(userId, size));
+    }
 }
