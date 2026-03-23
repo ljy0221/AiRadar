@@ -53,7 +53,6 @@ class GithubControllerTest {
                         .language("TypeScript")
                         .stars(10_000L)
                         .forks(1_000L)
-                        .weeklyCommits(20)
                         .starDelta7d(500)
                         .daily(List.of(GithubActivityPointDto.builder()
                                 .label("03-19")

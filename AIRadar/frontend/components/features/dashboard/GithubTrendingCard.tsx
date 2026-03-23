@@ -62,10 +62,16 @@ export const GithubTrendingCard = () => {
             </div>
 
             {/* 스타 델타 */}
-            <div className={`flex items-center gap-1 text-xs font-bold shrink-0 ${repo.starDelta7d >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>
-              {repo.starDelta7d >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-              {repo.starDelta7d >= 0 ? '+' : ''}{repo.starDelta7d.toLocaleString()}
-            </div>
+            {repo.starDelta7d !== null ? (
+              <div className={`flex items-center gap-1 text-xs font-bold shrink-0 ${repo.starDelta7d >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+                {repo.starDelta7d >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                {repo.starDelta7d >= 0 ? '+' : ''}{repo.starDelta7d.toLocaleString()}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 text-xs font-bold shrink-0 text-gray-400 dark:text-gray-500">
+                집계중
+              </div>
+            )}
           </div>
         ))}
       </div>
