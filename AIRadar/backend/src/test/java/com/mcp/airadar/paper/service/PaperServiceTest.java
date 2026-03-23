@@ -65,8 +65,8 @@ class PaperServiceTest {
     }
 
     @Test
-    @DisplayName("날짜 미지정 시 최근 4일 범위를 최신순으로 묶는다")
-    void getPaperList_withoutDate_returnsRecentFourDays() {
+    @DisplayName("날짜 미지정 시 최근 10일 범위를 최신순으로 묶는다")
+    void getPaperList_withoutDate_returnsRecentTenDays() {
         Paper olderPaper = new Paper();
         ReflectionTestUtils.setField(olderPaper, "paperId", "paper-002");
         ReflectionTestUtils.setField(olderPaper, "title", "Older Paper");
@@ -77,7 +77,7 @@ class PaperServiceTest {
         ReflectionTestUtils.setField(olderPaper, "publishedAt", LocalDateTime.of(2026, 3, 18, 8, 0));
 
         LocalDate today = LocalDate.now();
-        when(paperRepository.findRecentPaperFeed(null, null, today.minusDays(3).atStartOfDay(), today.plusDays(1).atStartOfDay()))
+        when(paperRepository.findRecentPaperFeed(null, null, today.minusDays(9).atStartOfDay(), today.plusDays(1).atStartOfDay()))
                 .thenReturn(List.of(olderPaper, samplePaper));
 
         List<PaperDto.DailyGroup> result = paperService.getPaperList(null, null, null);
@@ -85,7 +85,7 @@ class PaperServiceTest {
         assertThat(result).hasSize(2);
         assertThat(result.get(0).date()).isEqualTo(samplePaper.getPublishedAt().toLocalDate());
         assertThat(result.get(1).date()).isEqualTo(olderPaper.getPublishedAt().toLocalDate());
-        verify(paperRepository).findRecentPaperFeed(null, null, today.minusDays(3).atStartOfDay(), today.plusDays(1).atStartOfDay());
+        verify(paperRepository).findRecentPaperFeed(null, null, today.minusDays(9).atStartOfDay(), today.plusDays(1).atStartOfDay());
         verify(paperRepository, never()).findByIsActiveTrueOrderByPublishedAtDesc(any());
     }
 
