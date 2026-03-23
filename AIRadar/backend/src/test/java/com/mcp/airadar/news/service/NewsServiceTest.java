@@ -21,7 +21,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -52,8 +51,8 @@ class NewsServiceTest {
     }
 
     @Test
-    @DisplayName("date가 있으면 해당 날짜만 조회")
-    void getNewsList_withDate() {
+    @DisplayName("given date when get news list then groups by that date")
+    void getNewsListWithDate() {
         LocalDate targetDate = LocalDate.of(2026, 3, 19);
         when(newsRepository.findRecentNewsFeed("GLOBAL", "LLM", targetDate.atStartOfDay(), targetDate.plusDays(1).atStartOfDay()))
                 .thenReturn(List.of(sampleItem));
@@ -68,8 +67,8 @@ class NewsServiceTest {
     }
 
     @Test
-    @DisplayName("같은 날짜 내에서는 score 내림차순으로 정렬")
-    void getNewsList_sortsByScoreWithinDate() {
+    @DisplayName("given mixed scores when get news list then sorts higher score first")
+    void getNewsListSortsByScoreWithinDate() {
         NewsItem lowerScoreItem = new NewsItem();
         ReflectionTestUtils.setField(lowerScoreItem, "articleId", "article-002");
         ReflectionTestUtils.setField(lowerScoreItem, "title", "lower score");
@@ -93,8 +92,62 @@ class NewsServiceTest {
     }
 
     @Test
-    @DisplayName("찾는 articleId가 있으면 Detail 반환")
-    void getNewsDetail_found() {
+    @DisplayName("given no company param when get company news then returns five supported companies")
+    void getCompanyNewsReturnsSupportedCompanies() {
+        when(newsRepository.findCompanyNews("openai", 10)).thenReturn(List.of(sampleItem));
+        when(newsRepository.findCompanyNews("microsoft", 10)).thenReturn(List.of());
+        when(newsRepository.findCompanyNews("google", 10)).thenReturn(List.of());
+        when(newsRepository.findCompanyNews("naver", 10)).thenReturn(List.of());
+        when(newsRepository.findCompanyNews("kakao", 10)).thenReturn(List.of());
+
+        List<NewsDto.CompanyNewsGroup> result = newsService.getCompanyNews(null, null);
+
+        assertThat(result).hasSize(5);
+        assertThat(result.get(0).company()).isEqualTo("openai");
+        assertThat(result.get(0).items()).hasSize(1);
+        verify(newsRepository).findCompanyNews("openai", 10);
+        verify(newsRepository).findCompanyNews("microsoft", 10);
+        verify(newsRepository).findCompanyNews("google", 10);
+        verify(newsRepository).findCompanyNews("naver", 10);
+        verify(newsRepository).findCompanyNews("kakao", 10);
+    }
+
+    @Test
+    @DisplayName("given company and too large limit when get company news then caps at ten")
+    void getCompanyNewsCapsLimitAtTen() {
+        when(newsRepository.findCompanyNews("naver", 10)).thenReturn(List.of(sampleItem));
+
+        List<NewsDto.CompanyNewsGroup> result = newsService.getCompanyNews("naver", 99);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).company()).isEqualTo("naver");
+        assertThat(result.get(0).items()).hasSize(1);
+        verify(newsRepository).findCompanyNews("naver", 10);
+    }
+
+    @Test
+    @DisplayName("given uppercase company when get company news then normalizes key")
+    void getCompanyNewsNormalizesCompany() {
+        when(newsRepository.findCompanyNews("openai", 5)).thenReturn(List.of(sampleItem));
+
+        List<NewsDto.CompanyNewsGroup> result = newsService.getCompanyNews("OpenAI", 5);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).company()).isEqualTo("openai");
+        verify(newsRepository).findCompanyNews("openai", 5);
+    }
+
+    @Test
+    @DisplayName("given unsupported company when get company news then throws")
+    void getCompanyNewsThrowsForUnsupportedCompany() {
+        assertThatThrownBy(() -> newsService.getCompanyNews("anthropic", 5))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessageContaining("anthropic");
+    }
+
+    @Test
+    @DisplayName("given article id when get news detail then returns detail")
+    void getNewsDetailFound() {
         when(newsRepository.findByArticleIdAndIsActiveTrue("abc123")).thenReturn(Optional.of(sampleItem));
 
         NewsDto.Detail detail = newsService.getNewsDetail("abc123");
@@ -103,8 +156,8 @@ class NewsServiceTest {
     }
 
     @Test
-    @DisplayName("없는 articleId면 EntityNotFoundException 발생")
-    void getNewsDetail_notFound() {
+    @DisplayName("given missing article id when get news detail then throws")
+    void getNewsDetailNotFound() {
         when(newsRepository.findByArticleIdAndIsActiveTrue("no-such-id")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> newsService.getNewsDetail("no-such-id"))
