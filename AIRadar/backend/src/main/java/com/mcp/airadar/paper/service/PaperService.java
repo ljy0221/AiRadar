@@ -28,7 +28,7 @@ public class PaperService {
         LocalDate baseDate = date != null ? date : LocalDate.now();
         LocalDateTime startInclusive = date != null
                 ? baseDate.atStartOfDay()
-                : baseDate.minusDays(3).atStartOfDay();
+                : baseDate.minusDays(9).atStartOfDay();
         LocalDateTime endExclusive = baseDate.plusDays(1).atStartOfDay();
 
         Comparator<PaperDto.ListItem> itemComparator = Comparator
