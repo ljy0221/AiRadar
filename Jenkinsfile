@@ -178,12 +178,7 @@ pipeline {
               }
             }
           }
-          if (deployStages['Deploy Server1']) {
-            deployStages['Deploy Server1'].call()
-          }
-          if (deployStages['Deploy Server2']) {
-            deployStages['Deploy Server2'].call()
-          }
+          parallel deployStages
         }
       }
     }
