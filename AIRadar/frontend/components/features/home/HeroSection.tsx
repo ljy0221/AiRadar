@@ -29,7 +29,7 @@ export const HeroSection = () => {
         <div className="absolute inset-0 flex items-center justify-center opacity-20">
 
 
-          
+
           {/* Concentric Radar Rings */}
           {[400, 700, 1000].map((r) => (
             <div
@@ -66,8 +66,8 @@ export const HeroSection = () => {
           transition={{ duration: 1, delay: 0.4 }}
           className="px-5 py-2.5 rounded-full border border-accent/20 bg-bg-secondary/50 backdrop-blur-md mb-12 flex items-center gap-2 cursor-default"
         >
-          <div className="w-1.5 h-1.5 bg-[#00F2FF] rounded-full shadow-[0_0_6px_#00F2FF]" />
-          <span className="text-[10px] font-bold text-[#00F2FF] tracking-[0.2em] uppercase">
+          <div className="w-1.5 h-1.5 bg-[var(--color-accent)] rounded-full shadow-[0_0_6px_var(--color-accent)]" />
+          <span className="text-[10px] font-bold text-[var(--color-accent)] tracking-[0.2em] uppercase">
             LIVE AI INTELLIGENCE SYSTEM
           </span>
         </motion.div>
@@ -103,30 +103,14 @@ export const HeroSection = () => {
           </p>
         </motion.div>
 
-        {/* Action Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 1.0 }}
-          className="flex flex-col sm:flex-row items-center gap-4 mb-20"
-        >
-          <button className="px-6 py-3.5 bg-accent hover:bg-opacity-80 text-bg-primary font-bold rounded-lg flex items-center gap-2 transition-all">
-            지금 시작하기 <span className="text-xl leading-none">→</span>
-          </button>
-          <button className="px-6 py-3.5 bg-black/40 border border-text-primary/10 hover:bg-black/60 text-text-primary font-medium rounded-lg flex items-center gap-2 transition-all group">
-            데모 보기
-            <div className="w-5 h-5 rounded-full bg-text-primary/20 flex items-center justify-center group-hover:bg-text-primary/30 transition-colors">
-              <div className="w-0 h-0 border-y-[4px] border-y-transparent border-l-[6px] border-l-text-primary/90 ml-0.5" />
-            </div>
-          </button>
-        </motion.div>
+
 
         {/* Premium Tech Info Badges */}
         <motion.div
-           initial={{ opacity: 0 }}
-           animate={{ opacity: 1 }}
-           transition={{ duration: 1, delay: 1.2 }}
-           className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-3 gap-y-10 md:gap-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 1.2 }}
+          className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-3 gap-y-10 md:gap-0"
         >
           <div className="flex flex-col items-center gap-2">
             <span className="text-[11px] font-bold text-accent uppercase tracking-[0.15em]">Sensing</span>

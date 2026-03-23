@@ -238,10 +238,7 @@ export const NewsTimelineTab = () => {
           </div>
         )}
 
-        {/* 실시간 급상승 키워드 추가 (default 화면일 때만) */}
-        {!selectedDate && (
-          <TrendingKeywords />
-        )}
+
 
         <TimelineFilter
           currentCategory={regionFilter}

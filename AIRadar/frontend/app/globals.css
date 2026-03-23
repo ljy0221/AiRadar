@@ -16,8 +16,13 @@
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .animate-shimmer {
@@ -36,11 +41,16 @@
   /* 수동 테마 토글 (next-themes가 제어) */
   :root.dark,
   .dark {
-    --bg-primary: #03080f;    /* 1단계 (가장 어두운 기본) */
-    --bg-secondary: #080f1a;  /* 2단계 */
-    --bg-tertiary: #0d1825;   /* 3단계 (카드 배경) */
-    --text-primary: #f0f4fa;  /* 차가운 흰색 */
-    --accent: #00d4c8;        /* 시안 (포인트/CTA) */
+    --bg-primary: #03080f;
+    /* 1단계 (가장 어두운 기본) */
+    --bg-secondary: #080f1a;
+    /* 2단계 */
+    --bg-tertiary: #0d1825;
+    /* 3단계 (카드 배경) */
+    --text-primary: #f0f4fa;
+    /* 차가운 흰색 */
+    --accent: #00d4c8;
+    /* 시안 (포인트/CTA) */
   }
 }
 

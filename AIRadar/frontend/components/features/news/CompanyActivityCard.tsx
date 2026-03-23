@@ -60,17 +60,18 @@ export const CompanyActivityCard = ({ company, onClick }: Props) => {
         })}
       </div>
 
-      {/* 3. 하단: 진행률 표시 바 */}
-      <div className="w-full h-[3px] bg-gray-100 dark:bg-gray-800/80 rounded-full overflow-hidden mt-auto">
-        <div 
-          className="h-full rounded-full transition-all duration-1000"
-          style={{ width: `${company.progress}%`, backgroundColor: company.color }}
+      {/* 3. 하단: 진행률 표시 바 및 화살표 */}
+      <div className="mt-auto flex items-center justify-between gap-4">
+        <div className="flex-1 h-[2.5px] bg-gray-200/50 dark:bg-gray-800/80 rounded-full overflow-hidden">
+          <div 
+            className="h-full rounded-full transition-all duration-1000 ease-out"
+            style={{ width: `${company.progress}%`, backgroundColor: company.color }}
+          />
+        </div>
+        <ArrowRight 
+          className="w-4 h-4 opacity-40 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1 shrink-0" 
+          style={{ color: company.color }} 
         />
-      </div>
-
-      {/* 우측 하단 화살표 아이콘 (상세 진입 암시) */}
-      <div className="absolute right-4 top-[102px]">
-        <ArrowRight className="w-4 h-4 opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: company.color }} />
       </div>
       
     </div>

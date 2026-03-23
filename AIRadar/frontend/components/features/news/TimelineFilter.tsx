@@ -13,8 +13,8 @@ interface TimelineFilterProps {
   setActiveCategory?: (cat: string) => void;
 }
 
-export const TimelineFilter = ({ 
-  currentCategory, 
+export const TimelineFilter = ({
+  currentCategory,
   setCategory,
   availableDates,
   selectedDate,
@@ -36,7 +36,7 @@ export const TimelineFilter = ({
         - 외부 다크/화이트 카드형 블록
       */}
       <div className="bg-gray-50/50 dark:bg-[#11121A] border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 sm:p-5 shadow-sm">
-        
+
         {/* 상단 행: 지역 필터(좌) + 날짜 필터(우) */}
         <div className="flex justify-between items-center mb-5">
           {/* 1) 지역 검색 필터 구역 */}
@@ -49,11 +49,10 @@ export const TimelineFilter = ({
               <button
                 key={type.id}
                 onClick={() => setCategory(type.id as typeof currentCategory)}
-                className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 ${
-                  currentCategory === type.id
+                className={`px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 ${currentCategory === type.id
                     ? 'bg-white dark:bg-[#2a2d42] text-[var(--color-accent)] dark:text-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                }`}
+                  }`}
               >
                 {type.label}
               </button>
@@ -62,20 +61,19 @@ export const TimelineFilter = ({
 
           {/* 2) 날짜/달력 필터 구역 */}
           <div className="w-fit flex items-center gap-2">
-            <button 
+            <button
               onClick={() => setIsCalendarOpen(true)}
-              className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border rounded-xl text-xs sm:text-sm font-bold transition-colors ${
-                selectedDate 
-                  ? 'border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--color-accent)]/10 dark:bg-[var(--color-accent)]/20 shadow-sm' 
+              className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border rounded-xl text-xs sm:text-sm font-bold transition-colors ${selectedDate
+                  ? 'border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--color-accent)]/10 dark:bg-[var(--color-accent)]/20 shadow-sm'
                   : 'border-gray-200 dark:border-gray-800/80 text-gray-700 dark:text-gray-300 bg-white dark:bg-[#171924] hover:bg-gray-50 dark:hover:bg-[#1c1f2e]'
-              }`}
+                }`}
             >
               <CalendarDays className={`w-4 h-4 ${selectedDate ? 'text-[var(--color-accent)]' : 'text-gray-500 dark:text-gray-400'}`} />
               {selectedDate ? selectedDate.replace(/-/g, '.') : '달력'}
             </button>
-            
+
             {selectedDate && (
-              <button 
+              <button
                 onClick={() => onDateSelect(null)}
                 className="p-1.5 sm:p-2 rounded-xl border border-gray-200 dark:border-gray-800/80 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#1c1f2e] transition-colors"
                 title="필터 초기화"
@@ -98,11 +96,10 @@ export const TimelineFilter = ({
                 <button
                   key={keyword}
                   onClick={() => setActiveCategory(keyword)}
-                  className={`shrink-0 px-3 py-1.5 sm:px-4 sm:py-1.5 rounded-full text-xs font-bold transition-all duration-200 border ${
-                    isActive
+                  className={`shrink-0 px-3 py-1.5 sm:px-4 sm:py-1.5 rounded-full text-xs font-bold transition-all duration-200 border ${isActive
                       ? 'border-emerald-500/80 text-emerald-500 bg-emerald-500/5'
                       : 'border-gray-300 dark:border-gray-800/80 text-gray-600 dark:text-gray-400 bg-transparent hover:border-gray-400 dark:hover:border-gray-600'
-                  }`}
+                    }`}
                 >
                   {keyword === 'ALL' ? '전체' : keyword}
                 </button>
@@ -112,8 +109,8 @@ export const TimelineFilter = ({
         )}
       </div>
 
-      <CalendarModal 
-        isOpen={isCalendarOpen} 
+      <CalendarModal
+        isOpen={isCalendarOpen}
         onClose={handleCloseCalendar}
         availableDates={availableDates}
         selectedDate={selectedDate}
