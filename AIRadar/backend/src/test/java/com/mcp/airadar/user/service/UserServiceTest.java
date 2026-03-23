@@ -5,7 +5,6 @@ import com.mcp.airadar.auth.repository.UserRepository;
 import com.mcp.airadar.recommendation.entity.SearchLog;
 import com.mcp.airadar.recommendation.repository.SearchLogRepository;
 import com.mcp.airadar.user.dto.BookmarkHistoryDto;
-import com.mcp.airadar.user.dto.LikeHistoryDto;
 import com.mcp.airadar.user.dto.OnboardingRequest;
 import com.mcp.airadar.user.entity.UserInterest;
 import com.mcp.airadar.user.repository.UserInterestRepository;
@@ -198,40 +197,18 @@ class UserServiceTest {
         assertThat(result).isEmpty();
     }
 
-    // ─── getLikeHistory ───────────────────────────────────────────────────────
+    // ─── deleteBookmark ───────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("좋아요 기록이 있을 때 articleId와 occurredAt이 올바르게 매핑되어 반환됨")
-    void getLikeHistory_hasLikes_returnsMappedDtos() {
+    @DisplayName("북마크 삭제 시 searchLogRepository.deleteByUserIdAndArticleIdAndEventType 호출됨")
+    void deleteBookmark_callsRepository() {
         // given
-        LocalDateTime now = LocalDateTime.now();
-        SearchLog log1 = SearchLog.builder()
-                .userId(userId).articleId("article-010")
-                .eventType("ARTICLE_LIKED").occurredAt(now.minusMinutes(30))
-                .build();
-
-        when(searchLogRepository.findLikeHistory(userId)).thenReturn(List.of(log1));
+        String articleId = "article-001";
 
         // when
-        List<LikeHistoryDto> result = userService.getLikeHistory(userId);
+        userService.deleteBookmark(userId, articleId);
 
         // then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).articleId()).isEqualTo("article-010");
-        assertThat(result.get(0).occurredAt()).isEqualTo(log1.getOccurredAt());
-        verify(searchLogRepository).findLikeHistory(userId);
-    }
-
-    @Test
-    @DisplayName("좋아요 기록이 없으면 빈 리스트 반환")
-    void getLikeHistory_noLikes_returnsEmptyList() {
-        // given
-        when(searchLogRepository.findLikeHistory(userId)).thenReturn(List.of());
-
-        // when
-        List<LikeHistoryDto> result = userService.getLikeHistory(userId);
-
-        // then
-        assertThat(result).isEmpty();
+        verify(searchLogRepository).deleteByUserIdAndArticleIdAndEventType(userId, articleId, "ARTICLE_BOOKMARKED");
     }
 }
