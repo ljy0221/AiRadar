@@ -59,6 +59,13 @@ class NewsControllerTest {
                 .build();
     }
 
+    private NewsDto.CompanyNewsGroup sampleCompanyGroup() {
+        return NewsDto.CompanyNewsGroup.builder()
+                .company("naver")
+                .items(List.of(sampleListItem()))
+                .build();
+    }
+
     private NewsDto.Detail sampleDetail() {
         return NewsDto.Detail.builder()
                 .articleId("article-001")
@@ -80,11 +87,9 @@ class NewsControllerTest {
 
     @Test
     @DisplayName("given default params when get news list then returns wrapped success response")
-    void givenDefaultParams_whenGetNewsList_thenReturnsWrappedSuccessResponse() throws Exception {
-        // given
+    void givenDefaultParamsWhenGetNewsListThenReturnsWrappedSuccessResponse() throws Exception {
         when(newsService.getNewsList(isNull(), isNull(), isNull())).thenReturn(List.of(sampleDailyGroup()));
 
-        // when then
         mockMvc.perform(get("/api/v1/news"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -96,12 +101,10 @@ class NewsControllerTest {
 
     @Test
     @DisplayName("given region and date when get news list then keeps wrapped payload")
-    void givenRegionAndDate_whenGetNewsList_thenKeepsWrappedPayload() throws Exception {
-        // given
+    void givenRegionAndDateWhenGetNewsListThenKeepsWrappedPayload() throws Exception {
         when(newsService.getNewsList(eq("GLOBAL"), isNull(), eq(LocalDate.of(2026, 3, 19))))
                 .thenReturn(List.of(sampleDailyGroup()));
 
-        // when then
         mockMvc.perform(get("/api/v1/news")
                         .param("region", "GLOBAL")
                         .param("date", "2026-03-19"))
@@ -110,12 +113,25 @@ class NewsControllerTest {
     }
 
     @Test
+    @DisplayName("given company params when get company news then returns wrapped success response")
+    void givenCompanyParamsWhenGetCompanyNewsThenReturnsWrappedSuccessResponse() throws Exception {
+        when(newsService.getCompanyNews("naver", 5)).thenReturn(List.of(sampleCompanyGroup()));
+
+        mockMvc.perform(get("/api/v1/news/companies")
+                        .param("company", "naver")
+                        .param("limit", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.path").value("/api/v1/news/companies"))
+                .andExpect(jsonPath("$.data[0].company").value("naver"))
+                .andExpect(jsonPath("$.data[0].items[0].articleId").value("article-001"));
+    }
+
+    @Test
     @DisplayName("given article id when get news detail then returns wrapped detail response")
-    void givenArticleId_whenGetNewsDetail_thenReturnsWrappedDetailResponse() throws Exception {
-        // given
+    void givenArticleIdWhenGetNewsDetailThenReturnsWrappedDetailResponse() throws Exception {
         when(newsService.getNewsDetail("article-001")).thenReturn(sampleDetail());
 
-        // when then
         mockMvc.perform(get("/api/v1/news/article-001"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.path").value("/api/v1/news/article-001"))
@@ -125,11 +141,9 @@ class NewsControllerTest {
 
     @Test
     @DisplayName("given missing article id when get news detail then returns wrapped error response")
-    void givenMissingArticleId_whenGetNewsDetail_thenReturnsWrappedErrorResponse() throws Exception {
-        // given
+    void givenMissingArticleIdWhenGetNewsDetailThenReturnsWrappedErrorResponse() throws Exception {
         when(newsService.getNewsDetail("no-such")).thenThrow(new EntityNotFoundException("not found"));
 
-        // when then
         mockMvc.perform(get("/api/v1/news/no-such"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))

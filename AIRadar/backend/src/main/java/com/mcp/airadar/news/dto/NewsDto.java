@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public class NewsDto {
 
@@ -44,6 +45,20 @@ public class NewsDto {
             LocalDate date,
             List<ListItem> items
     ) {}
+
+    @Builder
+    public record CompanyNewsGroup(
+            String company,
+            List<ListItem> items
+    ) {}
+
+    public static final Map<String, String> COMPANY_DISPLAY_NAMES = Map.of(
+            "openai", "openai",
+            "microsoft", "microsoft",
+            "google", "google",
+            "naver", "naver",
+            "kakao", "kakao"
+    );
 
     @Builder
     public record Detail(
