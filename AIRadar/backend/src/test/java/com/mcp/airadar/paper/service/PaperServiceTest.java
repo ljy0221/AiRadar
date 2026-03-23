@@ -11,18 +11,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PaperServiceTest {
@@ -33,77 +34,74 @@ class PaperServiceTest {
     @InjectMocks
     private PaperService paperService;
 
-    private Pageable pageable;
     private Paper samplePaper;
 
     @BeforeEach
     void setUp() {
-        pageable = PageRequest.of(0, 20);
         samplePaper = new Paper();
+        ReflectionTestUtils.setField(samplePaper, "paperId", "paper-001");
+        ReflectionTestUtils.setField(samplePaper, "title", "Attention Is All You Need");
+        ReflectionTestUtils.setField(samplePaper, "source", "arxiv");
+        ReflectionTestUtils.setField(samplePaper, "authors", new String[]{"Vaswani"});
+        ReflectionTestUtils.setField(samplePaper, "researchArea", "cs.CL");
+        ReflectionTestUtils.setField(samplePaper, "category", "NLP");
+        ReflectionTestUtils.setField(samplePaper, "publishedAt", LocalDateTime.of(2026, 3, 19, 9, 0));
     }
 
     @Test
-    @DisplayName("필터 없음 → 전체 조회")
-    void getPaperList_noFilter() {
-        Page<Paper> page = new PageImpl<>(List.of(samplePaper));
-        when(paperRepository.findByIsActiveTrueOrderByPublishedAtDesc(pageable)).thenReturn(page);
+    @DisplayName("date가 있으면 해당 날짜 논문만 그룹으로 반환한다")
+    void getPaperList_withDate() {
+        LocalDate targetDate = LocalDate.of(2026, 3, 19);
+        when(paperRepository.findRecentPaperFeed("NLP", "cs.CL", targetDate.atStartOfDay(), targetDate.plusDays(1).atStartOfDay()))
+                .thenReturn(List.of(samplePaper));
 
-        Page<PaperDto.ListItem> result = paperService.getPaperList(null, null, pageable);
+        List<PaperDto.DailyGroup> result = paperService.getPaperList("NLP", "cs.CL", targetDate);
 
-        assertThat(result).isNotNull();
-        verify(paperRepository).findByIsActiveTrueOrderByPublishedAtDesc(pageable);
-        verify(paperRepository, never()).findByIsActiveTrueAndCategoryOrderByPublishedAtDesc(any(), any());
-        verify(paperRepository, never()).findByIsActiveTrueAndResearchAreaOrderByPublishedAtDesc(any(), any());
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).date()).isEqualTo(targetDate);
+        assertThat(result.get(0).items()).hasSize(1);
+        assertThat(result.get(0).items().get(0).paperId()).isEqualTo("paper-001");
+        verify(paperRepository).findRecentPaperFeed("NLP", "cs.CL", targetDate.atStartOfDay(), targetDate.plusDays(1).atStartOfDay());
     }
 
     @Test
-    @DisplayName("category만 → category 필터 조회")
-    void getPaperList_categoryOnly() {
-        Page<Paper> page = new PageImpl<>(List.of(samplePaper));
-        when(paperRepository.findByIsActiveTrueAndCategoryOrderByPublishedAtDesc(eq("NLP"), eq(pageable)))
-                .thenReturn(page);
+    @DisplayName("날짜 미지정 시 최근 4일 범위를 최신순으로 묶는다")
+    void getPaperList_withoutDate_returnsRecentFourDays() {
+        Paper olderPaper = new Paper();
+        ReflectionTestUtils.setField(olderPaper, "paperId", "paper-002");
+        ReflectionTestUtils.setField(olderPaper, "title", "Older Paper");
+        ReflectionTestUtils.setField(olderPaper, "source", "arxiv");
+        ReflectionTestUtils.setField(olderPaper, "authors", new String[]{"Author"});
+        ReflectionTestUtils.setField(olderPaper, "researchArea", "cs.CL");
+        ReflectionTestUtils.setField(olderPaper, "category", "NLP");
+        ReflectionTestUtils.setField(olderPaper, "publishedAt", LocalDateTime.of(2026, 3, 18, 8, 0));
 
-        paperService.getPaperList("NLP", null, pageable);
+        LocalDate today = LocalDate.now();
+        when(paperRepository.findRecentPaperFeed(null, null, today.minusDays(3).atStartOfDay(), today.plusDays(1).atStartOfDay()))
+                .thenReturn(List.of(olderPaper, samplePaper));
 
-        verify(paperRepository).findByIsActiveTrueAndCategoryOrderByPublishedAtDesc("NLP", pageable);
+        List<PaperDto.DailyGroup> result = paperService.getPaperList(null, null, null);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).date()).isEqualTo(samplePaper.getPublishedAt().toLocalDate());
+        assertThat(result.get(1).date()).isEqualTo(olderPaper.getPublishedAt().toLocalDate());
+        verify(paperRepository).findRecentPaperFeed(null, null, today.minusDays(3).atStartOfDay(), today.plusDays(1).atStartOfDay());
+        verify(paperRepository, never()).findByIsActiveTrueOrderByPublishedAtDesc(any());
     }
 
     @Test
-    @DisplayName("researchArea만 → researchArea 필터 조회")
-    void getPaperList_researchAreaOnly() {
-        Page<Paper> page = new PageImpl<>(List.of(samplePaper));
-        when(paperRepository.findByIsActiveTrueAndResearchAreaOrderByPublishedAtDesc(eq("cs.AI"), eq(pageable)))
-                .thenReturn(page);
-
-        paperService.getPaperList(null, "cs.AI", pageable);
-
-        verify(paperRepository).findByIsActiveTrueAndResearchAreaOrderByPublishedAtDesc("cs.AI", pageable);
-    }
-
-    @Test
-    @DisplayName("category + researchArea 둘 다 → 복합 필터 조회")
-    void getPaperList_categoryAndResearchArea() {
-        Page<Paper> page = new PageImpl<>(List.of(samplePaper));
-        when(paperRepository.findByIsActiveTrueAndCategoryAndResearchAreaOrderByPublishedAtDesc(
-                eq("Vision"), eq("cs.CV"), eq(pageable))).thenReturn(page);
-
-        paperService.getPaperList("Vision", "cs.CV", pageable);
-
-        verify(paperRepository).findByIsActiveTrueAndCategoryAndResearchAreaOrderByPublishedAtDesc("Vision", "cs.CV", pageable);
-    }
-
-    @Test
-    @DisplayName("존재하는 paperId → Detail 반환")
+    @DisplayName("paperId로 상세 조회를 반환한다")
     void getPaperDetail_found() {
         when(paperRepository.findByPaperIdAndIsActiveTrue("paper-001")).thenReturn(Optional.of(samplePaper));
 
         PaperDto.Detail detail = paperService.getPaperDetail("paper-001");
 
         assertThat(detail).isNotNull();
+        assertThat(detail.paperId()).isEqualTo("paper-001");
     }
 
     @Test
-    @DisplayName("없는 paperId → EntityNotFoundException")
+    @DisplayName("없는 paperId면 EntityNotFoundException을 던진다")
     void getPaperDetail_notFound() {
         when(paperRepository.findByPaperIdAndIsActiveTrue("no-paper")).thenReturn(Optional.empty());
 
