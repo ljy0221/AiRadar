@@ -44,7 +44,6 @@ public class UserEventService {
     // 이벤트별 가중치
     private static final double W_VIEW_LONG  = 1.0;  // 30초 이상 체류
     private static final double W_SEARCH     = 2.0;
-    private static final double W_LIKE       = 3.0;
     private static final double W_BOOKMARK   = 5.0;
 
     private static final double W_TRENDING_AUTH = 1.0;
@@ -100,19 +99,6 @@ public class UserEventService {
             saveLog(userId, null, normalizedQuery, EventType.ARTICLE_SEARCHED);
         } catch (Exception e) {
             log.warn("[Event] ARTICLE_SEARCHED 처리 실패 (무시): {}", e.getMessage());
-        }
-    }
-
-    /** 좋아요 이벤트 */
-    @Async("eventExecutor")
-    @Transactional
-    public void onArticleLiked(UUID userId, String articleId) {
-        try {
-            updateProfileForArticle(userId, articleId, W_LIKE);
-            invalidateRecommendationCache(userId);
-            saveLog(userId, articleId, null, EventType.ARTICLE_LIKED);
-        } catch (Exception e) {
-            log.warn("[Event] ARTICLE_LIKED 처리 실패 (무시): {}", e.getMessage());
         }
     }
 
