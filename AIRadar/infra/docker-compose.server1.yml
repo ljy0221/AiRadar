@@ -141,7 +141,6 @@ services:
       "
     volumes:
       - ../airflow/dags:/opt/airflow/dags
-      - ../airflow/scripts:/opt/airflow/scripts
       - ../backend/build/libs/airadar-spark.jar:/opt/spark-jobs/airadar-spark.jar
     environment:
       AIRFLOW_UID: ${AIRFLOW_UID:-50000}
