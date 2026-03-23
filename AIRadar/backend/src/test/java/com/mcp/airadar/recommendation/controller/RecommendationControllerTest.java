@@ -40,6 +40,7 @@ class RecommendationControllerTest {
         return new RecommendationDto.NewsItem(
                 "art-001",
                 "ALS 추천 기사",
+                "https://example.com/art-001",
                 "TechCrunch",
                 "GLOBAL",
                 "AI",
