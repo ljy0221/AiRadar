@@ -40,6 +40,23 @@ public interface PaperRepository extends JpaRepository<Paper, String> {
 
     Optional<Paper> findByPaperIdAndIsActiveTrue(String paperId);
 
+    /** 키워드 배열 교집합 매칭 — 추천 서빙용 */
+    @Query(value = """
+        SELECT * FROM papers
+        WHERE is_active = true
+          AND keywords && CAST(:keywords AS TEXT[])
+          AND published_at >= :since
+        ORDER BY published_at DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<Paper> findByKeywordsOverlap(
+            @Param("keywords") String keywords,
+            @Param("since") java.time.LocalDateTime since,
+            @Param("limit") int limit);
+
+    /** score 대신 published_at 최신순 인기 논문 (Cold start fallback) */
+    List<Paper> findTop20ByIsActiveTrueOrderByPublishedAtDesc();
+
     @Query(value = """
             SELECT *
             FROM papers

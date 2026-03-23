@@ -236,7 +236,7 @@ public class CollaborativeFilteringJob {
         Dataset<Row> forWrite = df.withColumn("reason", functions.lit("ALS"))
             .withColumn("generated_at", functions.current_timestamp())
             .withColumn("expires_at",
-                functions.expr("current_timestamp + INTERVAL '1 day'"));
+                functions.expr("current_timestamp + INTERVAL '3 days'"));
 
         forWrite.write()
             .mode(SaveMode.Overwrite)

@@ -18,7 +18,7 @@ public class RecommendationDto {
             BigDecimal score,
             String[] keywords,
             LocalDateTime publishedAt,
-            String reason   // KEYWORD_MATCH | TRENDING | COLD_START
+            String reason   // ALS | KEYWORD_MATCH | COLD_START
     ) {
         public static NewsItem from(com.mcp.airadar.news.entity.NewsItem e, String reason) {
             return new NewsItem(
@@ -31,6 +31,35 @@ public class RecommendationDto {
                     e.getScore(),
                     e.getKeywords(),
                     e.getPublishedAt(),
+                    reason
+            );
+        }
+    }
+
+    /**
+     * 추천 논문 응답
+     */
+    public record PaperItem(
+            String paperId,
+            String title,
+            String[] authors,
+            String category,
+            String researchArea,
+            String[] keywords,
+            String summary,
+            LocalDateTime publishedAt,
+            String reason   // KEYWORD_MATCH | COLD_START
+    ) {
+        public static PaperItem from(com.mcp.airadar.paper.entity.Paper p, String reason) {
+            return new PaperItem(
+                    p.getPaperId(),
+                    p.getTitle(),
+                    p.getAuthors(),
+                    p.getCategory(),
+                    p.getResearchArea(),
+                    p.getKeywords(),
+                    p.getSummary(),
+                    p.getPublishedAt(),
                     reason
             );
         }
