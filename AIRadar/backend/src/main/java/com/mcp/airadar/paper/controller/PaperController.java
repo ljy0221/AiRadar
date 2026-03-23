@@ -2,14 +2,15 @@ package com.mcp.airadar.paper.controller;
 
 import com.mcp.airadar.paper.dto.PaperDto;
 import com.mcp.airadar.paper.service.PaperService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/papers")
+@RequestMapping("/api/v1/papers")
 public class PaperController {
 
     private final PaperService paperService;
@@ -19,12 +20,12 @@ public class PaperController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<PaperDto.ListItem>> getPaperList(
+    public ResponseEntity<List<PaperDto.DailyGroup>> getPaperList(
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String researchArea,
-            @PageableDefault(size = 20, sort = "publishedAt") Pageable pageable
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        return ResponseEntity.ok(paperService.getPaperList(category, researchArea, pageable));
+        return ResponseEntity.ok(paperService.getPaperList(category, researchArea, date));
     }
 
     @GetMapping("/{paperId}")
