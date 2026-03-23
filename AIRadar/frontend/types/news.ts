@@ -14,6 +14,7 @@ export interface NewsListItem {
   summary?: string;   // mock API 응답에 포함, 없을 수도 있음
   url?: string;       // mock API 응답에 포함, 없을 수도 있음
   isBookmarked?: boolean; // 유저의 북마크 여부
+  keywords?: string[]; // 기사별 키워드 배열
 }
 
 export interface NewsDetail extends NewsListItem {
