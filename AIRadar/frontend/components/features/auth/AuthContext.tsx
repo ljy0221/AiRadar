@@ -10,7 +10,7 @@ interface AuthContextType {
   isInitialized: boolean;
   onboardingCompleted: boolean;
   userEmail: string | null;
-  loginState: (accessToken: string, onboardingCompleted: boolean, email: string) => void;
+  loginState: (accessToken: string, refreshToken: string, onboardingCompleted: boolean, email: string) => void;
   logoutState: () => void;
   setOnboardingCompleted: (completed: boolean) => void;
   updateOnboardingState: (completed: boolean) => void;
@@ -29,6 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const handleLogoutEvent = () => {
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('onboardingCompleted');
       setIsLoggedIn(false);
       setOnboardingCompleted(true);
@@ -55,32 +56,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       setIsInitialized(true);
     } else {
-      // 토큰이 없더라도 쿠키에 Refresh Token이 있을 수 있으므로 재발급 시도
-      authApi.refresh()
-        .then((res: any) => {
-          if (res.accessToken) {
-            localStorage.setItem('accessToken', res.accessToken);
-            setIsLoggedIn(true);
-            if (res.onboardingCompleted !== undefined) {
-              setOnboardingCompleted(res.onboardingCompleted);
-              localStorage.setItem('onboardingCompleted', String(res.onboardingCompleted));
+      // 액세스 토큰이 없더라도 리프레시 토큰이 있으면 세션 복구 시도
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (refreshToken) {
+        authApi.refresh(refreshToken)
+          .then((res: any) => {
+            if (res.accessToken) {
+              localStorage.setItem('accessToken', res.accessToken);
+              if (res.refreshToken) {
+                localStorage.setItem('refreshToken', res.refreshToken); // 토큰 로테이션 대응
+              }
+              setIsLoggedIn(true);
+              if (res.onboardingCompleted !== undefined) {
+                setOnboardingCompleted(res.onboardingCompleted);
+                localStorage.setItem('onboardingCompleted', String(res.onboardingCompleted));
+              }
             }
-          }
-        })
-        .catch(() => {
-          setIsLoggedIn(false);
-          localStorage.removeItem('accessToken');
-        })
-        .finally(() => {
-          setIsInitialized(true);
-        });
+          })
+          .catch(() => {
+            setIsLoggedIn(false);
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+          })
+          .finally(() => {
+            setIsInitialized(true);
+          });
+      } else {
+        setIsInitialized(true);
+      }
     }
 
     return () => window.removeEventListener('auth-logout', handleLogoutEvent);
   }, [queryClient]);
 
-  const loginState = (accessToken: string, completed: boolean, email: string) => {
+  const loginState = (accessToken: string, refreshToken: string, completed: boolean, email: string) => {
     localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('userEmail', email); // 이메일 저장 추가
     setUserEmail(email);
     // 사용자 식별자를 포함한 전용 키로 저장
@@ -103,6 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // localStorage.removeItem(`onboarding_completed_${userEmail}`); <- 제거하지 않음
       
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('userEmail'); // 이메일 삭제 추가
       localStorage.removeItem('onboardingCompleted');
       setIsLoggedIn(false);
