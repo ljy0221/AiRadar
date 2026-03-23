@@ -6,7 +6,6 @@ import com.mcp.airadar.auth.repository.UserRepository;
 import com.mcp.airadar.recommendation.repository.SearchLogRepository;
 import com.mcp.airadar.user.dto.AddInterestRequest;
 import com.mcp.airadar.user.dto.BookmarkHistoryDto;
-import com.mcp.airadar.user.dto.LikeHistoryDto;
 import com.mcp.airadar.user.dto.OnboardingRequest;
 import com.mcp.airadar.user.dto.UpdateProfileRequest;
 import com.mcp.airadar.user.dto.UserInterestDto;
@@ -112,10 +111,9 @@ public class UserService {
                 .toList();
     }
 
-    public List<LikeHistoryDto> getLikeHistory(UUID userId) {
-        return searchLogRepository.findLikeHistory(userId).stream()
-                .map(log -> new LikeHistoryDto(log.getArticleId(), log.getOccurredAt()))
-                .toList();
+    @Transactional
+    public void deleteBookmark(UUID userId, String articleId) {
+        searchLogRepository.deleteByUserIdAndArticleIdAndEventType(userId, articleId, "ARTICLE_BOOKMARKED");
     }
 
     @Transactional

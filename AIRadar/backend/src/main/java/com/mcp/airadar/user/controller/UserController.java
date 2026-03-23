@@ -2,7 +2,6 @@ package com.mcp.airadar.user.controller;
 
 import com.mcp.airadar.user.dto.AddInterestRequest;
 import com.mcp.airadar.user.dto.BookmarkHistoryDto;
-import com.mcp.airadar.user.dto.LikeHistoryDto;
 import com.mcp.airadar.user.dto.OnboardingRequest;
 import com.mcp.airadar.user.dto.UpdateProfileRequest;
 import com.mcp.airadar.user.dto.UserInterestDto;
@@ -68,9 +67,12 @@ public class UserController {
         return ResponseEntity.ok(userService.getBookmarkHistory(userId));
     }
 
-    @GetMapping("/likes")
-    public ResponseEntity<List<LikeHistoryDto>> getLikeHistory(@AuthenticationPrincipal UUID userId) {
-        return ResponseEntity.ok(userService.getLikeHistory(userId));
+    @DeleteMapping("/bookmarks/{articleId}")
+    public ResponseEntity<Void> deleteBookmark(
+            @AuthenticationPrincipal UUID userId,
+            @PathVariable String articleId) {
+        userService.deleteBookmark(userId, articleId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/onboarding")
