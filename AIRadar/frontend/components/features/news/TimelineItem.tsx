@@ -20,7 +20,7 @@ interface TimelineItemProps {
 }
 
 export const TimelineItem = ({ data }: TimelineItemProps) => {
-  const { trackLike, trackBookmark } = useTracking();
+  const { trackLike, trackBookmark, trackArticleClick } = useTracking();
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
@@ -104,7 +104,7 @@ export const TimelineItem = ({ data }: TimelineItemProps) => {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => {
-                  // 원문 클릭 시 체류 시간은 측정 불가하지만, 클릭 자체를 뷰로 처리할 수도 있음
+                  trackArticleClick(data.id);
                 }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-accent)]/10 text-[11px] text-[var(--color-accent)] font-bold rounded-lg hover:bg-[var(--color-accent)] hover:text-white transition-all ml-2"
               >

@@ -183,7 +183,7 @@ export const OnboardingModal = () => {
                     <p className="text-[var(--color-text-primary)]/60 text-base md:text-lg">메인 카테고리를 선택하여 AI 모델의 방향성을 설정해 주세요.</p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 overflow-y-auto max-h-[60vh] md:max-h-none pr-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 pr-1">
                     {ONBOARDING_KEYWORDS.map((item) => {
                       const Icon = item.icon;
                       return (
@@ -217,7 +217,7 @@ export const OnboardingModal = () => {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className="w-full max-w-[1240px] bg-[var(--color-bg-primary)]/40 dark:bg-white/[0.02] backdrop-blur-md rounded-[32px] md:rounded-[56px] p-6 sm:p-10 md:p-16 shadow-2xl border border-gray-200 dark:border-white/10 overflow-y-auto max-h-[90vh]"
+                  className="w-full max-w-[1240px] bg-[var(--color-bg-primary)]/40 dark:bg-white/[0.02] backdrop-blur-md rounded-[32px] md:rounded-[56px] p-6 sm:p-10 md:p-16 shadow-2xl border border-gray-200 dark:border-white/10 mb-8 md:mb-12"
                 >
                   <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 lg:gap-16">
                     {/* Left: Keywords */}

@@ -7,6 +7,7 @@ import { TimelineItem, TimelineItemData } from './TimelineItem';
 import { useNewsListQuery, useInfiniteNewsQuery } from '@/hooks/queries/useNewsQuery';
 import { usePersonalizedNewsQuery } from '@/hooks/queries/useRecommendationQuery';
 import { useAuth } from '../auth/AuthContext';
+import { useTracking } from '@/hooks/useTracking';
 import { Sparkles, ExternalLink } from 'lucide-react';
 import type { NewsListItem, DailyNewsGroup } from '@/types/news';
 
@@ -43,6 +44,7 @@ function formatDate(iso: string): string {
 
 export const NewsTimelineTab = () => {
   const { isLoggedIn } = useAuth();
+  const { trackArticleClick } = useTracking();
   const [regionFilter, setRegionFilter] = useState<'all' | 'domestic' | 'international'>('all');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -53,10 +55,10 @@ export const NewsTimelineTab = () => {
   const { data: recommendations } = usePersonalizedNewsQuery(5, isLoggedIn);
 
   // 1) 기본 조회 (최근 4일) : selectedDate가 없을 때 활성화
-  const { 
-    data: recentGroups, 
-    isLoading: isRecentLoading, 
-    isError: isRecentError 
+  const {
+    data: recentGroups,
+    isLoading: isRecentLoading,
+    isError: isRecentError
   } = useNewsListQuery({ region });
 
   // 2) 특정 날짜 무한 스크롤 : selectedDate가 있을 때만 활성화
@@ -79,22 +81,22 @@ export const NewsTimelineTab = () => {
         items: group.items.slice(0, 7)
       }));
     }
-    
+
     if (!infiniteData) return [];
-    
+
     const flattened = infiniteData.pages.flat();
     const map = new Map<string, NewsListItem[]>();
-    
+
     for (const group of flattened) {
       if (!map.has(group.date)) map.set(group.date, []);
       map.get(group.date)!.push(...group.items);
     }
-    
+
     return Array.from(map.entries()).map(([date, items]) => ({ date, items }));
   }, [selectedDate, recentGroups, infiniteData]);
 
   // 달력 모달 등에서 활성화할 수 있는 전체 가용 날짜 리스트 (기본 조회 데이터 기준)
-  const availableDates = useMemo(() => 
+  const availableDates = useMemo(() =>
     recentGroups ? recentGroups.map(group => group.date) : [],
     [recentGroups]
   );
@@ -115,7 +117,7 @@ export const NewsTimelineTab = () => {
   useEffect(() => {
     const observer = new IntersectionObserver(handleObserver, { threshold: 0.1 });
     if (observerRef.current) observer.observe(observerRef.current);
-    
+
     return () => observer.disconnect();
   }, [handleObserver, selectedDate]);
 
@@ -145,18 +147,20 @@ export const NewsTimelineTab = () => {
                 <Sparkles className="w-5 h-5 text-[var(--color-accent)]" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 italic tracking-tight uppercase">AI For You</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">당신의 관심사를 반영한 오늘의 추천 뉴스</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 italic tracking-tight uppercase">오늘의 추천 뉴스</h3>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {recommendations.slice(0, 4).map((rec) => (
-                <a 
-                  key={rec.articleId} 
-                  href={rec.articleId.startsWith('http') ? rec.articleId : `/news/${rec.articleId}`}
-                  target={rec.articleId.startsWith('http') ? "_blank" : "_self"}
+                <a
+                  key={rec.articleId}
+                  href={rec.url || (rec.articleId.startsWith('http') ? rec.articleId : `/news/${rec.articleId}`)}
+                  target={(rec.url || rec.articleId.startsWith('http')) ? "_blank" : "_self"}
                   rel="noopener noreferrer"
+                  onClick={() => {
+                    trackArticleClick(rec.articleId);
+                  }}
                   className="group relative bg-white dark:bg-[#1a1c2e] border border-gray-100 dark:border-gray-800 p-5 rounded-2xl hover:shadow-xl hover:border-[var(--color-accent)]/30 transition-all duration-300 flex flex-col h-full"
                 >
                   <div className="flex justify-between items-start mb-3">
@@ -201,10 +205,10 @@ export const NewsTimelineTab = () => {
                 <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200">
                   {group.date.replace(/-/g, '.')}
                 </h3>
-                
+
                 {/* 4일치 기본 화면에서 '더보기' 버튼: 클릭 시 해당 일자 상세 필터(selectedDate)로 전환 */}
                 {!selectedDate && (
-                  <button 
+                  <button
                     onClick={() => setSelectedDate(group.date)}
                     className="ml-auto text-[13px] font-bold text-gray-400 hover:text-[var(--color-accent)] transition-colors"
                   >
@@ -238,11 +242,11 @@ export const NewsTimelineTab = () => {
               )}
             </div>
           )}
-          
+
           {mergedGroups.length === 0 && (
-             <div className="w-full flex justify-center py-20 text-gray-400 text-sm">
-               조회된 뉴스가 없습니다.
-             </div>
+            <div className="w-full flex justify-center py-20 text-gray-400 text-sm">
+              조회된 뉴스가 없습니다.
+            </div>
           )}
         </div>
       </div>
