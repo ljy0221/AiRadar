@@ -66,7 +66,7 @@ with DAG(
             "payload": {
                 "domain": "news",
                 "provider": "gdelt",
-                "window_minutes": 30,
+                "window_minutes": 60,
                 "max_articles": 120,
             }
         },
