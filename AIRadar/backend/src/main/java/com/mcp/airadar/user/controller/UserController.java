@@ -1,6 +1,8 @@
 package com.mcp.airadar.user.controller;
 
 import com.mcp.airadar.user.dto.AddInterestRequest;
+import com.mcp.airadar.user.dto.BookmarkHistoryDto;
+import com.mcp.airadar.user.dto.LikeHistoryDto;
 import com.mcp.airadar.user.dto.OnboardingRequest;
 import com.mcp.airadar.user.dto.UpdateProfileRequest;
 import com.mcp.airadar.user.dto.UserInterestDto;
@@ -59,6 +61,16 @@ public class UserController {
     @GetMapping("/history")
     public ResponseEntity<List<ViewHistoryDto>> getViewHistory(@AuthenticationPrincipal UUID userId) {
         return ResponseEntity.ok(userService.getViewHistory(userId));
+    }
+
+    @GetMapping("/bookmarks")
+    public ResponseEntity<List<BookmarkHistoryDto>> getBookmarkHistory(@AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(userService.getBookmarkHistory(userId));
+    }
+
+    @GetMapping("/likes")
+    public ResponseEntity<List<LikeHistoryDto>> getLikeHistory(@AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(userService.getLikeHistory(userId));
     }
 
     @PostMapping("/onboarding")

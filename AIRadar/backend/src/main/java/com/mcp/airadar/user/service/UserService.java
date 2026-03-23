@@ -5,6 +5,8 @@ import com.mcp.airadar.auth.entity.User;
 import com.mcp.airadar.auth.repository.UserRepository;
 import com.mcp.airadar.recommendation.repository.SearchLogRepository;
 import com.mcp.airadar.user.dto.AddInterestRequest;
+import com.mcp.airadar.user.dto.BookmarkHistoryDto;
+import com.mcp.airadar.user.dto.LikeHistoryDto;
 import com.mcp.airadar.user.dto.OnboardingRequest;
 import com.mcp.airadar.user.dto.UpdateProfileRequest;
 import com.mcp.airadar.user.dto.UserInterestDto;
@@ -101,6 +103,18 @@ public class UserService {
     public List<ViewHistoryDto> getViewHistory(UUID userId) {
         return searchLogRepository.findRecentViewHistory(userId).stream()
                 .map(log -> new ViewHistoryDto(log.getArticleId(), log.getOccurredAt()))
+                .toList();
+    }
+
+    public List<BookmarkHistoryDto> getBookmarkHistory(UUID userId) {
+        return searchLogRepository.findBookmarkHistory(userId).stream()
+                .map(log -> new BookmarkHistoryDto(log.getArticleId(), log.getOccurredAt()))
+                .toList();
+    }
+
+    public List<LikeHistoryDto> getLikeHistory(UUID userId) {
+        return searchLogRepository.findLikeHistory(userId).stream()
+                .map(log -> new LikeHistoryDto(log.getArticleId(), log.getOccurredAt()))
                 .toList();
     }
 
