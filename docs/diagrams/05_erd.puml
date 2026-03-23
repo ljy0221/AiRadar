@@ -1,0 +1,341 @@
+@startuml AiRadar ERD
+
+!define TABLE(name) entity name <<Table>>
+!define PK(col) <u>col</u>
+!define FK(col) col
+
+skinparam linetype ortho
+skinparam entity {
+    BackgroundColor #FAFAFA
+    BorderColor #555555
+    FontSize 12
+}
+skinparam package {
+    BorderColor #999999
+    BackgroundColor #F5F5F5
+}
+
+' ─────────────────────────────────────────
+' Gold 서빙 테이블
+' ─────────────────────────────────────────
+package "Gold Layer (서빙)" #FFD700 {
+
+    TABLE(news_items) {
+        PK(article_id) : VARCHAR(255)
+        ..
+        title : TEXT
+        content : TEXT
+        url : VARCHAR(1000)
+        source : VARCHAR(100)
+        country_code : CHAR(2)
+        region : VARCHAR(10)
+        sentiment : VARCHAR(20)
+        keywords : TEXT[]
+        score : DECIMAL(5,4)
+        summary : TEXT
+        category : VARCHAR(50)
+        view_count : BIGINT
+        published_at : TIMESTAMP
+        analyzed_at : TIMESTAMP
+        is_active : BOOLEAN
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(papers) {
+        PK(paper_id) : VARCHAR(255)
+        ..
+        title : TEXT
+        abstract : TEXT
+        url : VARCHAR(1000)
+        source : VARCHAR(50)
+        authors : TEXT[]
+        research_area : VARCHAR(100)
+        keywords : TEXT[]
+        summary : TEXT
+        category : VARCHAR(50)
+        published_at : TIMESTAMP
+        analyzed_at : TIMESTAMP
+        is_active : BOOLEAN
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(github_repos) {
+        PK(repo_id) : VARCHAR(255)
+        ..
+        repo_name : VARCHAR(500)
+        description : TEXT
+        language : VARCHAR(100)
+        topics : TEXT[]
+        stars : BIGINT
+        forks : BIGINT
+        open_issues : INT
+        weekly_commits : INT
+        star_delta_7d : INT
+        ai_relevance : BOOLEAN
+        keywords : TEXT[]
+        snapshot_date : DATE
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+' ─────────────────────────────────────────
+' 벡터 검색
+' ─────────────────────────────────────────
+package "벡터 검색 (pgvector)" #E8F4FD {
+
+    TABLE(content_embeddings) {
+        PK(content_id) : VARCHAR(255)
+        ..
+        content_type : VARCHAR(20)
+        ' NEWS | PAPER | GITHUB
+        embedding : vector(768)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+' ─────────────────────────────────────────
+' 인증 / 사용자
+' ─────────────────────────────────────────
+package "사용자 / 인증" #E8F8E8 {
+
+    TABLE(users) {
+        PK(id) : UUID
+        ..
+        email : VARCHAR(255) UNIQUE
+        password : VARCHAR(255)
+        name : VARCHAR(100)
+        role : VARCHAR(20)
+        provider : VARCHAR(20)
+        social_id : VARCHAR(255)
+        email_verified : BOOLEAN
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+' ─────────────────────────────────────────
+' 추천 / Feedback Loop
+' ─────────────────────────────────────────
+package "추천 / Feedback Loop" #F0E8FF {
+
+    TABLE(search_logs) {
+        PK(id) : BIGSERIAL
+        ..
+        FK(user_id) : UUID
+        FK(article_id) : VARCHAR(255)
+        query : VARCHAR(500)
+        event_type : VARCHAR(30)
+        ' ARTICLE_VIEWED | LIKED | BOOKMARKED | SEARCHED
+        occurred_at : TIMESTAMP
+        -- 월별 파티셔닝 --
+    }
+
+    TABLE(user_interests) {
+        PK(id) : UUID
+        ..
+        FK(user_id) : UUID
+        keyword : VARCHAR(100)
+        weight : DECIMAL(8,4)
+        source : VARCHAR(20)
+        ' MANUAL | INFERRED
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(user_recommendations) {
+        PK(id) : UUID
+        ..
+        FK(user_id) : UUID
+        FK(article_id) : VARCHAR(255)
+        score : DECIMAL(8,6)
+        reason : VARCHAR(50)
+        generated_at : TIMESTAMP
+        expires_at : TIMESTAMP
+        ' TTL 1일 자동 만료
+    }
+}
+
+' ─────────────────────────────────────────
+' 집계 / 분석
+' ─────────────────────────────────────────
+package "집계 / 분석" #FFF3E0 {
+
+    TABLE(company_news_timeline) {
+        PK(id) : BIGSERIAL
+        ..
+        company_name : VARCHAR(200)
+        FK(article_id) : VARCHAR(255)
+        published_at : TIMESTAMP
+        -- UNIQUE(company_name, article_id) --
+    }
+
+    TABLE(tech_keyword_daily) {
+        PK(id) : BIGSERIAL
+        ..
+        keyword : VARCHAR(200)
+        stat_date : DATE
+        source_type : VARCHAR(20)
+        mention_count : INT
+        search_count : INT
+        avg_sentiment : DECIMAL(4,3)
+        commit_count : INT
+        created_at : TIMESTAMP
+    }
+
+    TABLE(tech_lifecycle) {
+        PK(keyword) : VARCHAR(200)
+        ..
+        status : VARCHAR(20)
+        peak_date : DATE
+        first_seen_date : DATE
+        trend_score : DECIMAL(8,4)
+        velocity : DECIMAL(8,4)
+        week_over_week : DECIMAL(6,3)
+        related_keywords : TEXT[]
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(tech_commercialization) {
+        PK(tech_name) : VARCHAR(200)
+        ..
+        category : VARCHAR(50)
+        first_paper_date : DATE
+        paper_peak_date : DATE
+        paper_count : INT
+        first_product_date : DATE
+        product_count : INT
+        days_to_market : INT
+        commercialization_stage : VARCHAR(30)
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(job_ai_risk) {
+        PK(job_type) : VARCHAR(200)
+        ..
+        job_category : VARCHAR(100)
+        risk_level : VARCHAR(10)
+        risk_score : DECIMAL(4,2)
+        human_strengths : TEXT[]
+        recommended_skills : TEXT[]
+        scenarios : JSONB
+        related_tools : TEXT[]
+        source_article_count : INT
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(country_ai_stats) {
+        PK(id) : BIGSERIAL
+        ..
+        country_code : CHAR(2)
+        country_name : VARCHAR(100)
+        stat_date : DATE
+        news_volume : INT
+        avg_sentiment : DECIMAL(4,3)
+        github_contributions : INT
+        ai_activity_score : DECIMAL(6,3)
+        created_at : TIMESTAMP
+    }
+}
+
+' ─────────────────────────────────────────
+' 스테이징 테이블
+' ─────────────────────────────────────────
+package "Staging (Spark Upsert 경유)" #F5F5F5 {
+
+    TABLE(news_items_staging) {
+        article_id : VARCHAR(255)
+        ..
+        title : TEXT
+        content : TEXT
+        url : VARCHAR(1000)
+        source : VARCHAR(100)
+        published_at : VARCHAR(50)
+        sentiment : VARCHAR(20)
+        keywords : TEXT[]
+        score : DECIMAL(5,4)
+        summary : TEXT
+        category : VARCHAR(50)
+        region : VARCHAR(10)
+        companies : TEXT[]
+        error_log : TEXT
+        batch_date : DATE
+    }
+
+    TABLE(papers_staging) {
+        paper_id : VARCHAR(255)
+        ..
+        title : TEXT
+        abstract : TEXT
+        url : VARCHAR(1000)
+        source : VARCHAR(50)
+        authors : TEXT[]
+        published_at : VARCHAR(50)
+        keywords : TEXT[]
+        summary : TEXT
+        category : VARCHAR(50)
+        research_area : VARCHAR(100)
+        error_log : TEXT
+        batch_date : DATE
+    }
+
+    TABLE(github_repos_staging) {
+        repo_id : VARCHAR(255)
+        ..
+        repo_name : VARCHAR(500)
+        description : TEXT
+        language : VARCHAR(100)
+        topics : TEXT[]
+        stars : BIGINT
+        forks : BIGINT
+        open_issues : INT
+        weekly_commits : INT
+        star_delta_7d : INT
+        ai_relevance : BOOLEAN
+        keywords : TEXT[]
+        error_log : TEXT
+        batch_date : DATE
+    }
+}
+
+' ─────────────────────────────────────────
+' 관계 정의 (논리적 참조, FK 없음)
+' ─────────────────────────────────────────
+
+news_items      ||--o{ company_news_timeline      : "article_id 참조"
+news_items      ||--o| content_embeddings          : "content_id = article_id\ncontent_type = NEWS"
+papers          ||--o| content_embeddings          : "content_id = paper_id\ncontent_type = PAPER"
+github_repos    ||--o| content_embeddings          : "content_id = repo_id\ncontent_type = GITHUB"
+
+users           ||--o{ user_interests             : "user_id"
+users           ||--o{ search_logs                : "user_id"
+users           ||--o{ user_recommendations       : "user_id"
+news_items      ||--o{ user_recommendations       : "article_id 참조"
+news_items      ||--o{ search_logs                : "article_id 참조"
+
+news_items_staging    ..>  news_items    : "TRUNCATE → Upsert"
+papers_staging        ..>  papers        : "TRUNCATE → Upsert"
+github_repos_staging  ..>  github_repos  : "TRUNCATE → Upsert"
+
+note bottom of content_embeddings
+  AI 서버(ai-server)가
+  Spark 파이프라인을 경유하지 않고
+  직접 Upsert
+  IVFFlat Index (cosine, lists=100)
+end note
+
+note right of search_logs
+  월별 Range 파티셔닝
+  (search_logs_2026_03 등)
+  Spark ALS 배치 입력 데이터
+end note
+
+note right of user_recommendations
+  expires_at = NOW() + 1 day
+  (자동 만료)
+end note
+
+@enduml
