@@ -96,13 +96,16 @@ public class CollaborativeFilteringJob {
         jdbcProps.setProperty("driver", "org.postgresql.Driver");
 
         // 1. search_logs에서 최근 LOOKBACK_DAYS일치 로그인 사용자 이벤트 조회
+        // papers 테이블과 LEFT JOIN하여 content_type 결정 (논문이면 PAPER, 아니면 NEWS)
         String query = String.format("""
-            (SELECT user_id, article_id, event_type
-             FROM search_logs
-             WHERE user_id IS NOT NULL
-               AND article_id IS NOT NULL
-               AND occurred_at >= '%s'::date - INTERVAL '%d days'
-               AND occurred_at <= '%s'::date + INTERVAL '1 day'
+            (SELECT sl.user_id, sl.article_id, sl.event_type,
+                    CASE WHEN p.paper_id IS NOT NULL THEN 'PAPER' ELSE 'NEWS' END AS content_type
+             FROM search_logs sl
+             LEFT JOIN papers p ON p.paper_id = sl.article_id
+             WHERE sl.user_id IS NOT NULL
+               AND sl.article_id IS NOT NULL
+               AND sl.occurred_at >= '%s'::date - INTERVAL '%d days'
+               AND sl.occurred_at <= '%s'::date + INTERVAL '1 day'
             ) AS logs
             """, date, LOOKBACK_DAYS, date);
 
@@ -126,10 +129,11 @@ public class CollaborativeFilteringJob {
                     functions.col("event_type").equalTo("ARTICLE_BOOKMARKED"), functions.lit(5.0f))
                 .when(functions.col("event_type").equalTo("ARTICLE_LIKED"), functions.lit(3.0f))
                 .when(functions.col("event_type").equalTo("ARTICLE_SEARCHED"), functions.lit(2.0f))
-                .otherwise(functions.lit(1.0f))  // ARTICLE_VIEWED
+                .otherwise(functions.lit(1.0f))  // ARTICLE_VIEWED (뉴스/논문 공통)
             )
             // 같은 (user, article) 중복 시 가중치 합산 (implicit feedback)
-            .groupBy("user_id", "article_id")
+            // content_type도 groupBy에 포함하여 뉴스/논문 구분 유지
+            .groupBy("user_id", "article_id", "content_type")
             .agg(functions.sum("rating").cast(DataTypes.FloatType).alias("rating"));
 
         // 3. zipWithIndex로 UUID/String → 정수 인덱스 매핑
@@ -158,7 +162,7 @@ public class CollaborativeFilteringJob {
         Dataset<Row> ratingIndexed = ratings
             .join(userIndexed, "user_id")
             .join(articleIndexed, "article_id")
-            .select("user_index", "article_index", "rating");
+            .select("user_index", "article_index", "rating", "content_type");
 
         // 4. ALS 학습
         ALS als = new ALS()
@@ -177,6 +181,11 @@ public class CollaborativeFilteringJob {
         Dataset<Row> rawRecs = model.recommendForAllUsers(TOP_N);
 
         // 6. 역인덱스 변환 (정수 → 실제 ID)
+        // ratingIndexed에서 (article_index, content_type) 매핑을 추출하여 추천 결과에 합류
+        Dataset<Row> articleContentType = ratingIndexed
+            .select("article_index", "content_type")
+            .distinct();
+
         Dataset<Row> recommendations = rawRecs
             .select(
                 functions.col("user_index"),
@@ -189,10 +198,12 @@ public class CollaborativeFilteringJob {
             )
             .join(userIndexed, "user_index")
             .join(articleIndexed, "article_index")
+            .join(articleContentType, "article_index")
             .select(
                 functions.col("user_id"),
                 functions.col("article_id"),
-                functions.col("als_score").cast(DataTypes.createDecimalType(8, 6)).alias("score")
+                functions.col("als_score").cast(DataTypes.createDecimalType(8, 6)).alias("score"),
+                functions.col("content_type")
             );
 
         long recCount = recommendations.count();
@@ -232,7 +243,7 @@ public class CollaborativeFilteringJob {
         props.setProperty("password", password);
         props.setProperty("driver", "org.postgresql.Driver");
 
-        // reason 컬럼 추가
+        // reason, content_type 컬럼 추가
         Dataset<Row> forWrite = df.withColumn("reason", functions.lit("ALS"))
             .withColumn("generated_at", functions.current_timestamp())
             .withColumn("expires_at",
@@ -254,8 +265,8 @@ public class CollaborativeFilteringJob {
                 """);
             stmt.execute("""
                 INSERT INTO user_recommendations
-                    (user_id, article_id, score, reason, generated_at, expires_at)
-                SELECT user_id, article_id, score, reason, generated_at, expires_at
+                    (user_id, article_id, score, reason, content_type, generated_at, expires_at)
+                SELECT user_id, article_id, score, reason, content_type, generated_at, expires_at
                 FROM user_recommendations_staging
                 """);
             stmt.execute("TRUNCATE TABLE user_recommendations_staging");

@@ -20,4 +20,16 @@ public interface UserRecommendationRepository extends JpaRepository<UserRecommen
     List<UserRecommendation> findValidByUserId(
             @Param("userId") UUID userId,
             @Param("now") LocalDateTime now);
+
+    @Query("""
+            SELECT r FROM UserRecommendation r
+            WHERE r.userId = :userId
+              AND r.contentType = :contentType
+              AND r.expiresAt > :now
+            ORDER BY r.score DESC
+            """)
+    List<UserRecommendation> findValidByUserIdAndContentType(
+            @Param("userId") UUID userId,
+            @Param("contentType") String contentType,
+            @Param("now") LocalDateTime now);
 }
