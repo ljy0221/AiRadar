@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Disclosure, DisclosureButton, DisclosurePanel, Popover, PopoverButton, PopoverPanel, Transition } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { User, Settings, LogOut, LogIn, UserPlus, Mail, PlusCircle } from 'lucide-react';
@@ -27,6 +27,15 @@ export const Header = () => {
   const { data: user } = useUserQuery();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const openAuthModal = (view: 'login' | 'signup' = 'login') => {
     setAuthView(view);
@@ -34,12 +43,19 @@ export const Header = () => {
   };
 
   const userInitial = user?.nickname?.charAt(0).toUpperCase() || user?.name?.charAt(0).toUpperCase() || '?';
+  const isHomePage = pathname === '/';
+  const shouldBeTransparent = isHomePage && !isScrolled;
 
   return (
     <>
       <Disclosure
         as="nav"
-        className="sticky top-0 z-50 w-full bg-[var(--color-bg-primary)] border-none shadow-none backdrop-blur-md bg-opacity-80 dark:bg-opacity-80 transition-colors"
+        className={classNames(
+          "sticky top-0 z-50 w-full transition-all duration-300",
+          shouldBeTransparent 
+            ? "bg-transparent border-none" 
+            : "bg-[var(--color-bg-primary)]/80 backdrop-blur-md border-none shadow-none"
+        )}
       >
         <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
           <div className="relative flex h-14 items-center justify-between">
@@ -53,7 +69,13 @@ export const Header = () => {
             </div>
             <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
               <div className="flex shrink-0 items-center">
-                <Link href="/" className="font-serif text-2xl font-normal tracking-tight text-[var(--color-text-primary)] hover:opacity-80 transition-opacity">
+                <Link 
+                  href="/" 
+                  className={classNames(
+                    "font-serif text-2xl font-normal tracking-tight transition-all",
+                    shouldBeTransparent ? "text-white" : "text-[var(--color-text-primary)] hover:opacity-80"
+                  )}
+                >
                   AI Radar
                 </Link>
               </div>
@@ -69,7 +91,7 @@ export const Header = () => {
                           className={classNames(
                             isCurrent
                               ? 'text-[var(--color-accent)] font-bold'
-                              : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]',
+                              : shouldBeTransparent ? 'text-white/80 hover:text-white' : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]',
                             'rounded-md px-3 py-2 text-base transition-colors',
                           )}
                         >
@@ -86,10 +108,12 @@ export const Header = () => {
                 <Popover className="relative">
                   <PopoverButton
                     className={classNames(
-                      "p-2 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-200 flex items-center justify-center hover:scale-110 active:scale-95 group focus:outline-none",
+                      "p-2 rounded-full border shadow-sm transition-all duration-200 flex items-center justify-center hover:scale-110 active:scale-95 group focus:outline-none",
                       isLoggedIn && user
-                        ? "bg-[var(--color-accent)] text-white text-base font-bold"
-                        : "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-[var(--color-text-primary)]"
+                        ? "bg-[var(--color-accent)] text-white text-base font-bold border-transparent"
+                        : shouldBeTransparent 
+                          ? "bg-white/10 hover:bg-white/20 text-white border-white/20" 
+                          : "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-[var(--color-text-primary)] border-gray-200 dark:border-gray-700"
                     )}
                   >
                     <span className="sr-only">Open user menu</span>
@@ -98,7 +122,10 @@ export const Header = () => {
                         {userInitial}
                       </div>
                     ) : (
-                      <User className="size-5 text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors" />
+                      <User className={classNames(
+                        "size-5 transition-colors",
+                        shouldBeTransparent ? "text-white group-hover:text-white" : "text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]"
+                      )} />
                     )}
                   </PopoverButton>
 
@@ -174,7 +201,9 @@ export const Header = () => {
                   </Transition>
                 </Popover>
                 <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1"></div>
-                <ThemeToggle />
+                <ThemeToggle 
+                  className={shouldBeTransparent ? "border-white/20 hover:bg-white/10 text-white" : ""}
+                />
               </div>
             </div>
           </div>

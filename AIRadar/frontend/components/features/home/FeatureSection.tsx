@@ -67,7 +67,7 @@ export const FeatureSection = () => {
               </li>
             </ul>
           </div>
-          <div className="flex-1 w-full bg-white dark:bg-[#1a1c2e] rounded-2xl aspect-[4/3] flex items-center justify-center border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden card-hover-effect animate-float">
+          <div className="flex-1 w-full bg-white dark:bg-[#0e1520] rounded-2xl aspect-[4/3] flex items-center justify-center border border-gray-200 dark:border-white/5 shadow-md overflow-hidden card-hover-effect animate-float">
             <BacktestingChart />
           </div>
         </div>
@@ -103,7 +103,7 @@ export const FeatureSection = () => {
               </li>
             </ul>
           </div>
-          <div className="flex-1 w-full bg-white dark:bg-[#1a1c2e] rounded-2xl aspect-[4/3] flex items-center justify-center border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden card-hover-effect animate-float delay-300">
+          <div className="flex-1 w-full bg-white dark:bg-[#0e1520] rounded-2xl aspect-[4/3] flex items-center justify-center border border-gray-200 dark:border-white/5 shadow-md overflow-hidden card-hover-effect animate-float delay-300">
             <CorrelationChart />
           </div>
         </div>

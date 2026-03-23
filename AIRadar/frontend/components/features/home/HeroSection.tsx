@@ -1,54 +1,159 @@
-import { Mouse, ChevronDown } from 'lucide-react';
-import heroDay from '@/public/hero-day.png';
-import heroNight from '@/public/hero-night.jpg';
+"use client";
+
+import { motion } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export const HeroSection = () => {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({
+        x: (e.clientX / window.innerWidth - 0.5) * 20,
+        y: (e.clientY / window.innerHeight - 0.5) * 20,
+      });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
   return (
-    <>
-      {/* 
-        🔥 최종 수정 구조 (Klein Private Equity 레퍼런스 완벽 일치)
-        - 투명한 요소는 완전히 제거하고 헤더와 동일한 불투명(단색) 배경을 적용합니다.
-        - 위에 글씨가 있는 만큼만 하얀색 배경 덩어리가 유동적으로 크기를 차지합니다.
-        - 화면 전체에서 남는 모든 밑 공간(flex-1)을 패럴랙스 고정된 사진으로 시원하게 보여줍니다!
-      */}
-      <section className="w-full relative min-h-[90vh] md:min-h-screen text-center overflow-hidden bg-[var(--color-bg-primary)] flex flex-col">
+    <section className="w-full relative min-h-screen flex flex-col items-center justify-between pb-8 pt-20 overflow-hidden bg-bg-primary">
+      {/* 1. Deep Background Grid & Radar Elements */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none flex items-center justify-center">
+        {/* Dark radial gradient overlay */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,212,200,0.05)_0%,var(--color-bg-primary)_65%)]" />
 
-        {/* 라이트 모드용 패럴랙스 배경 (항상 맨 밑바닥에 완전 화면 크기로 깔려 있음) */}
-        <div
-          className="absolute inset-0 z-0 opacity-100 dark:opacity-0 transition-opacity duration-500 bg-fixed bg-cover bg-bottom"
-          style={{ backgroundImage: `url("${heroDay.src}")` }}
-        />
+        {/* Diagonal Crosshair Lines */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-20">
 
-        {/* 다크 모드용 패럴랙스 배경 */}
-        <div
-          className="absolute inset-0 z-0 opacity-0 dark:opacity-100 transition-opacity duration-500 bg-fixed bg-cover bg-bottom"
-          style={{ backgroundImage: `url("${heroNight.src}")` }}
-        />
 
-        {/* 1. 상단 텍스트 영역: 왼쪽 정렬 + 세리프 폰트 적용 */}
-        <div className="w-full relative z-20 shrink-0 bg-[var(--color-bg-primary)] flex flex-col items-start justify-center pt-7 pb-2 md:pt-9 md:pb-2">
-          <div className="max-w-5xl w-full flex flex-col items-start gap-1 px-8 md:px-16 translate-y-3 md:translate-y-3">
-            <h1 className="font-serif text-7xl md:text-[7rem] lg:text-[8.5rem] font-normal tracking-tight text-slate-800 dark:text-white leading-none">
-              AI Radar
-            </h1>
-            <h2 className="font-sans text-lg md:text-2xl font-semibold mt-0 text-slate-700 dark:text-gray-200 tracking-wide">
-              데이터가 증명하는 내일, 가장 먼저 AI 선행 신호를 포착하다
-            </h2>
+          
+          {/* Concentric Radar Rings */}
+          {[400, 700, 1000].map((r) => (
+            <div
+              key={r}
+              className="absolute rounded-full border-[1px] border-accent/30"
+              style={{ width: r, height: r }}
+            />
+          ))}
+          {/* Animated Pulsing Rings */}
+          <div className="absolute w-[800px] h-[800px] rounded-full border-[1.5px] border-accent/40 animate-radar" />
+          <div className="absolute w-[800px] h-[800px] rounded-full border-[1.5px] border-accent/40 animate-radar" style={{ animationDelay: '1s' }} />
+
+          {/* Rotating Scan Line */}
+          <div className="absolute w-[1500px] h-[1500px] rounded-full overflow-hidden animate-scan pointer-events-none" style={{ animationDuration: '8s' }}>
+            {/* Smooth full conic gradient tail */}
+            <div className="w-full h-full bg-[conic-gradient(from_0deg,transparent_0deg,transparent_180deg,var(--color-accent)_360deg)] opacity-40 mix-blend-screen" />
+            {/* Leading edge scanner beam */}
+            <div className="absolute top-0 left-1/2 -ml-[1px] w-[2px] h-1/2 bg-accent shadow-[0_0_15px_var(--color-accent)]" />
           </div>
         </div>
+      </div>
 
-        {/* 1-5. 그라디언트 오버레이: 텍스트가 묻히는 것을 방지하기 위해 상단에서 아래로 부드럽게 퍼지는 그라디언트 추가 */}
-        <div className="absolute top-0 left-0 w-full h-[400px] z-10 bg-gradient-to-b from-[var(--color-bg-primary)] via-[var(--color-bg-primary)]/70 to-transparent pointer-events-none" />
+      {/* 2. Content Area */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
+        className="relative z-10 flex flex-col items-center justify-center px-4 max-w-6xl w-full flex-grow -mt-16"
+      >
+        {/* Floating Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.4 }}
+          className="px-5 py-2.5 rounded-full border border-accent/20 bg-bg-secondary/50 backdrop-blur-md mb-12 flex items-center gap-2 cursor-default"
+        >
+          <div className="w-1.5 h-1.5 bg-[#00F2FF] rounded-full shadow-[0_0_6px_#00F2FF]" />
+          <span className="text-[10px] font-bold text-[#00F2FF] tracking-[0.2em] uppercase">
+            LIVE AI INTELLIGENCE SYSTEM
+          </span>
+        </motion.div>
 
-        {/* 2. 하단 여백 영역: 화면 전체(min-h-screen)에서 위쪽 글씨 박스가 차지한 공간을 제외한 모든 남는 공간(flex-1)을 사진으로 꽉꽉 채워줍니다! */}
-        <div className="w-full relative z-20 flex-1 bg-transparent flex items-end justify-center pb-12">
-          {/* 뒤에 깔린 사진 때문에 화살표가 잘 안보일까바 반투명 동그라미 추가 */}
-          <div className="animate-bounce flex flex-col items-center gap-2 drop-shadow-lg">
-            <Mouse className="w-7 h-7 text-white stroke-[1.5px]" />
-            <ChevronDown className="w-5 h-5 text-white" />
-          </div>
+        {/* Stacked Main Title */}
+        <div className="relative group text-center flex flex-col items-center mb-10 w-full overflow-visible py-4">
+          <motion.h1
+            style={{ x: mousePos.x * 0.1, y: mousePos.y * 0.1 }}
+            initial={{ opacity: 0, y: 30, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 1.2, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-col items-center leading-[0.95] select-none relative z-10 font-syne tracking-tight w-full"
+          >
+            <span className="text-[14vw] md:text-[7.5rem] lg:text-[8.5rem] text-text-primary font-[800] uppercase tracking-wider">
+              AI
+            </span>
+            <span className="text-[17vw] md:text-[8.5rem] lg:text-[9.5rem] text-accent -mt-[3%] md:-mt-[4%] font-[800] tracking-wide">
+              Radar
+            </span>
+          </motion.h1>
         </div>
-      </section>
-    </>
+
+        {/* Sub-headline */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.8 }}
+          className="flex flex-col items-center text-center max-w-2xl mb-12"
+        >
+          <p className="text-sm md:text-lg lg:text-xl font-normal text-text-primary/70 leading-relaxed tracking-wide">
+            내일의 기술을 오늘 마주하다.<br />
+            AI Radar는 가장 예리한 눈으로 미래의 신호를 읽습니다.
+          </p>
+        </motion.div>
+
+        {/* Action Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 1.0 }}
+          className="flex flex-col sm:flex-row items-center gap-4 mb-20"
+        >
+          <button className="px-6 py-3.5 bg-accent hover:bg-opacity-80 text-bg-primary font-bold rounded-lg flex items-center gap-2 transition-all">
+            지금 시작하기 <span className="text-xl leading-none">→</span>
+          </button>
+          <button className="px-6 py-3.5 bg-black/40 border border-text-primary/10 hover:bg-black/60 text-text-primary font-medium rounded-lg flex items-center gap-2 transition-all group">
+            데모 보기
+            <div className="w-5 h-5 rounded-full bg-text-primary/20 flex items-center justify-center group-hover:bg-text-primary/30 transition-colors">
+              <div className="w-0 h-0 border-y-[4px] border-y-transparent border-l-[6px] border-l-text-primary/90 ml-0.5" />
+            </div>
+          </button>
+        </motion.div>
+
+        {/* Premium Tech Info Badges */}
+        <motion.div
+           initial={{ opacity: 0 }}
+           animate={{ opacity: 1 }}
+           transition={{ duration: 1, delay: 1.2 }}
+           className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-3 gap-y-10 md:gap-0"
+        >
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-[11px] font-bold text-accent uppercase tracking-[0.15em]">Sensing</span>
+            <span className="text-lg md:text-xl font-[system-ui,sans-serif] font-bold text-text-primary tracking-widest">Full Stack</span>
+          </div>
+          <div className="flex flex-col items-center gap-2 md:border-l border-text-primary/10">
+            <span className="text-[11px] font-bold text-accent uppercase tracking-[0.15em]">Engine</span>
+            <span className="text-lg md:text-xl font-[system-ui,sans-serif] font-bold text-text-primary tracking-widest">Real-time ML</span>
+          </div>
+          <div className="flex flex-col items-center gap-2 md:border-l border-text-primary/10">
+            <span className="text-[11px] font-bold text-accent uppercase tracking-[0.15em]">Forecast</span>
+            <span className="text-lg md:text-xl font-[system-ui,sans-serif] font-bold text-text-primary tracking-widest">99.8% Conf.</span>
+          </div>
+        </motion.div>
+      </motion.div>
+
+      {/* 3. Minimalist Scroll Indicator */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1, delay: 1.4 }}
+        className="relative z-10 flex flex-col items-center gap-3 opacity-60 hover:opacity-100 transition-opacity mt-auto"
+      >
+        <div className="w-[1px] h-10 bg-gradient-to-b from-accent to-transparent" />
+        <span className="text-[10px] font-normal text-text-primary/40 tracking-[0.2em] uppercase">SCROLL</span>
+      </motion.div>
+    </section>
+
   );
 };

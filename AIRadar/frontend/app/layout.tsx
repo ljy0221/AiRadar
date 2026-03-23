@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, Noto_Serif_KR } from "next/font/google";
+import { Space_Grotesk, Inter, Noto_Serif_KR, Syne } from "next/font/google";
 import "./globals.css";
 import { MainLayout } from "../components/layout";
 import { Providers } from "./providers";
@@ -25,6 +25,13 @@ const notoSerifKR = Noto_Serif_KR({
   variable: "--font-korean",
 });
 
+// AI Radar 로고 타이틀용 폰트 (Syne)
+const syne = Syne({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-syne",
+});
+
 export const metadata: Metadata = {
   title: "AI Radar",
   description: "AI 트렌드 분석 및 예측 시스템",
@@ -37,7 +44,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" suppressHydrationWarning>
-      <body className={`${spaceGrotesk.variable} ${inter.variable} ${notoSerifKR.variable} font-sans`}>
+      <body className={`${spaceGrotesk.variable} ${inter.variable} ${notoSerifKR.variable} ${syne.variable} font-sans`}>
         <Providers>
           <MainLayout>{children}</MainLayout>
         </Providers>
