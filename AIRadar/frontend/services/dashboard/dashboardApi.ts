@@ -31,7 +31,6 @@ export interface KeywordDefinition {
   term: string;
   englishTerm: string;
   category: '개념/이론' | '모델/아키텍처' | '학습/기법' | '기타';
-  summary: string;
   description: string;
   // 모델 상세 정보 (선택항목)
   details?: {

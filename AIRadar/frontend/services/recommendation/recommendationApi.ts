@@ -11,6 +11,7 @@ export interface RecommendationItem {
   keywords: string[];
   publishedAt: string;
   reason: 'ALS' | 'KEYWORD_MATCH' | 'COLD_START';
+  url?: string;
 }
 
 export const recommendationApi = {
