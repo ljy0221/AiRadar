@@ -148,7 +148,7 @@ public class TrendAggregationJob {
                 if (githubDf != null) {
                     String cond = "EXISTS(topics, t -> lower(t) IN (" + variantsListStr + "))";
                     Row r = githubDf
-                        where(cond).selectExpr("COALESCE(SUM(star_delta_7d), 0) as s").first();
+                        .where(cond).selectExpr("COALESCE(SUM(star_delta_7d), 0) as s").first();
                     Number val = r.getAs("s");
                     if (val != null) githubActivity = Math.max(0, val.longValue());
                 }
@@ -183,8 +183,7 @@ public class TrendAggregationJob {
             
 
             
-        if (newsDf != null) n
-            wsDf.unpersist();
+        if (newsDf != null) newsDf.unpersist();
         if (paperDf != null) paperDf.unpersist();
         if (githubDf != null) githubDf.unpersist();
 
@@ -203,9 +202,9 @@ public class TrendAggregationJob {
             
 
                 
-                id upsertKeywordDaily(Connecti
-                "INSERT INTO tech_keyword_daily (keyword, stat_date, source_type
-                "VALUES (?, ?, ?, ?, ?, ?) " +
+    private static void upsertKeywordDaily(Connection conn, String keyword, LocalDate date, String sourceType, long mentions, double sentiment, long commits) throws Exception {
+        String sql = "INSERT INTO tech_keyword_daily (keyword, stat_date, source_type, mention_count, avg_sentiment, commit_count) " +
+                     "VALUES (?, ?, ?, ?, ?, ?) " +
                      "ON CONFLICT (keyword, stat_date, source_type) DO UPDATE SET " +
                      "mention_count = EXCLUDED.mention_count, avg_sentiment = EXCLUDED.avg_sentiment, commit_count = EXCLUDED.commit_count";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -235,12 +234,9 @@ public class TrendAggregationJob {
     }
 
             
-    private static String determineStatus(double trendSc
-            re, double wow, double velocity) {
-        if (trendScore >= THRESHOLD_PEA
-            ) return "PEAK";
-        if (wow >= THRESHOLD_R
-            SING_WOW && velocity > 0) return "GROWING";
+    private static String determineStatus(double trendScore, double wow, double velocity) {
+        if (trendScore >= THRESHOLD_PEAK) return "PEAK";
+        if (wow >= THRESHOLD_RISING_WOW && velocity > 0) return "GROWING";
         if (wow <= THRESHOLD_DECLINING) return "DECLINING";
         if (trendScore < 10.0) return "DORMANT";
         return "EMERGING";
@@ -248,9 +244,9 @@ public class TrendAggregationJob {
             
 
                 
-                id upsertLifecycle(Connection conn, S
-                "INSERT INTO tech_lifecycle (keyword, st
-                "VALUES (?, ?, ?, ?, ?, ?, NOW()) " +
+    private static void upsertLifecycle(Connection conn, String keyword, double score, double velocity, double wow, String status, LocalDate date) throws Exception {
+        String sql = "INSERT INTO tech_lifecycle (keyword, status, trend_score, velocity, week_over_week, first_seen_date, updated_at) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, NOW()) " +
                 "ON CONFLICT (keyword) DO UPDATE SET " +
                 "status = EXCLUDED.status, trend_score = EXCLUDED.trend_score, velocity = EXCLUDED.velocity, " +
                 
