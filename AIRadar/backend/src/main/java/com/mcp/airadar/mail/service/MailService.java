@@ -2,6 +2,8 @@ package com.mcp.airadar.mail.service;
 
 import com.mcp.airadar.common.api.BusinessException;
 import com.mcp.airadar.common.api.ErrorCode;
+import com.mcp.airadar.mail.dto.MailSendRequest;
+import com.mcp.airadar.mail.dto.MailSendResponse;
 import com.mcp.airadar.mail.dto.MailSubscribeRequest;
 import com.mcp.airadar.mail.dto.MailSubscriptionResponse;
 import com.mcp.airadar.mail.entity.NewsletterSubscription;
@@ -10,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -55,6 +59,28 @@ public class MailService {
         if (subscription.isSubscribed()) {
             subscription.unsubscribe();
         }
+    }
+
+    @Transactional(readOnly = true)
+    public MailSendResponse sendMockNewsletter(MailSendRequest request) {
+        String normalizedEmail = normalizeEmail(request.email());
+        String normalizedJobCategory = normalizeJobCategory(request.jobCategory());
+        String resolvedJobCategory = normalizedJobCategory != null ? normalizedJobCategory : "AI Practitioner";
+        LocalDateTime sentAt = LocalDateTime.now();
+
+        return new MailSendResponse(
+                normalizedEmail,
+                "[AIRadar] " + resolvedJobCategory + " Daily Brief",
+                resolvedJobCategory,
+                "Temporary AI industry briefing tailored for " + resolvedJobCategory + ".",
+                List.of(
+                        "Generative AI job postings increased by 12 percent week over week.",
+                        "Interest in GitHub repositories for open-source LLM operations is rising.",
+                        "Evaluation automation and cost optimization remain the top adoption themes."
+                ),
+                sentAt,
+                true
+        );
     }
 
     private String normalizeEmail(String email) {
