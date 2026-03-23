@@ -3,14 +3,16 @@
 
 import { useState, useMemo } from 'react';
 import { TimelineItem, TimelineItemData } from '../news/TimelineItem';
-import { PaperItem, DailyPaperGroup } from '@/types/paper';
 import { usePaperDailyQuery } from '@/hooks/queries/usePaperQuery';
 import { useBookmarksQuery } from '@/hooks/queries/useUserQuery';
+import { usePersonalizedPapersQuery } from '@/hooks/queries/useRecommendationQuery';
+import { useAuth } from '../auth/AuthContext';
 import { PaperFilter } from './PaperFilter';
+import { Sparkles, ExternalLink } from 'lucide-react';
 import Loading from '@/app/loading';
 
 // PaperItem → TimelineItemData 매핑 함수
-function toTimelineItemData(paper: PaperItem, bookmarkedIds: Set<string>): TimelineItemData {
+function toTimelineItemData(paper: any, bookmarkedIds: Set<string>): TimelineItemData {
   return {
     id: paper.paperId,
     type: 'paper',
@@ -32,11 +34,15 @@ function formatDate(iso: string): string {
 }
 
 export const PaperTimelineTab = () => {
+  const { isLoggedIn } = useAuth();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   
   // 0) 북마크 목록 조회 (로그인 시에만)
   const { data: bookmarks } = useBookmarksQuery();
   const bookmarkedIds = useMemo(() => new Set(bookmarks?.map(b => b.articleId) || []), [bookmarks]);
+
+  // 0) 개인화 논문 추천 피드 (로그인 시 & 날짜 미선택 시)
+  const { data: recommendations } = usePersonalizedPapersQuery(4, isLoggedIn && !selectedDate);
 
   // 1) 기본 조회 (최근 4일)
   const { 
@@ -78,8 +84,61 @@ export const PaperTimelineTab = () => {
   if (isError) return <div className="py-20 text-center text-red-500">데이터를 불러오지 못했습니다.</div>;
 
   return (
-    <div className="w-full flex flex-col items-center">
-      <div className="w-full max-w-4xl px-4">
+    <div className="w-full flex flex-col items-center py-6">
+      <div className="w-full max-w-4xl">
+        
+        {/* 추천 논문 섹션 (로그인 시 & 날짜 미선택 시) */}
+        {isLoggedIn && !selectedDate && recommendations && recommendations.length > 0 && (
+          <div className="mb-12 px-4">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="p-2 bg-[var(--color-accent)]/10 rounded-lg">
+                <Sparkles className="w-5 h-5 text-[var(--color-accent)]" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 italic tracking-tight uppercase">오늘의 추천 논문</h3>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {recommendations.slice(0, 4).map((rec) => (
+                <a
+                  key={rec.paperId}
+                  href={rec.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative bg-white dark:bg-[#1a1c2e] border border-gray-100 dark:border-gray-800 p-5 rounded-2xl hover:shadow-xl hover:border-[var(--color-accent)]/30 transition-all duration-300 flex flex-col h-full"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <span className="px-2 py-0.5 bg-[var(--color-accent)]/10 text-[var(--color-accent)] text-[10px] font-black rounded-md uppercase tracking-wider">
+                      {rec.reason === 'ALS' ? '맞춤 추천' : rec.reason === 'KEYWORD_MATCH' ? '관심 키워드' : '인기 논문'}
+                    </span>
+                    <span className="text-[10px] font-bold text-gray-400 truncate max-w-[120px]">
+                      {rec.authors?.[0] || 'Unknown'} {rec.authors?.length > 1 ? '외' : ''}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-sm text-gray-800 dark:text-gray-200 line-clamp-2 leading-snug group-hover:text-[var(--color-accent)] transition-colors mb-3">
+                    {rec.title}
+                  </h4>
+                  <div className="flex items-center justify-between mt-auto">
+                    <div className="flex gap-1.5 overflow-hidden">
+                      {rec.keywords?.slice(0, 2).map(kw => (
+                        <span key={kw} className="text-[10px] text-gray-400 truncate">#{kw}</span>
+                      ))}
+                      {!rec.keywords?.length && rec.researchArea && (
+                        <span className="text-[10px] text-gray-400 truncate">#{rec.researchArea}</span>
+                      )}
+                    </div>
+                    <div className="text-[10px] font-bold text-[var(--color-accent)] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
+                      원문보기 <ExternalLink className="w-2.5 h-2.5" />
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="px-4">
         {/* 날짜 필터 섹션 */}
         <PaperFilter 
           availableDates={availableDates}
@@ -124,6 +183,7 @@ export const PaperTimelineTab = () => {
               조회된 논문이 없습니다.
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>

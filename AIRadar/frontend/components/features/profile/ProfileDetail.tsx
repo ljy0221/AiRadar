@@ -97,7 +97,7 @@ export const ProfileDetail = () => {
   };
 
   return (
-    <div className="max-w-[1440px] mx-auto py-12 px-2">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="text-3xl font-bold mb-8 text-[var(--color-text-primary)]">내 프로필</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-8 items-start">
@@ -141,7 +141,7 @@ export const ProfileDetail = () => {
                   size="sm"
                   onClick={handleToggleNewsletter}
                   disabled={updateMutation.isPending}
-                  className={`min-w-[100px] ${user.isNewsletterSubscribed ? 'border-red-400 text-red-400 hover:bg-red-50' : 'bg-[#C2410C]/80 hover:bg-[#C2410C]'}`}
+                  className={`min-w-[100px] font-bold ${user.isNewsletterSubscribed ? 'border-red-400 text-red-400 hover:bg-red-50' : 'bg-[var(--color-accent)] hover:brightness-110'}`}
                 >
                   {updateMutation.isPending ? '처리 중...' : user.isNewsletterSubscribed ? '구독취소하기' : '구독하기'}
                 </Button>
@@ -177,7 +177,7 @@ export const ProfileDetail = () => {
                 size="md"
                 onClick={handleAddKeyword as any}
                 disabled={!newKeyword.trim() || addInterestMutation.isPending}
-                className="bg-gray-700 text-white rounded-lg hover:bg-gray-800 active:scale-95 transition-all w-20"
+                className="bg-[var(--color-accent)] text-white font-bold rounded-lg hover:brightness-110 active:scale-95 transition-all w-20 disabled:opacity-50 disabled:bg-gray-700 disabled:text-gray-400"
               >
                 {addInterestMutation.isPending ? '추가 중...' : '추가'}
               </Button>
