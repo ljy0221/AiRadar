@@ -32,7 +32,7 @@ const ServiceCard = ({ title, description, imagePath, className, delay }: Servic
             alt={title} 
             width={240} 
             height={240} 
-            className="object-contain animate-float transition-transform duration-500 group-hover:scale-110"
+            className="object-contain animate-float transition-all duration-700 group-hover:scale-110 saturate-[0.3] brightness-[0.85] opacity-80 group-hover:saturate-100 group-hover:brightness-100 group-hover:opacity-100"
           />
         </div>
 

@@ -8,8 +8,9 @@ import { useBookmarksQuery } from '@/hooks/queries/useUserQuery';
 import { usePersonalizedPapersQuery } from '@/hooks/queries/useRecommendationQuery';
 import { useAuth } from '../auth/AuthContext';
 import { PaperFilter } from './PaperFilter';
-import { Sparkles, ExternalLink } from 'lucide-react';
+import { Sparkles, ExternalLink, ChevronLeft, ChevronRight, CalendarDays, X } from 'lucide-react';
 import Loading from '@/app/loading';
+import { CalendarModal } from '@/components/common';
 
 // PaperItem → TimelineItemData 매핑 함수
 function toTimelineItemData(paper: any, bookmarkedIds: Set<string>): TimelineItemData {
@@ -36,49 +37,56 @@ function formatDate(iso: string): string {
 export const PaperTimelineTab = () => {
   const { isLoggedIn } = useAuth();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>('ALL');
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   
   // 0) 북마크 목록 조회 (로그인 시에만)
   const { data: bookmarks } = useBookmarksQuery();
   const bookmarkedIds = useMemo(() => new Set(bookmarks?.map(b => b.articleId) || []), [bookmarks]);
 
-  // 0) 개인화 논문 추천 피드 (로그인 시 & 날짜 미선택 시)
-  const { data: recommendations } = usePersonalizedPapersQuery(4, isLoggedIn && !selectedDate);
-
-  // 1) 기본 조회 (최근 4일)
+  // 1) 기본 조회 (가용 날짜 확인용)
   const { 
     data: recentGroups, 
     isLoading: isRecentLoading, 
     isError: isRecentError 
   } = usePaperDailyQuery();
 
-  // 2) 특정 날짜 조회 (selectedDate가 있을 때만 활성화)
+  const availableDates = useMemo(() => 
+    recentGroups ? recentGroups.map(group => group.date) : [], 
+    [recentGroups]
+  );
+
+  // 화면에 표시할 날짜 결정 (선택된 날짜가 없으면 가장 최신 날짜)
+  const displayDate = selectedDate || (availableDates.length > 0 ? availableDates[0] : null);
+
+  // 0) 개인화 논문 추천 피드 (로그인 시 & 날짜 미선택 시)
+  const { data: recommendations } = usePersonalizedPapersQuery(4, isLoggedIn && !selectedDate);
+
+  // 2) 특정 날짜 조회
   const { 
     data: filteredGroups, 
     isLoading: isFilteredLoading, 
     isError: isFilteredError 
-  } = usePaperDailyQuery(selectedDate ? { date: selectedDate } : undefined);
+  } = usePaperDailyQuery(displayDate ? { date: displayDate } : undefined);
 
-  // 현재 보여줄 날짜 그룹 결정
-  const renderedGroups = useMemo(() => {
-    if (selectedDate) {
-      return filteredGroups || [];
-    }
-    
-    // 초기 화면: 일별 최대 7개로 제한
-    if (!recentGroups) return [];
-    return recentGroups.map(group => ({
-      ...group,
-      items: group.items.slice(0, 7)
-    }));
-  }, [selectedDate, filteredGroups, recentGroups]);
+  const currentGroup = filteredGroups?.[0] || null;
 
-  // 가용 날짜 리스트 추출 (기본 조회 데이터 기준)
-  const availableDates = useMemo(() => {
-    return recentGroups ? recentGroups.map(group => group.date) : [];
-  }, [recentGroups]);
+  // 화살표 네비게이션 핸들러
+  const handlePrevDay = (currentStr: string) => {
+    setActiveCategory('ALL'); // 날짜 변경 시 필터 초기화
+    const d = new Date(currentStr);
+    d.setDate(d.getDate() - 1);
+    setSelectedDate(d.toISOString().split('T')[0]);
+  };
+  const handleNextDay = (currentStr: string) => {
+    setActiveCategory('ALL'); // 날짜 변경 시 필터 초기화
+    const d = new Date(currentStr);
+    d.setDate(d.getDate() + 1);
+    setSelectedDate(d.toISOString().split('T')[0]);
+  };
 
-  const isLoading = selectedDate ? isFilteredLoading : isRecentLoading;
-  const isError = selectedDate ? isFilteredError : isRecentError;
+  const isLoading = displayDate ? isFilteredLoading : isRecentLoading;
+  const isError = displayDate ? isFilteredError : isRecentError;
 
   if (isLoading) return <Loading />;
   if (isError) return <div className="py-20 text-center text-red-500">데이터를 불러오지 못했습니다.</div>;
@@ -89,7 +97,7 @@ export const PaperTimelineTab = () => {
         
         {/* 추천 논문 섹션 (로그인 시 & 날짜 미선택 시) */}
         {isLoggedIn && !selectedDate && recommendations && recommendations.length > 0 && (
-          <div className="mb-12 px-4">
+          <div className="mb-12 px-4 text-center md:text-left">
             <div className="flex items-center gap-2 mb-6">
               <div className="p-2 bg-[var(--color-accent)]/10 rounded-lg">
                 <Sparkles className="w-5 h-5 text-[var(--color-accent)]" />
@@ -106,7 +114,7 @@ export const PaperTimelineTab = () => {
                   href={rec.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group relative bg-white dark:bg-[#1a1c2e] border border-gray-100 dark:border-gray-800 p-5 rounded-2xl hover:shadow-xl hover:border-[var(--color-accent)]/30 transition-all duration-300 flex flex-col h-full"
+                  className="group relative bg-white dark:bg-[#1a1c2e] border border-gray-100 dark:border-gray-800 p-5 rounded-2xl hover:shadow-xl hover:border-[var(--color-accent)]/30 transition-all duration-300 flex flex-col h-full text-left"
                 >
                   <div className="flex justify-between items-start mb-3">
                     <span className="px-2 py-0.5 bg-[var(--color-accent)]/10 text-[var(--color-accent)] text-[10px] font-black rounded-md uppercase tracking-wider">
@@ -139,46 +147,104 @@ export const PaperTimelineTab = () => {
         )}
 
         <div className="px-4">
-        {/* 날짜 필터 섹션 */}
-        <PaperFilter 
+        {/* 통합 필터 섹션 (뉴스 섹션 스타일 적용) */}
+        <div className="bg-gray-50/50 dark:bg-[#11121A] border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 sm:p-5 shadow-sm mb-12">
+          <div className="flex justify-between items-center mb-5">
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">일별 논문 탐색</h3>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setIsCalendarOpen(true)}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border rounded-xl text-xs sm:text-sm font-bold transition-colors ${
+                  selectedDate 
+                    ? 'border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--color-accent)]/10 dark:bg-[var(--color-accent)]/20 shadow-sm' 
+                    : 'border-gray-200 dark:border-gray-800/80 text-gray-700 dark:text-gray-300 bg-white dark:bg-[#171924] hover:bg-gray-50 dark:hover:bg-[#1c1f2e]'
+                }`}
+              >
+                <CalendarDays className={`w-4 h-4 ${selectedDate ? 'text-[var(--color-accent)]' : 'text-gray-500 dark:text-gray-400'}`} />
+                {selectedDate ? selectedDate.replace(/-/g, '.') : '날짜 선택'}
+              </button>
+              {selectedDate && (
+                <button 
+                  onClick={() => setSelectedDate(null)}
+                  className="p-1.5 sm:p-2 rounded-xl border border-gray-200 dark:border-gray-800/80 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#1c1f2e] transition-colors"
+                  title="필터 초기화"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 카테고리/키워드 필터 칩 */}
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+            {['ALL', ...Array.from(new Set(currentGroup?.items.map((item: any) => item.category) || []))].map(keyword => {
+              const isActive = activeCategory === keyword;
+              return (
+                <button
+                  key={keyword}
+                  onClick={() => setActiveCategory(keyword)}
+                  className={`shrink-0 px-3 py-1.5 sm:px-4 sm:py-1.5 rounded-full text-xs font-bold transition-all duration-200 border ${
+                    isActive
+                      ? 'border-emerald-500/80 text-emerald-500 bg-emerald-500/5'
+                      : 'border-gray-300 dark:border-gray-800/80 text-gray-600 dark:text-gray-400 bg-transparent hover:border-gray-400 dark:hover:border-gray-600'
+                  }`}
+                >
+                  {keyword === 'ALL' ? '전체' : keyword}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <CalendarModal 
+          isOpen={isCalendarOpen} 
+          onClose={() => setIsCalendarOpen(false)}
           availableDates={availableDates}
           selectedDate={selectedDate}
           onDateSelect={setSelectedDate}
         />
 
         <div className="flex flex-col gap-10">
-          {renderedGroups.map((group, gIdx) => (
-            <div key={group.date || gIdx} className="relative">
-              {/* 날짜 헤더 영역 */}
-              <div className="flex items-center gap-3 mb-6 relative z-10">
-                <div className="w-4 h-4 rounded-full bg-[var(--color-accent)] opacity-80" />
-                <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200">
-                  {group.date.replace(/-/g, '.')}
+          {currentGroup ? (
+            <div key={currentGroup.date} className="relative">
+              {/* 날짜 헤더 영역과 좌우 화살표 */}
+              <div className="flex items-center gap-3 mb-6 relative z-10 bg-white dark:bg-[#0b0c10] py-2 sticky top-[60px] md:top-[70px]">
+                <div className="w-4 h-4 rounded-full bg-[var(--color-accent)] opacity-80 shrink-0" />
+                
+                <button
+                  onClick={() => handlePrevDay(currentGroup.date)}
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors group ml-2"
+                  title="이전 날짜 (과거)"
+                >
+                  <ChevronLeft className="w-5 h-5 text-gray-400 group-hover:text-[var(--color-accent)]" />
+                </button>
+                
+                <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200 min-w-[140px] text-center">
+                  {currentGroup.date.replace(/-/g, '.')}
                 </h3>
                 
-                {/* 특정 날짜 미선택 시 나타나는 '더보기' 버튼 */}
-                {!selectedDate && (
-                  <button
-                    onClick={() => setSelectedDate(group.date)}
-                    className="ml-auto text-[13px] font-bold text-gray-400 hover:text-[var(--color-accent)] transition-colors"
-                  >
-                    이 날짜 논문 전체 보기→
-                  </button>
-                )}
+                <button
+                  onClick={() => handleNextDay(currentGroup.date)}
+                  className={`p-1.5 rounded-full transition-colors group ${availableDates[0] === currentGroup.date || !availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date() ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer'}`}
+                  disabled={availableDates[0] === currentGroup.date || !availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date()}
+                  title="다음 날짜 (최신)"
+                >
+                  <ChevronRight className={`w-5 h-5 text-gray-400 ${availableDates[0] === currentGroup.date || !availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date() ? '' : 'group-hover:text-[var(--color-accent)]'}`} />
+                </button>
               </div>
 
               {/* 해당 날짜의 논문 아이템 리스트 래퍼 (왼쪽 세로선 포함) */}
               <div className="relative border-l-2 border-gray-200 dark:border-gray-800 ml-2">
                 <div className="flex flex-col gap-4">
-                  {group.items.map((item, iIdx) => (
-                    <TimelineItem key={item.paperId || iIdx} data={toTimelineItemData(item, bookmarkedIds)} />
-                  ))}
+                  {currentGroup.items
+                    .filter((item: any) => activeCategory === 'ALL' || item.category === activeCategory)
+                    .map((item: any, iIdx: number) => (
+                      <TimelineItem key={item.paperId || iIdx} data={toTimelineItemData(item, bookmarkedIds)} />
+                    ))}
                 </div>
               </div>
             </div>
-          ))}
-
-          {renderedGroups.length === 0 && (
+          ) : (
             <div className="w-full flex justify-center py-20 text-gray-400 text-sm">
               조회된 논문이 없습니다.
             </div>

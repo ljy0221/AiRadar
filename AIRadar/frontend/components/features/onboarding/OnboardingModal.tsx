@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { 
   Check, X, Sparkles, Rocket, Target, Cpu, Brain, Layers, 
-  ArrowRight, PlusCircle, Loader2, ChevronRight 
+  ArrowRight, PlusCircle, Loader2, ChevronRight, Star, ChevronDown, Radar 
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -106,28 +106,18 @@ export const OnboardingModal = () => {
   return (
     <Transition show={true} as="div">
       <Dialog onClose={() => {}} className="relative z-[100]">
-        <div className="fixed inset-0 bg-[var(--color-bg-primary)]/90 backdrop-blur-2xl transition-opacity overflow-hidden">
-          {/* AI 감성의 다이나믹 오로라 배경 */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50 dark:opacity-40">
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-lg transition-opacity overflow-hidden">
+          {/* AI 감성의 다이나믹 오로라 배경 (모달 내부에 종속되도록 위치 조정 가능성 검토) */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
             <motion.div 
               animate={{ 
                 scale: [1, 1.2, 1],
-                opacity: [0.3, 0.5, 0.3],
+                opacity: [0.1, 0.2, 0.1],
                 x: [0, 50, 0],
                 y: [0, -30, 0]
               }}
               transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
               className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-[var(--color-accent)]/20 rounded-full blur-[120px]" 
-            />
-            <motion.div 
-              animate={{ 
-                scale: [1, 1.3, 1],
-                opacity: [0.2, 0.4, 0.2],
-                x: [0, -40, 0],
-                y: [0, 40, 0]
-              }}
-              transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-              className="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] bg-blue-500/10 rounded-full blur-[150px]" 
             />
           </div>
         </div>
@@ -143,26 +133,54 @@ export const OnboardingModal = () => {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className="w-full max-w-xl bg-[var(--color-bg-primary)]/40 dark:bg-white/[0.02] backdrop-blur-md rounded-[40px] md:rounded-[56px] p-8 sm:p-12 md:p-16 shadow-2xl border border-gray-200 dark:border-white/10 relative overflow-hidden text-center"
+                  className="w-full max-w-md bg-white dark:bg-[#0b0c10] border border-gray-200 dark:border-white/10 rounded-[40px] md:rounded-[48px] p-8 sm:p-10 md:p-12 shadow-[0_32px_80px_rgba(0,0,0,0.5)] relative overflow-hidden text-center flex flex-col items-center mx-4"
                 >
-                  <div className="relative z-10">
-                    <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-[var(--color-accent)] to-[#f97316] rounded-[28px] md:rounded-[32px] flex items-center justify-center mx-auto mb-6 md:mb-10 shadow-2xl shadow-[var(--color-accent)]/40 relative">
-                      <Sparkles className="w-10 h-10 md:w-12 md:h-12 text-white" />
-                      <div className="absolute inset-0 rounded-[28px] md:rounded-[32px] animate-ping bg-[var(--color-accent)]/20 -z-10" />
-                    </div>
-                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[var(--color-text-primary)] tracking-tight mb-4 md:mb-6 leading-[1.15] md:leading-[1.1]">
-                      당신만의 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-accent)] to-[#fb923c]">AI 인사이트</span>를<br className="hidden sm:block" />정교하게 설계합니다
-                    </h2>
-                    <p className="text-[var(--color-text-primary)]/60 font-medium text-base md:text-lg max-w-sm mx-auto mb-10 md:mb-14 leading-relaxed px-4 sm:px-0">
-                      매일 쏟아지는 수만 개의 AI 소식 중,<br className="hidden sm:block" />당신에게 꼭 필요한 것만 걸러내 드릴게요.
-                    </p>
-                    <button
-                      onClick={() => setStep('focus')}
-                      className="w-full max-w-xs bg-[var(--color-text-primary)] dark:bg-white text-[var(--color-bg-primary)] dark:text-black font-black py-4 md:py-5 rounded-2xl shadow-2xl hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-3 group mx-auto text-lg md:text-xl"
+                  {/* 도트 형태의 모달 내부 배경 무늬 */}
+                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(var(--color-text-primary)_1px,transparent_1px)] [background-size:20px_20px]" />
+                  
+                  {/* 상단 스텝 인디케이터 - 시스템 컬러 적용 */}
+                  <div className="flex gap-2 justify-center mb-8">
+                    <div className="w-8 h-1.5 rounded-full bg-[var(--color-accent)] shadow-[0_0_8px_var(--color-accent)]/30 transition-all duration-500" />
+                    <div className="w-3 h-1.5 rounded-full bg-gray-200 dark:bg-gray-800 transition-all duration-500" />
+                    <div className="w-3 h-1.5 rounded-full bg-gray-200 dark:bg-gray-800 transition-all duration-500" />
+                  </div>
+
+                  <div className="relative z-10 w-full flex flex-col items-center">
+                    {/* 메인 아이콘 - 서비스 상징인 Radar로 변경 */}
+                    <motion.div 
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.8, type: 'spring' }}
+                      className="w-16 h-16 md:w-20 md:h-20 bg-[var(--color-accent)] rounded-[24px] flex items-center justify-center mb-8 shadow-2xl shadow-[var(--color-accent)]/20 relative cursor-default"
                     >
-                      시작하기
-                      <ChevronRight className="w-5 h-5 md:w-6 md:h-6 group-hover:translate-x-1 transition-transform" />
-                    </button>
+                      <Radar className="w-8 h-8 md:w-10 md:h-10 text-white" />
+                      <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-white rounded-full border-[3px] border-[var(--color-accent)] transition-transform" />
+                    </motion.div>
+
+                    {/* 메인 타이틀 - 시스템 컬러 기반 그라데이션 */}
+                    <h2 className="text-2xl sm:text-3xl font-black text-[var(--color-text-primary)] tracking-tight mb-4 leading-tight text-center">
+                      당신만의 <span className="text-transparent bg-clip-text bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent)]/70">AI 인사이트를</span><br />
+                      정교하게 설계합니다
+                    </h2>
+
+                    {/* 서브 설명 - 폰트 크기 축소 및 굵기 완화 */}
+                    <p className="text-[var(--color-text-primary)]/40 font-medium text-xs md:text-sm max-w-[260px] mx-auto mb-12 leading-relaxed tracking-normal">
+                      매일 쏟아지는 수만 개의 AI 소식 중,<br />
+                      당신에게 꼭 필요한 것만 걸러낼게요.
+                    </p>
+
+                    {/* 하단 유도 버튼 - 캡슐형 디자인 적용 */}
+                    <div className="flex flex-col items-center mt-8 mb-4 w-full">
+                      <motion.button
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setStep('focus')}
+                        className="w-full max-w-[280px] bg-[var(--color-text-primary)] dark:bg-white text-[var(--color-bg-primary)] dark:text-black font-black py-4 rounded-2xl shadow-xl hover:shadow-2xl hover:brightness-110 transition-all flex items-center justify-center gap-2 group text-base"
+                      >
+                        시작하기
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
+                      </motion.button>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -233,9 +251,9 @@ export const OnboardingModal = () => {
 
                       <div className="space-y-8 md:space-y-12">
                         {ONBOARDING_KEYWORDS.map((group) => (
-                          <div key={group.category} className={selectedFocus && group.id !== selectedFocus ? 'opacity-30 grayscale' : ''}>
-                            <h3 className="text-[10px] md:text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.3em] mb-4 md:mb-6 flex items-center gap-4">
-                              {group.category} <div className="h-[1px] flex-1 bg-gray-100 dark:bg-white/5" />
+                          <div key={group.category} className="transition-opacity duration-300">
+                            <h3 className="text-[10px] md:text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.3em] mb-4 md:mb-6 flex items-center gap-4">
+                              {group.category} <div className="h-[1px] flex-1 bg-gray-100 dark:bg-white/10" />
                             </h3>
                             <div className="flex flex-wrap gap-2 md:gap-3">
                               {group.keywords.map((keyword) => {
@@ -246,8 +264,8 @@ export const OnboardingModal = () => {
                                     onClick={() => toggleKeyword(keyword)}
                                     className={`px-4 py-2.5 md:px-6 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-[15px] font-bold transition-all border outline-none ${
                                       isSelected
-                                        ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white shadow-2xl shadow-[var(--color-accent)]/30 scale-105'
-                                        : 'bg-[var(--color-bg-primary)] dark:bg-white/5 border-gray-200 dark:border-white/5 text-gray-500 hover:border-[var(--color-accent)]/50 hover:bg-gray-50 dark:hover:bg-white/10 hover:text-[var(--color-accent)]'
+                                        ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white shadow-2xl shadow-[var(--color-accent)]/30 scale-105 ring-1 ring-[var(--color-accent)] ring-offset-2 dark:ring-offset-[#0b0c10]'
+                                        : 'bg-gray-50/50 dark:bg-white/[0.05] border-gray-200 dark:border-white/5 text-gray-600 dark:text-gray-300 hover:border-[var(--color-accent)]/50 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-[var(--color-accent)]'
                                     }`}
                                   >
                                     {keyword}
@@ -406,10 +424,9 @@ export const OnboardingModal = () => {
                   </p>
                   <button
                     onClick={() => setOnboardingCompleted(true)}
-                    className="w-full max-w-xs bg-[var(--color-text-primary)] dark:bg-white text-[var(--color-bg-primary)] dark:text-black font-black py-4 md:py-5 rounded-2xl shadow-2xl hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-3 group mx-auto text-lg md:text-xl"
+                    className="w-full max-w-xs bg-[var(--color-text-primary)] dark:bg-white text-[var(--color-bg-primary)] dark:text-black font-black py-4 md:py-5 rounded-2xl shadow-2xl hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center group mx-auto text-lg md:text-xl"
                   >
                     대시보드 입장하기
-                    <Rocket className="w-5 h-5 md:w-6 md:h-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                   </button>
                 </motion.div>
               )}
