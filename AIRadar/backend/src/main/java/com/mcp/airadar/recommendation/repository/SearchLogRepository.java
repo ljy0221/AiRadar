@@ -29,12 +29,5 @@ public interface SearchLogRepository extends JpaRepository<SearchLog, Long> {
             """, nativeQuery = true)
     List<SearchLog> findBookmarkHistory(@Param("userId") UUID userId);
 
-    @Query(value = """
-            SELECT DISTINCT ON (article_id) *
-            FROM search_logs
-            WHERE user_id = :userId
-              AND event_type = 'ARTICLE_LIKED'
-            ORDER BY article_id, occurred_at DESC
-            """, nativeQuery = true)
-    List<SearchLog> findLikeHistory(@Param("userId") UUID userId);
+    void deleteByUserIdAndArticleIdAndEventType(UUID userId, String articleId, String eventType);
 }

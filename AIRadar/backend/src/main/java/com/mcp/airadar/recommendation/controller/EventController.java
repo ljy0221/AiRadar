@@ -55,18 +55,6 @@ public class EventController {
     }
 
     /**
-     * 좋아요 이벤트
-     * [AUTH 필요]
-     */
-    @PostMapping("/article-like")
-    public ResponseEntity<Void> articleLike(
-            @AuthenticationPrincipal UUID userId,
-            @Valid @RequestBody ArticleActionRequest request) {
-        userEventService.onArticleLiked(userId, request.articleId());
-        return ResponseEntity.accepted().build();
-    }
-
-    /**
      * 북마크 이벤트
      * [AUTH 필요]
      */
