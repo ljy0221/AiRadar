@@ -26,9 +26,6 @@ export const eventApi = {
   trackSearch: (query: string) =>
     api.post('/events/search', { query }).catch(() => { }),
 
-  // 좋아요 이벤트
-  trackLike: (articleId: string) =>
-    api.post('/events/article-like', { articleId }).catch(() => { }),
 
   // 북마크 이벤트
   trackBookmark: (articleId: string) =>

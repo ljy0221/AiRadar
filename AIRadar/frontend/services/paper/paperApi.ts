@@ -1,32 +1,23 @@
-// services/paperApi.ts
-// Arxiv 논문 데이터 API 서비스
-// 현재: Mock 데이터 반환 / 실제 백엔드 연동 시 TODO 주석 확인 후 교체
+// services/paper/paperApi.ts
+import { api } from '../common/api';
+import { PaperListItem, DailyPaperGroup, PaperListParams } from '@/types/paper';
 
-import type { PaperDetail, PaperListItem, PaperListParams } from '@/types/paper';
+export const paperApi = {
+  // 일별 그룹화된 논문 목록 조회 (실서버 연동)
+  // GET /api/v1/papers
+  getPapers: async (params?: PaperListParams): Promise<DailyPaperGroup[]> => {
+    // api interceptor가 response.data.data를 자동으로 반환하도록 설정되어 있음
+    const response = await api.get<DailyPaperGroup[]>('/papers', {
+      params,
+    });
+    
+    // axios interceptor에서 data 필드만 이미 추출해 보냈을 것이므로 형변환하여 반환
+    return response as unknown as DailyPaperGroup[];
+  },
 
-import { MOCK_PAPER_LIST, MOCK_PAPER_DETAIL } from './paperRaw';
-
-// ─────────────────────────────────────────────────────────────
-// API Functions
-// ─────────────────────────────────────────────────────────────
-
-// TODO: replace with real API → api.get('/papers', { params })
-export const fetchPaperList = async (params?: PaperListParams): Promise<PaperListItem[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      let result = [...MOCK_PAPER_LIST];
-      if (params?.category) result = result.filter((p) => p.category === params.category);
-      if (params?.researchArea) result = result.filter((p) => p.researchArea === params.researchArea);
-      resolve(result);
-    }, 600);
-  });
-};
-
-// TODO: replace with real API → api.get(`/papers/${paperId}`)
-export const fetchPaperDetail = async (paperId: string): Promise<PaperDetail | null> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(MOCK_PAPER_DETAIL[paperId] ?? null);
-    }, 400);
-  });
+  // 특정 논문 상세 정보 조회 (추후 사용 가능)
+  // GET /api/v1/papers/{paperId}
+  getPaperDetail: async (paperId: string): Promise<PaperListItem> => {
+    return api.get(`/papers/${paperId}`);
+  }
 };

@@ -15,6 +15,7 @@ const navigation = [
   { name: '대시보드', href: '/dashboard' },
   { name: '직업', href: '/jobs' },
   { name: '뉴스', href: '/news' },
+  { name: '논문', href: '/papers' },
 ];
 
 function classNames(...classes: (string | undefined | null | false)[]) {
@@ -52,8 +53,8 @@ export const Header = () => {
         as="nav"
         className={classNames(
           "sticky top-0 z-50 w-full transition-all duration-300",
-          shouldBeTransparent 
-            ? "bg-transparent border-none" 
+          shouldBeTransparent
+            ? "bg-transparent border-none"
             : "bg-[var(--color-bg-primary)]/80 backdrop-blur-md border-none shadow-none"
         )}
       >
@@ -69,8 +70,8 @@ export const Header = () => {
             </div>
             <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
               <div className="flex shrink-0 items-center">
-                <Link 
-                  href="/" 
+                <Link
+                  href="/"
                   className={classNames(
                     "font-serif text-2xl font-normal tracking-tight transition-all",
                     shouldBeTransparent ? "text-white" : "text-[var(--color-text-primary)] hover:opacity-80"
@@ -111,8 +112,8 @@ export const Header = () => {
                       "p-2 rounded-full border shadow-sm transition-all duration-200 flex items-center justify-center hover:scale-110 active:scale-95 group focus:outline-none",
                       isLoggedIn && user
                         ? "bg-[var(--color-accent)] text-white text-base font-bold border-transparent"
-                        : shouldBeTransparent 
-                          ? "bg-white/10 hover:bg-white/20 text-white border-white/20" 
+                        : shouldBeTransparent
+                          ? "bg-white/10 hover:bg-white/20 text-white border-white/20"
                           : "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-[var(--color-text-primary)] border-gray-200 dark:border-gray-700"
                     )}
                   >
@@ -179,7 +180,7 @@ export const Header = () => {
                             <p className="text-lg font-bold text-[var(--color-text-primary)]">AI Radar</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">로그인이 필요합니다</p>
                           </div>
-                           <PopoverButton
+                          <PopoverButton
                             as="button"
                             onClick={() => openAuthModal('login')}
                             className="flex items-center gap-3 w-full px-6 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-all group text-left outline-none"
@@ -201,7 +202,7 @@ export const Header = () => {
                   </Transition>
                 </Popover>
                 <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1"></div>
-                <ThemeToggle 
+                <ThemeToggle
                   className={shouldBeTransparent ? "border-white/20 hover:bg-white/10 text-white" : ""}
                 />
               </div>
