@@ -1,12 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTracking } from '@/hooks/useTracking';
 
 export const JobSearch = () => {
-  const [query, setQuery] = useState('');
   const [displayedTitle, setDisplayedTitle] = useState('');
   const fullTitle = '당신의 직업, AI는 어떻게 볼까요?';
   const router = useRouter();
@@ -24,20 +22,15 @@ export const JobSearch = () => {
 
   const { trackSearch } = useTracking();
 
-  const performSearch = (searchTerm: string) => {
-    if (searchTerm.trim()) {
-      trackSearch(searchTerm);
-      // 임시 -> frontend-developer로 이동
-      router.push(`/jobs/frontend-developer`);
-    }
+  const handleJobClick = (jobName: string) => {
+    trackSearch(jobName);
+    router.push(`/jobs/${encodeURIComponent(jobName)}`);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    performSearch(query);
-  };
-
-  const trendingTags = ['프론트엔드', '데이터 분석가', 'AI 엔지니어', 'PM'];
+  const jobList = [
+    '개발자', '마케터', '행정 보조', '통역사', '고객 상담원', 
+    '변호사', '회계사', '심리상담사', '패션 디자이너', '경찰관'
+  ];
 
   return (
     <div className="w-full flex-1 flex flex-col items-center justify-center min-h-[90vh] pb-32 px-4">
@@ -59,27 +52,15 @@ export const JobSearch = () => {
         </p>
       </div>
 
-      <div className="w-full max-w-2xl">
-        <form onSubmit={handleSearch} className="relative mb-6">
-          <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
-          <input
-            type="text"
-            placeholder="프론트엔드 개발자"
-            className="w-full pl-16 pr-6 py-5 rounded-full text-lg shadow-md border border-gray-100 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all dark:bg-[#1a1c2e] hover:shadow-lg"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </form>
-
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <span className="text-sm opacity-60 mr-2">인기 검색어:</span>
-          {trendingTags.map((tag) => (
+      <div className="w-full max-w-3xl mt-6">
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {jobList.map((job) => (
             <button
-              key={tag}
-              onClick={() => performSearch(tag)}
-              className="px-4 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-sm hover:bg-[var(--color-accent)] hover:text-white transition-all duration-200 cursor-pointer hover:scale-105 active:scale-95"
+              key={job}
+              onClick={() => handleJobClick(job)}
+              className="px-5 py-2.5 rounded-full bg-white dark:bg-[#1a1c2e] text-gray-700 dark:text-gray-300 shadow-sm border border-gray-200 dark:border-gray-800 hover:bg-[var(--color-accent)] hover:text-white dark:hover:bg-[var(--color-accent)] hover:border-transparent transition-all duration-200 cursor-pointer hover:-translate-y-1 active:scale-95 font-medium text-base"
             >
-              #{tag}
+              # {job}
             </button>
           ))}
         </div>
