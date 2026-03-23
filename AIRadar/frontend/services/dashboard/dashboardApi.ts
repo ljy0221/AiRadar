@@ -84,8 +84,8 @@ export const fetchDashboardData = async (): Promise<DashboardResponse> => {
   try {
     // 1. 진짜 백엔드 서버(172.26.5.50)에서 계산된 Lifecycle 데이터 훔쳐오기
     // 데이터 형식: [{ keyword: "RAG", status: "GROWING", trendScore: 85.2, ... }]
-    const response = await api.get('/dashboard/lifecycle');
-    const realLifecycleData = response.data;
+    const response: any = await api.get('/dashboard/lifecycle');
+    const realLifecycleData = Array.isArray(response) ? response : response?.data;
     // 2. 기존 프론트엔드 анали저(Analyzer)를 그대로 실행해서 UI 뼈대와 디자인 완성본 가져오기
     const dashboardResponse = analyzeDashboardData(mockKeywordDictionary);
     // 3. 뼈대만 있는 dashboardResponse에 진짜 '점수'와 '상태' 덮어씌우기 
