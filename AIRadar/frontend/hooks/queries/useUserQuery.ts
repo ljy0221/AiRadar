@@ -6,6 +6,7 @@ import { useAuth } from '@/components/features/auth/AuthContext';
 export const userQueryKeys = {
   me: ['user', 'me'] as const,
   interests: ['user', 'interests'] as const,
+  bookmarks: ['user', 'bookmarks'] as const,
 };
 
 // ── GET /users/me ─────────────────────────────────────────────────────────────
@@ -77,5 +78,17 @@ export const useRemoveInterestMutation = () => {
     onError: (error) => {
       console.error('관심 키워드 삭제 실패:', error);
     },
+  });
+};
+
+// ── GET /users/me/bookmarks ──────────────────────────────────────────────────
+export const useBookmarksQuery = () => {
+  const { isLoggedIn } = useAuth();
+
+  return useQuery({
+    queryKey: userQueryKeys.bookmarks,
+    queryFn: userApi.getBookmarks,
+    staleTime: 1000 * 60 * 5, // 5분
+    enabled: isLoggedIn,
   });
 };

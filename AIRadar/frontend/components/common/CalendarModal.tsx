@@ -60,11 +60,13 @@ export const CalendarModal = ({
   }, [availableDatesSet]);
 
   const handleDateClick = useCallback((dateString: string) => {
-    if (isDateAvailable(dateString)) {
-      onDateSelect(dateString);
-      onClose();
-    }
-  }, [isDateAvailable, onDateSelect, onClose]);
+    // 미래 날짜 선택 방지 
+    const isFuture = new Date(dateString) > new Date();
+    if (isFuture) return;
+
+    onDateSelect(dateString);
+    onClose();
+  }, [onDateSelect, onClose]);
 
   const handleReset = useCallback(() => {
     onDateSelect(null);
@@ -84,22 +86,20 @@ export const CalendarModal = ({
       const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const isAvailable = isDateAvailable(dateString);
       const isSelected = selectedDate === dateString;
+      const isFuture = new Date(dateString) > new Date();
 
       return (
         <button
           key={`day-${day}`}
           onClick={() => handleDateClick(dateString)}
-          disabled={!isAvailable}
+          disabled={isFuture}
           className={`relative w-10 h-10 flex items-center justify-center rounded-full text-sm font-medium transition-[background-color] duration-75
             ${isSelected ? 'bg-[var(--color-accent)] text-white' : ''}
-            ${!isSelected && isAvailable ? 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100' : ''}
-            ${!isAvailable ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' : ''}
+            ${!isSelected && !isFuture ? 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100' : ''}
+            ${isFuture ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' : ''}
           `}
         >
           {day}
-          {isAvailable && !isSelected && (
-            <div className="absolute bottom-1 w-1 h-1 bg-[var(--color-accent)] rounded-full" />
-          )}
         </button>
       );
     });

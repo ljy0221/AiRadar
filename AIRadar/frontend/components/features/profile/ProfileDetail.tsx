@@ -6,6 +6,7 @@ import { EditProfileModal } from './EditProfileModal';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { NewsletterSubscribeModal } from '@/components/features/home';
 import { X } from 'lucide-react';
+import { BookmarkList } from './BookmarkList';
 
 import {
   useUserQuery,
@@ -210,6 +211,9 @@ export const ProfileDetail = () => {
               {currentInterests.length}개 등록됨
             </p>
           </div>
+
+          {/* 북마크 목록 섹션 추가 */}
+          <BookmarkList />
 
         </div>
 

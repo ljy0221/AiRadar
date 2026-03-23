@@ -41,4 +41,7 @@ export const userApi = {
 
   // 온보딩 완료 — POST /users/me/onboarding
   completeOnboarding: (keywords: string[]): Promise<void> => api.post('/users/me/onboarding', { keywords }),
+
+  // 북마크 목록 조회 — GET /users/me/bookmarks
+  getBookmarks: (): Promise<{ articleId: string; occurredAt: string }[]> => api.get('/users/me/bookmarks'),
 };

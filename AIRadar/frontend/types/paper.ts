@@ -1,37 +1,33 @@
 // types/paper.ts
-// Arxiv 논문(Paper) 관련 TypeScript 타입 정의
-// 백엔드 PaperDto.ListItem / PaperDto.Detail 기반
 
 export interface PaperListItem {
-  paperId: string;      // Arxiv ID 형식: YYMM.NNNNN (예: '2403.09611')
+  paperId: string;
   title: string;
-  source: string;       // 항상 'arxiv'
+  source: string;
   authors: string[];
   researchArea: string;
-  category: PaperCategory;
-  publishedAt: string;  // ISO 8601
+  category: string;
+  publishedAt: string;
+  isBookmarked?: boolean;
 }
 
 export interface PaperDetail extends PaperListItem {
   abstractText: string;
-  url: string;          // 'https://arxiv.org/abs/{paperId}'
+  url: string;
   keywords: string[];
   summary: string;
 }
 
-export type PaperCategory =
-  | 'LLM'
-  | 'Agent'
-  | 'Vision'
-  | 'Multimodal'
-  | 'Efficient'
-  | 'RL'
-  | 'NLP'
-  | 'Other';
+// 기존 PaperItem 호환용 (추후 정리 가능)
+export type PaperItem = PaperDetail;
+
+export interface DailyPaperGroup {
+  date: string;
+  items: PaperItem[];
+}
 
 export interface PaperListParams {
-  category?: PaperCategory;
+  category?: string;
   researchArea?: string;
-  page?: number;
-  size?: number;
+  date?: string; // yyyy-MM-dd
 }

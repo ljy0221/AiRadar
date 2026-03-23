@@ -4,7 +4,6 @@ export * from './KeywordBarChart';
 export * from './KeywordRadarChart';
 export * from './KeywordDictionary';
 export * from './GithubTrendingCard';
-export * from './PaperListCard';
 export { ModelComparison } from './ModelComparison';
 export { RankingList } from './RankingList';
 export { GithubTabContents } from './GithubTabContents';
