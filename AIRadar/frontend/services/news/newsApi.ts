@@ -11,12 +11,12 @@ import type { NewsListParams, DailyNewsGroup } from '@/types/news';
 
 // GET /api/v1/news
 export const fetchNewsList = async (params?: NewsListParams): Promise<DailyNewsGroup[]> => {
-  const response = await api.get<DailyNewsGroup[]>('/news', {
-    params, // { region, category, date } 파라미터 전달
-  });
+  return api.get('/news', { params });
+};
 
-  // api 인터셉터가 response.data를 알아서 반환하도록 설정되어 있습니다.
-  return response as unknown as DailyNewsGroup[];
+// GET /api/v1/news/{articleId}
+export const fetchNewsDetail = async (articleId: string): Promise<any> => {
+  return api.get(`/news/${articleId}`);
 };
 
 

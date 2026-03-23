@@ -7,6 +7,7 @@ import { PaperItem, DailyPaperGroup } from '@/types/paper';
 import { usePaperDailyQuery } from '@/hooks/queries/usePaperQuery';
 import { useBookmarksQuery } from '@/hooks/queries/useUserQuery';
 import { PaperFilter } from './PaperFilter';
+import Loading from '@/app/loading';
 
 // PaperItem → TimelineItemData 매핑 함수
 function toTimelineItemData(paper: PaperItem, bookmarkedIds: Set<string>): TimelineItemData {
@@ -73,7 +74,7 @@ export const PaperTimelineTab = () => {
   const isLoading = selectedDate ? isFilteredLoading : isRecentLoading;
   const isError = selectedDate ? isFilteredError : isRecentError;
 
-  if (isLoading) return <div className="py-20 text-center animate-pulse">데이터 로딩 중...</div>;
+  if (isLoading) return <Loading />;
   if (isError) return <div className="py-20 text-center text-red-500">데이터를 불러오지 못했습니다.</div>;
 
   return (
