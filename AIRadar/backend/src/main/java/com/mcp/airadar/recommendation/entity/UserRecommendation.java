@@ -31,6 +31,10 @@ public class UserRecommendation {
     @Column(length = 50)
     private String reason;
 
+    /** NEWS 또는 PAPER — ALS 추천 결과의 콘텐츠 타입 */
+    @Column(name = "content_type", nullable = false, length = 10)
+    private String contentType;
+
     @Column(name = "generated_at", nullable = false)
     private LocalDateTime generatedAt;
 
