@@ -5,16 +5,30 @@
 
 @theme {
   --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
   --color-text-primary: var(--text-primary);
   --color-accent: var(--accent);
   /* 폰트 토큰: layout.tsx에서 next/font가 주입한 CSS 변수와 연결 */
   --font-sans: var(--font-sans), var(--font-korean), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-serif), var(--font-korean), ui-serif, Georgia, serif;
+  --font-syne: var(--font-syne), sans-serif;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  animation: shimmer 5s infinite linear;
 }
 
 @layer base {
   :root {
     --bg-primary: #FAF9F5;
+    --bg-secondary: #F0F4FA;
+    --bg-tertiary: #E6EDF3;
     --text-primary: #2C3E50;
     --accent: #D16D6D;
   }
@@ -22,9 +36,11 @@
   /* 수동 테마 토글 (next-themes가 제어) */
   :root.dark,
   .dark {
-    --bg-primary: #0A0B1A;
-    --text-primary: #E6EDF3;
-    --accent: #66EDFF;
+    --bg-primary: #03080f;    /* 1단계 (가장 어두운 기본) */
+    --bg-secondary: #080f1a;  /* 2단계 */
+    --bg-tertiary: #0d1825;   /* 3단계 (카드 배경) */
+    --text-primary: #f0f4fa;  /* 차가운 흰색 */
+    --accent: #00d4c8;        /* 시안 (포인트/CTA) */
   }
 }
 
