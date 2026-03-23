@@ -4,7 +4,7 @@ import { useEffect, useCallback } from 'react';
 import { eventApi } from '../services/events/eventApi';
 
 export const useTracking = () => {
-  // 기사 조회 트래킹 (상세 페이지에서 사용)
+  // 기사 조회 트래킹 (상세 페이지에서 사용 - 현재는 상세 페이지가 없으나 구조 유지)
   const useArticleViewTracking = (articleId: string | undefined) => {
     useEffect(() => {
       if (!articleId) return;
@@ -40,10 +40,17 @@ export const useTracking = () => {
     eventApi.trackBookmark(articleId);
   }, []);
 
+  // 기사 원문 클릭 트래킹 (외부 링크 이동 전 호출)
+  // 사용자가 eventApi를 /events/article-view로 수정했으므로 이에 맞춰 호출
+  const trackArticleClick = useCallback((articleId: string) => {
+    eventApi.trackArticleClick(articleId);
+  }, []);
+
   return {
     useArticleViewTracking,
     trackSearch,
     trackLike,
-    trackBookmark
+    trackBookmark,
+    trackArticleClick
   };
 };

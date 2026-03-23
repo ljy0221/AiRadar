@@ -145,9 +145,10 @@ pipeline {
                   scp -o StrictHostKeyChecking=no AIRadar/infra/docker-compose.server2.yml ${SERVER2_HOST}:${REPO_DIR}/AIRadar/infra/
                   scp -o StrictHostKeyChecking=no AIRadar/infra/scripts/deploy-server2.sh ${SERVER2_HOST}:${REPO_DIR}/AIRadar/infra/scripts/
                   # frontend 소스 전송 (빌드 컨텍스트 갱신, node_modules/.next 제외)
-                  ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} 'rm -rf ${REPO_DIR}/AIRadar/frontend && mkdir -p ${REPO_DIR}/AIRadar/frontend'
-                  scp -o StrictHostKeyChecking=no -r AIRadar/frontend/ ${SERVER2_HOST}:${REPO_DIR}/AIRadar/
-                  ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} '
+                  rsync -az --checksum --delete \
+                    -e "ssh -o StrictHostKeyChecking=no" \
+                    AIRadar/frontend/ ${SERVER2_HOST}:${REPO_DIR}/AIRadar/frontend/
+                                    ssh -o StrictHostKeyChecking=no ${SERVER2_HOST} '
                     set -e
                     cd ${REPO_DIR}
                     bash AIRadar/infra/scripts/deploy-server2.sh

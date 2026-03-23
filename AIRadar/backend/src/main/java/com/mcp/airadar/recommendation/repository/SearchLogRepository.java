@@ -19,4 +19,22 @@ public interface SearchLogRepository extends JpaRepository<SearchLog, Long> {
             LIMIT 50
             """, nativeQuery = true)
     List<SearchLog> findRecentViewHistory(@Param("userId") UUID userId);
+
+    @Query(value = """
+            SELECT DISTINCT ON (article_id) *
+            FROM search_logs
+            WHERE user_id = :userId
+              AND event_type = 'ARTICLE_BOOKMARKED'
+            ORDER BY article_id, occurred_at DESC
+            """, nativeQuery = true)
+    List<SearchLog> findBookmarkHistory(@Param("userId") UUID userId);
+
+    @Query(value = """
+            SELECT DISTINCT ON (article_id) *
+            FROM search_logs
+            WHERE user_id = :userId
+              AND event_type = 'ARTICLE_LIKED'
+            ORDER BY article_id, occurred_at DESC
+            """, nativeQuery = true)
+    List<SearchLog> findLikeHistory(@Param("userId") UUID userId);
 }

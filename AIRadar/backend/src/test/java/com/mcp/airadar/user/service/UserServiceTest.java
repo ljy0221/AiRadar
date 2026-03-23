@@ -2,7 +2,10 @@ package com.mcp.airadar.user.service;
 
 import com.mcp.airadar.auth.entity.User;
 import com.mcp.airadar.auth.repository.UserRepository;
+import com.mcp.airadar.recommendation.entity.SearchLog;
 import com.mcp.airadar.recommendation.repository.SearchLogRepository;
+import com.mcp.airadar.user.dto.BookmarkHistoryDto;
+import com.mcp.airadar.user.dto.LikeHistoryDto;
 import com.mcp.airadar.user.dto.OnboardingRequest;
 import com.mcp.airadar.user.entity.UserInterest;
 import com.mcp.airadar.user.repository.UserInterestRepository;
@@ -21,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -151,5 +155,83 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.completeOnboarding(userId, request))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("사용자를 찾을 수 없습니다.");
+    }
+
+    // ─── getBookmarkHistory ───────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("북마크 기록이 있을 때 articleId와 occurredAt이 올바르게 매핑되어 반환됨")
+    void getBookmarkHistory_hasBookmarks_returnsMappedDtos() {
+        // given
+        LocalDateTime now = LocalDateTime.now();
+        SearchLog log1 = SearchLog.builder()
+                .userId(userId).articleId("article-001")
+                .eventType("ARTICLE_BOOKMARKED").occurredAt(now.minusHours(2))
+                .build();
+        SearchLog log2 = SearchLog.builder()
+                .userId(userId).articleId("article-002")
+                .eventType("ARTICLE_BOOKMARKED").occurredAt(now.minusHours(1))
+                .build();
+
+        when(searchLogRepository.findBookmarkHistory(userId)).thenReturn(List.of(log1, log2));
+
+        // when
+        List<BookmarkHistoryDto> result = userService.getBookmarkHistory(userId);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).articleId()).isEqualTo("article-001");
+        assertThat(result.get(1).articleId()).isEqualTo("article-002");
+        verify(searchLogRepository).findBookmarkHistory(userId);
+    }
+
+    @Test
+    @DisplayName("북마크 기록이 없으면 빈 리스트 반환")
+    void getBookmarkHistory_noBookmarks_returnsEmptyList() {
+        // given
+        when(searchLogRepository.findBookmarkHistory(userId)).thenReturn(List.of());
+
+        // when
+        List<BookmarkHistoryDto> result = userService.getBookmarkHistory(userId);
+
+        // then
+        assertThat(result).isEmpty();
+    }
+
+    // ─── getLikeHistory ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("좋아요 기록이 있을 때 articleId와 occurredAt이 올바르게 매핑되어 반환됨")
+    void getLikeHistory_hasLikes_returnsMappedDtos() {
+        // given
+        LocalDateTime now = LocalDateTime.now();
+        SearchLog log1 = SearchLog.builder()
+                .userId(userId).articleId("article-010")
+                .eventType("ARTICLE_LIKED").occurredAt(now.minusMinutes(30))
+                .build();
+
+        when(searchLogRepository.findLikeHistory(userId)).thenReturn(List.of(log1));
+
+        // when
+        List<LikeHistoryDto> result = userService.getLikeHistory(userId);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).articleId()).isEqualTo("article-010");
+        assertThat(result.get(0).occurredAt()).isEqualTo(log1.getOccurredAt());
+        verify(searchLogRepository).findLikeHistory(userId);
+    }
+
+    @Test
+    @DisplayName("좋아요 기록이 없으면 빈 리스트 반환")
+    void getLikeHistory_noLikes_returnsEmptyList() {
+        // given
+        when(searchLogRepository.findLikeHistory(userId)).thenReturn(List.of());
+
+        // when
+        List<LikeHistoryDto> result = userService.getLikeHistory(userId);
+
+        // then
+        assertThat(result).isEmpty();
     }
 }
