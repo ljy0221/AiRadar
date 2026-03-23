@@ -2,6 +2,8 @@ package com.mcp.airadar.mail.controller;
 
 import com.mcp.airadar.mail.dto.MailSubscribeRequest;
 import com.mcp.airadar.mail.dto.MailSubscriptionResponse;
+import com.mcp.airadar.mail.dto.MailSendRequest;
+import com.mcp.airadar.mail.dto.MailSendResponse;
 import com.mcp.airadar.mail.service.MailService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -29,6 +31,11 @@ public class MailController {
     @PostMapping
     public ResponseEntity<MailSubscriptionResponse> subscribe(@Valid @RequestBody MailSubscribeRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(mailService.subscribe(request));
+    }
+
+    @PostMapping("/send")
+    public ResponseEntity<MailSendResponse> sendMockMail(@Valid @RequestBody MailSendRequest request) {
+        return ResponseEntity.ok(mailService.sendMockNewsletter(request));
     }
 
     @DeleteMapping

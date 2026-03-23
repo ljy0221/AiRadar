@@ -3,6 +3,8 @@ package com.mcp.airadar.mail.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcp.airadar.common.api.BusinessException;
 import com.mcp.airadar.common.api.ErrorCode;
+import com.mcp.airadar.mail.dto.MailSendRequest;
+import com.mcp.airadar.mail.dto.MailSendResponse;
 import com.mcp.airadar.mail.dto.MailSubscribeRequest;
 import com.mcp.airadar.mail.dto.MailSubscriptionResponse;
 import com.mcp.airadar.mail.service.MailService;
@@ -16,6 +18,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.eq;
@@ -46,8 +50,8 @@ class MailControllerTest {
     @Test
     @DisplayName("given valid request when subscribe then returns created wrapped response")
     void givenValidRequest_whenSubscribe_thenReturnsCreatedWrappedResponse() throws Exception {
-        MailSubscribeRequest request = new MailSubscribeRequest("user@example.com", "프론트엔드");
-        MailSubscriptionResponse response = new MailSubscriptionResponse("user@example.com", "프론트엔드", true);
+        MailSubscribeRequest request = new MailSubscribeRequest("user@example.com", "Backend Developer");
+        MailSubscriptionResponse response = new MailSubscriptionResponse("user@example.com", "Backend Developer", true);
 
         when(mailService.subscribe(request)).thenReturn(response);
 
@@ -58,8 +62,38 @@ class MailControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.path").value("/api/v1/mail"))
                 .andExpect(jsonPath("$.data.email").value("user@example.com"))
-                .andExpect(jsonPath("$.data.jobCategory").value("프론트엔드"))
+                .andExpect(jsonPath("$.data.jobCategory").value("Backend Developer"))
                 .andExpect(jsonPath("$.data.subscribed").value(true));
+    }
+
+    @Test
+    @DisplayName("given valid request when send mock mail then returns wrapped response")
+    void givenValidRequest_whenSendMockMail_thenReturnsWrappedResponse() throws Exception {
+        MailSendRequest request = new MailSendRequest("user@example.com", "Backend Developer");
+        MailSendResponse response = new MailSendResponse(
+                "user@example.com",
+                "[AIRadar] Backend Developer Daily Brief",
+                "Backend Developer",
+                "Temporary AI industry briefing tailored for Backend Developer.",
+                List.of("highlight1", "highlight2", "highlight3"),
+                LocalDateTime.of(2026, 3, 23, 9, 0),
+                true
+        );
+
+        when(mailService.sendMockNewsletter(request)).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/mail/send")
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.path").value("/api/v1/mail/send"))
+                .andExpect(jsonPath("$.data.email").value("user@example.com"))
+                .andExpect(jsonPath("$.data.subject").value("[AIRadar] Backend Developer Daily Brief"))
+                .andExpect(jsonPath("$.data.jobCategory").value("Backend Developer"))
+                .andExpect(jsonPath("$.data.summary").value("Temporary AI industry briefing tailored for Backend Developer."))
+                .andExpect(jsonPath("$.data.highlights[0]").value("highlight1"))
+                .andExpect(jsonPath("$.data.mock").value(true));
     }
 
     @Test

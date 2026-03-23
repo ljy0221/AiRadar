@@ -30,6 +30,7 @@ CLAUDE.md
 # =========================
 
 .gradle/
+.gradle-user-home/
 .gradle-user/
 build/
 bin/

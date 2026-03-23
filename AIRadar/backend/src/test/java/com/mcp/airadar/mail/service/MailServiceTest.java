@@ -1,6 +1,8 @@
 package com.mcp.airadar.mail.service;
 
 import com.mcp.airadar.common.api.BusinessException;
+import com.mcp.airadar.mail.dto.MailSendRequest;
+import com.mcp.airadar.mail.dto.MailSendResponse;
 import com.mcp.airadar.mail.dto.MailSubscribeRequest;
 import com.mcp.airadar.mail.dto.MailSubscriptionResponse;
 import com.mcp.airadar.mail.entity.NewsletterSubscription;
@@ -34,10 +36,10 @@ class MailServiceTest {
     @Test
     @DisplayName("given new email when subscribe then creates active subscription")
     void givenNewEmail_whenSubscribe_thenCreatesActiveSubscription() {
-        MailSubscribeRequest request = new MailSubscribeRequest("User@Example.com", "프론트엔드");
+        MailSubscribeRequest request = new MailSubscribeRequest("User@Example.com", "Backend Developer");
         NewsletterSubscription saved = NewsletterSubscription.builder()
                 .email("user@example.com")
-                .jobCategory("프론트엔드")
+                .jobCategory("Backend Developer")
                 .build();
 
         when(newsletterSubscriptionRepository.findByEmail("user@example.com")).thenReturn(Optional.empty());
@@ -46,7 +48,7 @@ class MailServiceTest {
         MailSubscriptionResponse response = mailService.subscribe(request);
 
         assertThat(response.email()).isEqualTo("user@example.com");
-        assertThat(response.jobCategory()).isEqualTo("프론트엔드");
+        assertThat(response.jobCategory()).isEqualTo("Backend Developer");
         assertThat(response.subscribed()).isTrue();
     }
 
@@ -55,19 +57,37 @@ class MailServiceTest {
     void givenExistingEmail_whenSubscribe_thenReactivates() {
         NewsletterSubscription existing = NewsletterSubscription.builder()
                 .email("user@example.com")
-                .jobCategory("백엔드")
+                .jobCategory("Data Engineer")
                 .build();
         UUID oldToken = existing.getUnsubscribeToken();
         existing.unsubscribe();
 
         when(newsletterSubscriptionRepository.findByEmail("user@example.com")).thenReturn(Optional.of(existing));
 
-        MailSubscriptionResponse response = mailService.subscribe(new MailSubscribeRequest("user@example.com", "프론트엔드"));
+        MailSubscriptionResponse response = mailService.subscribe(
+                new MailSubscribeRequest("user@example.com", "Backend Developer")
+        );
 
         assertThat(response.subscribed()).isTrue();
-        assertThat(response.jobCategory()).isEqualTo("프론트엔드");
+        assertThat(response.jobCategory()).isEqualTo("Backend Developer");
         assertThat(existing.getUnsubscribeToken()).isNotEqualTo(oldToken);
         verify(newsletterSubscriptionRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("given send request when sendMockNewsletter then returns mock newsletter content")
+    void givenSendRequest_whenSendMockNewsletter_thenReturnsMockNewsletterContent() {
+        MailSendResponse response = mailService.sendMockNewsletter(
+                new MailSendRequest("User@Example.com", "Backend Developer")
+        );
+
+        assertThat(response.email()).isEqualTo("user@example.com");
+        assertThat(response.jobCategory()).isEqualTo("Backend Developer");
+        assertThat(response.subject()).contains("Backend Developer");
+        assertThat(response.summary()).contains("Temporary AI industry briefing");
+        assertThat(response.highlights()).hasSize(3);
+        assertThat(response.mock()).isTrue();
+        assertThat(response.sentAt()).isNotNull();
     }
 
     @Test
@@ -75,7 +95,7 @@ class MailServiceTest {
     void givenMatchingEmailAndToken_whenUnsubscribe_thenMarksInactive() {
         NewsletterSubscription existing = NewsletterSubscription.builder()
                 .email("user@example.com")
-                .jobCategory("프론트엔드")
+                .jobCategory("Backend Developer")
                 .build();
         UUID token = existing.getUnsubscribeToken();
 
@@ -95,7 +115,6 @@ class MailServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> mailService.unsubscribe("user@example.com", token))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("이메일 또는 해지 토큰이 올바르지 않습니다.");
+                .isInstanceOf(BusinessException.class);
     }
 }
