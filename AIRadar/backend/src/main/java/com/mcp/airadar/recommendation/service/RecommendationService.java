@@ -173,12 +173,23 @@ public class RecommendationService {
         // 2. 이미 본 논문 ID 수집
         Set<String> viewedPaperIds = getViewedPaperIds(userId);
 
-        // 3. 유저 프로파일 키워드 매칭 (최근 30일)
+        // 3. ALS 배치 추천 결과 조회 (content_type = PAPER)
+        List<UserRecommendation> alsRecs = userRecommendationRepository
+                .findValidByUserIdAndContentType(userId, "PAPER", LocalDateTime.now());
+
+        Map<String, Double> alsScoreMap = alsRecs.stream()
+                .collect(Collectors.toMap(
+                        UserRecommendation::getArticleId,
+                        r -> r.getScore().doubleValue(),
+                        (a, b) -> a
+                ));
+
+        // 4. 유저 프로파일 키워드 매칭 (최근 30일)
         List<String> topKeywords = getTopKeywordsFromProfile(userId);
-        List<com.mcp.airadar.paper.entity.Paper> candidates = List.of();
+        List<com.mcp.airadar.paper.entity.Paper> keywordCandidates = List.of();
         if (!topKeywords.isEmpty()) {
             String pgArrayLiteral = toPgArrayLiteral(topKeywords);
-            candidates = paperRepository.findByKeywordsOverlap(
+            keywordCandidates = paperRepository.findByKeywordsOverlap(
                     pgArrayLiteral,
                     LocalDateTime.now().minusDays(30),
                     cappedSize * CANDIDATE_MULTIPLIER
@@ -187,8 +198,27 @@ public class RecommendationService {
                     .toList();
         }
 
-        // 4. 후보 없으면 Cold start
-        if (candidates.isEmpty()) {
+        // ALS 논문 후보 추가 (키워드 후보와 중복 제거)
+        Set<String> seenIds = keywordCandidates.stream()
+                .map(com.mcp.airadar.paper.entity.Paper::getPaperId)
+                .collect(Collectors.toSet());
+
+        List<com.mcp.airadar.paper.entity.Paper> alsCandidates = List.of();
+        if (!alsRecs.isEmpty()) {
+            List<String> alsIds = alsRecs.stream()
+                    .map(UserRecommendation::getArticleId)
+                    .filter(id -> !seenIds.contains(id) && !viewedPaperIds.contains(id))
+                    .toList();
+            if (!alsIds.isEmpty()) {
+                alsCandidates = paperRepository.findAllById(alsIds);
+            }
+        }
+
+        List<com.mcp.airadar.paper.entity.Paper> allCandidates = new ArrayList<>(keywordCandidates);
+        allCandidates.addAll(alsCandidates);
+
+        // 5. 후보 없으면 Cold start
+        if (allCandidates.isEmpty()) {
             return paperRepository.findTop20ByIsActiveTrueOrderByPublishedAtDesc().stream()
                     .filter(p -> !viewedPaperIds.contains(p.getPaperId()))
                     .limit(cappedSize)
@@ -198,13 +228,14 @@ public class RecommendationService {
 
         Map<String, Double> profileWeights = getProfileKeywordWeights(userId);
 
-        List<RecommendationDto.PaperItem> ranked = candidates.stream()
+        List<RecommendationDto.PaperItem> ranked = allCandidates.stream()
                 .sorted((a, b) -> Double.compare(
-                        paperKeywordScore(b, profileWeights),
-                        paperKeywordScore(a, profileWeights)
+                        calculatePaperCombinedScore(b, profileWeights, alsScoreMap),
+                        calculatePaperCombinedScore(a, profileWeights, alsScoreMap)
                 ))
                 .limit(cappedSize)
-                .map(p -> RecommendationDto.PaperItem.from(p, "KEYWORD_MATCH"))
+                .map(p -> RecommendationDto.PaperItem.from(p,
+                        alsScoreMap.containsKey(p.getPaperId()) ? "ALS" : "KEYWORD_MATCH"))
                 .toList();
 
         // 5. 캐시 저장 (30분)
@@ -316,9 +347,17 @@ public class RecommendationService {
                 .toList();
     }
 
-    /** 논문 키워드-프로파일 가중치 점수 (최신성 보너스 포함) */
-    private double paperKeywordScore(com.mcp.airadar.paper.entity.Paper paper,
-                                     Map<String, Double> profileWeights) {
+    /**
+     * 논문 ALS + 키워드 결합 점수
+     * ALS 있음: ALS(0.4) + 키워드(0.3) + 최신성(0.3)
+     * ALS 없음: 키워드(0.7) + 최신성(0.3)
+     */
+    private double calculatePaperCombinedScore(com.mcp.airadar.paper.entity.Paper paper,
+                                               Map<String, Double> profileWeights,
+                                               Map<String, Double> alsScoreMap) {
+        double alsScore = alsScoreMap.getOrDefault(paper.getPaperId(), 0.0);
+        boolean hasAls = alsScoreMap.containsKey(paper.getPaperId());
+
         double keywordScore = 0.0;
         if (paper.getKeywords() != null) {
             keywordScore = Arrays.stream(paper.getKeywords())
@@ -330,7 +369,11 @@ public class RecommendationService {
             long daysOld = Duration.between(paper.getPublishedAt(), LocalDateTime.now()).toDays();
             recencyScore = Math.exp(-0.05 * daysOld); // 논문은 뉴스보다 감쇠 느림
         }
-        return keywordScore * 0.7 + recencyScore * 0.3;
+        if (hasAls) {
+            return alsScore * 0.4 + keywordScore * 0.3 + recencyScore * 0.3;
+        } else {
+            return keywordScore * 0.7 + recencyScore * 0.3;
+        }
     }
 
     /** 이미 본 논문 ID 집합 (Redis profile art: 접두사, paper 전용 ppv: 접두사) */

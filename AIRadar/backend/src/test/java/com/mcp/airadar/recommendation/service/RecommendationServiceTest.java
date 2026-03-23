@@ -62,7 +62,7 @@ class RecommendationServiceTest {
     @DisplayName("Redis 캐시가 있으면 DB 조회 없이 캐시 결과 반환")
     void getPersonalizedFeed_cacheHit_skipDbQuery() throws Exception {
         // given
-        String cachedJson = "[{\"articleId\":\"art-001\",\"title\":\"cached\",\"source\":\"TechCrunch\"," +
+        String cachedJson = "[{\"articleId\":\"art-001\",\"title\":\"cached\",\"url\":\"https://example.com/art-001\",\"source\":\"TechCrunch\"," +
                 "\"region\":\"GLOBAL\",\"category\":\"AI\",\"sentiment\":\"POSITIVE\"," +
                 "\"score\":0.9,\"keywords\":[\"AI\"],\"publishedAt\":\"2026-03-20T09:00:00\",\"reason\":\"KEYWORD_MATCH\"}]";
 
