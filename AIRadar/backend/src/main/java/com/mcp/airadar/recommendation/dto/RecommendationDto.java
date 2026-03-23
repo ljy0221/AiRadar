@@ -11,6 +11,7 @@ public class RecommendationDto {
     public record NewsItem(
             String articleId,
             String title,
+            String url,
             String source,
             String region,
             String category,
@@ -24,6 +25,7 @@ public class RecommendationDto {
             return new NewsItem(
                     e.getArticleId(),
                     e.getTitle(),
+                    e.getUrl(),
                     e.getSource(),
                     e.getRegion(),
                     e.getCategory(),
@@ -42,18 +44,20 @@ public class RecommendationDto {
     public record PaperItem(
             String paperId,
             String title,
+            String url,
             String[] authors,
             String category,
             String researchArea,
             String[] keywords,
             String summary,
             LocalDateTime publishedAt,
-            String reason   // KEYWORD_MATCH | COLD_START
+            String reason   // ALS | KEYWORD_MATCH | COLD_START
     ) {
         public static PaperItem from(com.mcp.airadar.paper.entity.Paper p, String reason) {
             return new PaperItem(
                     p.getPaperId(),
                     p.getTitle(),
+                    p.getUrl(),
                     p.getAuthors(),
                     p.getCategory(),
                     p.getResearchArea(),

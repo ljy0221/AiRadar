@@ -13,6 +13,7 @@ public class PaperDto {
     public record ListItem(
             String paperId,
             String title,
+            String url,
             String source,
             String[] authors,
             String researchArea,
@@ -24,6 +25,7 @@ public class PaperDto {
             return ListItem.builder()
                     .paperId(e.getPaperId())
                     .title(e.getTitle())
+                    .url(e.getUrl())
                     .source(e.getSource())
                     .authors(e.getAuthors())
                     .researchArea(e.getResearchArea())
