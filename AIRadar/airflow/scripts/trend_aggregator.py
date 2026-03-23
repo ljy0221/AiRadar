@@ -15,6 +15,7 @@ import argparse
 import logging
 import os
 from datetime import date, timedelta
+from typing import Dict, List, Tuple, Optional
 
 import psycopg2
 
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 # ── 추적할 키워드 사전 (분석가님이 여기서 직접 관리!) ───────────────────────
 # key: 대표 키워드 이름 (화면에 표시됨)
 # value: DB 검색에 사용할 키워드 배리에이션 목록 (소문자)
-TRACKED_KEYWORDS: dict[str, list[str]] = {
+TRACKED_KEYWORDS: Dict[str, List[str]] = {
     "Agentic Workflow":     ["agentic workflow", "agentic ai", "ai agent", "autogpt", "autonomous agent"],
     "RAG":                  ["rag", "retrieval-augmented", "retrieval augmented", "vector search"],
     "Vision Transformers":  ["vision transformer", "vit", "visual transformer", "image recognition"],
@@ -62,7 +63,7 @@ def _get_conn():
 
 
 # ── STEP 1. 뉴스 언급량 집계 ─────────────────────────────────────────────────
-def _count_news_mentions(cur, keyword_variants: list[str], target_date: date) -> tuple[int, float]:
+def _count_news_mentions(cur, keyword_variants: List[str], target_date: date) -> Tuple[int, float]:
     """
     주어진 날짜의 news_items에서 키워드 언급 횟수와 평균 감성을 집계합니다.
     keywords 컬럼(TEXT[])에 배리에이션 중 하나라도 포함되어 있으면 카운트합니다.
@@ -92,7 +93,7 @@ def _count_news_mentions(cur, keyword_variants: list[str], target_date: date) ->
 
 
 # ── STEP 2. 논문 언급량 집계 ─────────────────────────────────────────────────
-def _count_paper_mentions(cur, keyword_variants: list[str], target_date: date) -> int:
+def _count_paper_mentions(cur, keyword_variants: List[str], target_date: date) -> int:
     placeholders = ", ".join(["%s"] * len(keyword_variants))
     sql = f"""
         SELECT COUNT(*)
@@ -109,7 +110,7 @@ def _count_paper_mentions(cur, keyword_variants: list[str], target_date: date) -
 
 
 # ── STEP 3. 깃허브 활성도 집계 ──────────────────────────────────────────────
-def _count_github_activity(cur, keyword_variants: list[str], target_date: date) -> int:
+def _count_github_activity(cur, keyword_variants: List[str], target_date: date) -> int:
     """최근 스냅샷에서 키워드 연관 레포들의 star_delta_7d 합계를 집계합니다."""
     placeholders = ", ".join(["%s"] * len(keyword_variants))
     sql = f"""
@@ -174,7 +175,7 @@ def _calculate_trend_score(paper_mentions: int, github_activity: int,
 
 
 # ── STEP 6. 전주 대비 성장률 계산 ────────────────────────────────────────────
-def _get_last_week_news_count(cur, keyword: str, target_date: date) -> float | None:
+def _get_last_week_news_count(cur, keyword: str, target_date: date) -> Optional[float]:
     """7일 전 같은 키워드의 뉴스 언급량 조회"""
     week_ago = target_date - timedelta(days=7)
     sql = """
