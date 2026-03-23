@@ -72,25 +72,25 @@ class PaperControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/paper returns wrapped success response")
+    @DisplayName("GET /api/v1/papers returns wrapped success response")
     void getPaperList_returns200() throws Exception {
         when(paperService.getPaperList(isNull(), isNull(), isNull())).thenReturn(List.of(sampleDailyGroup()));
 
-        mockMvc.perform(get("/api/v1/paper"))
+        mockMvc.perform(get("/api/v1/papers"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.path").value("/api/v1/paper"))
+                .andExpect(jsonPath("$.path").value("/api/v1/papers"))
                 .andExpect(jsonPath("$.data[0].date").value("2026-03-19"))
                 .andExpect(jsonPath("$.data[0].items[0].paperId").value("paper-001"));
     }
 
     @Test
-    @DisplayName("GET /api/v1/paper with filters returns wrapped grouped response")
+    @DisplayName("GET /api/v1/papers with filters returns wrapped grouped response")
     void getPaperList_withFilters_returns200() throws Exception {
         when(paperService.getPaperList(eq("NLP"), eq("cs.CL"), eq(LocalDate.of(2026, 3, 19))))
                 .thenReturn(List.of(sampleDailyGroup()));
 
-        mockMvc.perform(get("/api/v1/paper")
+        mockMvc.perform(get("/api/v1/papers")
                         .param("category", "NLP")
                         .param("researchArea", "cs.CL")
                         .param("date", "2026-03-19"))
@@ -99,24 +99,24 @@ class PaperControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/paper/{id} returns wrapped detail response")
+    @DisplayName("GET /api/v1/papers/{id} returns wrapped detail response")
     void getPaperDetail_found() throws Exception {
         when(paperService.getPaperDetail("paper-001")).thenReturn(sampleDetail());
 
-        mockMvc.perform(get("/api/v1/paper/paper-001"))
+        mockMvc.perform(get("/api/v1/papers/paper-001"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.paperId").value("paper-001"));
     }
 
     @Test
-    @DisplayName("GET /api/v1/paper/{id} returns wrapped error response on not found")
+    @DisplayName("GET /api/v1/papers/{id} returns wrapped error response on not found")
     void getPaperDetail_notFound() throws Exception {
         when(paperService.getPaperDetail("no-paper")).thenThrow(new EntityNotFoundException("not found"));
 
-        mockMvc.perform(get("/api/v1/paper/no-paper"))
+        mockMvc.perform(get("/api/v1/papers/no-paper"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("COMMON_005"))
-                .andExpect(jsonPath("$.error.path").value("/api/v1/paper/no-paper"));
+                .andExpect(jsonPath("$.error.path").value("/api/v1/papers/no-paper"));
     }
 }
