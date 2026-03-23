@@ -14,10 +14,27 @@ export interface RecommendationItem {
   url?: string;
 }
 
+export interface PaperRecommendationItem {
+  paperId: string;
+  title: string;
+  url: string;
+  authors: string[];
+  category: string;
+  researchArea: string;
+  keywords: string[];
+  summary: string;
+  publishedAt: string;
+  reason: 'ALS' | 'KEYWORD_MATCH' | 'COLD_START';
+}
+
 export const recommendationApi = {
-  // 개인화 피드 조회
+  // 개인화 뉴스 피드 조회
   getPersonalizedFeed: (size = 20): Promise<RecommendationItem[]> =>
     api.get(`/recommendations/news?size=${size}`),
+
+  // 개인화 논문 피드 조회
+  getPersonalizedPapers: (size = 20): Promise<PaperRecommendationItem[]> =>
+    api.get(`/recommendations/papers?size=${size}`),
 
   // 트렌딩 키워드 조회
   getTrendingKeywords: (limit = 20): Promise<string[]> =>

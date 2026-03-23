@@ -38,9 +38,14 @@ export const GithubTrendingCard = () => {
 
             {/* 정보 */}
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate hover:text-[var(--color-accent)] cursor-pointer">
-                {repo.repoName}
-              </p>
+              <a
+                href={`https://github.com/${repo.repoName}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate hover:text-[var(--color-accent)] transition-colors cursor-pointer block"
+              >
+                github.com/{repo.repoName}
+              </a>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                 {repo.description}
               </p>

@@ -35,9 +35,14 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
             {rank}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 truncate hover:text-[var(--color-accent)] cursor-pointer">
-              {repo.repoId}
-            </h3>
+            <a
+              href={`https://github.com/${repo.repoName}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xl font-bold text-gray-900 dark:text-gray-100 truncate hover:text-[var(--color-accent)] transition-colors cursor-pointer block"
+            >
+              github.com/{repo.repoName}
+            </a>
             <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
               {repo.language && (
                 <span className="flex items-center gap-1.5 px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-xs font-medium">
