@@ -17,6 +17,7 @@ public class PaperDto {
             String[] authors,
             String researchArea,
             String category,
+            String summary,
             LocalDateTime publishedAt
     ) {
         public static ListItem from(Paper e) {
@@ -27,6 +28,7 @@ public class PaperDto {
                     .authors(e.getAuthors())
                     .researchArea(e.getResearchArea())
                     .category(e.getCategory())
+                    .summary(e.getSummary())
                     .publishedAt(e.getPublishedAt())
                     .build();
         }
