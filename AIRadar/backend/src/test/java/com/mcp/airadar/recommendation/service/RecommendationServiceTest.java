@@ -197,6 +197,95 @@ class RecommendationServiceTest {
         assertThat(result.size()).isLessThanOrEqualTo(50);
     }
 
+    // ─── Cold Start — 본 기사 제외 ────────────────────────────────────────────
+
+    @Test
+    @DisplayName("Cold Start 시 이미 본 기사는 제외되어야 함")
+    void getPersonalizedFeed_coldStart_excludesViewedArticles() {
+        // given
+        when(valueOps.get(anyString())).thenReturn(null);
+        when(userRecommendationRepository.findValidByUserId(any(), any())).thenReturn(List.of());
+        // art:art-viewed → 이미 본 기사
+        when(hashOps.entries(anyString())).thenReturn(Map.of("art:art-viewed", "1.0"));
+
+        NewsItem viewedPopular = buildNewsItem("art-viewed", "이미 본 인기 기사");
+        NewsItem freshPopular  = buildNewsItem("art-new",    "새 인기 기사");
+        when(newsRepository.findTop20ByIsActiveTrueOrderByScoreDescPublishedAtDesc())
+                .thenReturn(List.of(viewedPopular, freshPopular));
+
+        ReflectionTestUtils.setField(recommendationService, "objectMapper", new ObjectMapper()
+                .findAndRegisterModules());
+
+        // when
+        List<RecommendationDto.NewsItem> result = recommendationService.getPersonalizedFeed(userId, 20);
+
+        // then
+        assertThat(result).extracting(RecommendationDto.NewsItem::articleId)
+                .doesNotContain("art-viewed")
+                .contains("art-new");
+        assertThat(result.get(0).reason()).isEqualTo("COLD_START");
+    }
+
+    @Test
+    @DisplayName("필터 후 후보가 모두 제거되면 Cold Start로 fallback")
+    void getPersonalizedFeed_allCandidatesFiltered_fallbackToColdStart() {
+        // given
+        when(valueOps.get(anyString())).thenReturn(null);
+        when(userRecommendationRepository.findValidByUserId(any(), any())).thenReturn(List.of());
+        // kw:AI 키워드 가중치 있지만, 반환되는 기사는 이미 본 기사
+        when(hashOps.entries(anyString())).thenReturn(Map.of("kw:AI", "2.0", "art:art-kw", "1.0"));
+
+        NewsItem viewedArticle = buildNewsItem("art-kw", "이미 본 키워드 기사");
+        when(newsRepository.findByKeywordsOverlap(anyString(), any(), anyInt()))
+                .thenReturn(List.of(viewedArticle));
+
+        NewsItem coldStartItem = buildNewsItem("art-cold", "Cold Start 기사");
+        when(newsRepository.findTop20ByIsActiveTrueOrderByScoreDescPublishedAtDesc())
+                .thenReturn(List.of(coldStartItem));
+
+        ReflectionTestUtils.setField(recommendationService, "objectMapper", new ObjectMapper()
+                .findAndRegisterModules());
+
+        // when
+        List<RecommendationDto.NewsItem> result = recommendationService.getPersonalizedFeed(userId, 20);
+
+        // then: 후보가 모두 필터링되어 Cold Start로 fallback
+        assertThat(result).extracting(RecommendationDto.NewsItem::articleId)
+                .contains("art-cold");
+        assertThat(result.get(0).reason()).isEqualTo("COLD_START");
+    }
+
+    // ─── 이미 본 기사 제외 ────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("Redis profile에 art: 필드가 있으면 해당 기사는 추천에서 제외")
+    void getPersonalizedFeed_viewedArticleExcluded() {
+        // given
+        when(valueOps.get(anyString())).thenReturn(null);
+        when(userRecommendationRepository.findValidByUserId(any(), any())).thenReturn(List.of());
+
+        // "kw:AI"는 키워드 가중치, "art:art-viewed"는 이미 본 기사
+        when(hashOps.entries(anyString())).thenReturn(
+                Map.of("kw:AI", "2.0", "art:art-viewed", "1.0")
+        );
+
+        NewsItem viewedArticle = buildNewsItem("art-viewed", "이미 본 기사");
+        NewsItem freshArticle  = buildNewsItem("art-fresh",  "새 기사");
+        when(newsRepository.findByKeywordsOverlap(anyString(), any(), anyInt()))
+                .thenReturn(List.of(viewedArticle, freshArticle));
+
+        ReflectionTestUtils.setField(recommendationService, "objectMapper", new ObjectMapper()
+                .findAndRegisterModules());
+
+        // when
+        List<RecommendationDto.NewsItem> result = recommendationService.getPersonalizedFeed(userId, 20);
+
+        // then: 이미 본 기사(art-viewed)는 제외, 새 기사만 반환
+        assertThat(result).extracting(RecommendationDto.NewsItem::articleId)
+                .doesNotContain("art-viewed")
+                .contains("art-fresh");
+    }
+
     // ─── 헬퍼 ─────────────────────────────────────────────────────────────────
 
     private NewsItem buildNewsItem(String articleId, String title) {

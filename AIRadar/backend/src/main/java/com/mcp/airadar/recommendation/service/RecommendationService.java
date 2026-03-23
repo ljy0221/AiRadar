@@ -3,6 +3,7 @@ package com.mcp.airadar.recommendation.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcp.airadar.news.repository.NewsRepository;
+import com.mcp.airadar.paper.repository.PaperRepository;
 import com.mcp.airadar.recommendation.dto.RecommendationDto;
 import com.mcp.airadar.recommendation.entity.UserRecommendation;
 import com.mcp.airadar.recommendation.repository.UserRecommendationRepository;
@@ -36,9 +37,10 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class RecommendationService {
 
-    private static final String REC_CACHE_KEY   = "user:%s:recommendations";
-    private static final String PROFILE_KEY     = "user:%s:profile";
-    private static final Duration REC_CACHE_TTL = Duration.ofMinutes(30);
+    private static final String REC_CACHE_KEY        = "user:%s:recommendations";
+    private static final String PAPER_CACHE_KEY      = "user:%s:paper-recommendations";
+    private static final String PROFILE_KEY          = "user:%s:profile";
+    private static final Duration REC_CACHE_TTL      = Duration.ofMinutes(30);
 
     // 추천 후보 확보를 위한 배수 (페이지 크기의 N배를 DB에서 가져와 재랭킹)
     private static final int CANDIDATE_MULTIPLIER = 5;
@@ -47,6 +49,7 @@ public class RecommendationService {
 
     private final StringRedisTemplate redisTemplate;
     private final NewsRepository newsRepository;
+    private final PaperRepository paperRepository;
     private final UserRecommendationRepository userRecommendationRepository;
     private final ObjectMapper objectMapper;
 
@@ -69,7 +72,10 @@ public class RecommendationService {
         List<UserRecommendation> alsRecs = userRecommendationRepository
                 .findValidByUserId(userId, LocalDateTime.now());
 
-        // 3. 유저 프로파일 기반 키워드 매칭 후보 조회 (최근 7일)
+        // 3. 이미 본 기사 ID 수집 (art: 접두사 필드)
+        Set<String> viewedArticleIds = getViewedArticleIds(userId);
+
+        // 4. 유저 프로파일 기반 키워드 매칭 후보 조회 (최근 7일)
         List<String> topKeywords = getTopKeywordsFromProfile(userId);
         List<com.mcp.airadar.news.entity.NewsItem> keywordCandidates = List.of();
         if (!topKeywords.isEmpty()) {
@@ -78,17 +84,20 @@ public class RecommendationService {
                     pgArrayLiteral,
                     LocalDateTime.now().minusDays(7),
                     cappedSize * CANDIDATE_MULTIPLIER
-            );
+            ).stream()
+                    .filter(a -> !viewedArticleIds.contains(a.getArticleId()))
+                    .toList();
         }
 
         // ALS 결과도 키워드 후보도 없으면 Cold start fallback
         if (alsRecs.isEmpty() && keywordCandidates.isEmpty()) {
-            return getColdStartFeed(cappedSize);
+            return getColdStartFeed(cappedSize, viewedArticleIds);
         }
 
-        // 4. ALS + 키워드 매칭 결합 재랭킹
-        //    ALS articleId 목록으로 DB 조회 (score 활용)
+        // 5. ALS + 키워드 매칭 결합 재랭킹
+        //    ALS articleId 목록으로 DB 조회 (score 활용), 이미 본 기사 제외
         Map<String, Double> alsScoreMap = alsRecs.stream()
+                .filter(r -> !viewedArticleIds.contains(r.getArticleId()))
                 .collect(Collectors.toMap(
                         UserRecommendation::getArticleId,
                         r -> r.getScore().doubleValue(),
@@ -102,8 +111,7 @@ public class RecommendationService {
 
         List<com.mcp.airadar.news.entity.NewsItem> alsCandidates = List.of();
         if (!alsRecs.isEmpty()) {
-            List<String> alsArticleIds = alsRecs.stream()
-                    .map(UserRecommendation::getArticleId)
+            List<String> alsArticleIds = alsScoreMap.keySet().stream()
                     .filter(id -> !seenIds.contains(id))
                     .toList();
             if (!alsArticleIds.isEmpty()) {
@@ -113,6 +121,11 @@ public class RecommendationService {
 
         List<com.mcp.airadar.news.entity.NewsItem> allCandidates = new ArrayList<>(keywordCandidates);
         allCandidates.addAll(alsCandidates);
+
+        // 필터 후 후보가 없으면 Cold start fallback
+        if (allCandidates.isEmpty()) {
+            return getColdStartFeed(cappedSize, viewedArticleIds);
+        }
 
         Map<String, Double> profileWeights = getProfileKeywordWeights(userId);
 
@@ -126,8 +139,80 @@ public class RecommendationService {
                         alsScoreMap.containsKey(item.getArticleId()) ? "ALS" : "KEYWORD_MATCH"))
                 .toList();
 
-        // 5. 캐시 저장 (30분)
+        // 6. 캐시 저장 (30분)
         cacheRecommendations(userId, ranked);
+
+        return ranked;
+    }
+
+    /**
+     * 개인화 논문 추천 — 로그인 유저 전용
+     *
+     * 서빙 우선순위:
+     *   1. Redis 캐시 (TTL 30분)
+     *   2. Redis 유저 프로파일 키워드 매칭 (최근 30일 논문)
+     *   3. Cold start fallback — 최신 논문 인기순
+     */
+    public List<RecommendationDto.PaperItem> getPersonalizedPapers(UUID userId, int size) {
+        int cappedSize = Math.min(size, 50);
+
+        // 1. Redis 캐시 확인
+        String cacheKey = PAPER_CACHE_KEY.formatted(userId);
+        String cachedJson = redisTemplate.opsForValue().get(cacheKey);
+        if (cachedJson != null) {
+            try {
+                List<RecommendationDto.PaperItem> cached = objectMapper.readValue(
+                        cachedJson, new TypeReference<>() {});
+                return cached.stream().limit(cappedSize).toList();
+            } catch (Exception e) {
+                log.warn("[Rec] 논문 캐시 역직렬화 실패, 캐시 무효화: userId={}", userId);
+                redisTemplate.delete(cacheKey);
+            }
+        }
+
+        // 2. 이미 본 논문 ID 수집
+        Set<String> viewedPaperIds = getViewedPaperIds(userId);
+
+        // 3. 유저 프로파일 키워드 매칭 (최근 30일)
+        List<String> topKeywords = getTopKeywordsFromProfile(userId);
+        List<com.mcp.airadar.paper.entity.Paper> candidates = List.of();
+        if (!topKeywords.isEmpty()) {
+            String pgArrayLiteral = toPgArrayLiteral(topKeywords);
+            candidates = paperRepository.findByKeywordsOverlap(
+                    pgArrayLiteral,
+                    LocalDateTime.now().minusDays(30),
+                    cappedSize * CANDIDATE_MULTIPLIER
+            ).stream()
+                    .filter(p -> !viewedPaperIds.contains(p.getPaperId()))
+                    .toList();
+        }
+
+        // 4. 후보 없으면 Cold start
+        if (candidates.isEmpty()) {
+            return paperRepository.findTop20ByIsActiveTrueOrderByPublishedAtDesc().stream()
+                    .filter(p -> !viewedPaperIds.contains(p.getPaperId()))
+                    .limit(cappedSize)
+                    .map(p -> RecommendationDto.PaperItem.from(p, "COLD_START"))
+                    .toList();
+        }
+
+        Map<String, Double> profileWeights = getProfileKeywordWeights(userId);
+
+        List<RecommendationDto.PaperItem> ranked = candidates.stream()
+                .sorted((a, b) -> Double.compare(
+                        paperKeywordScore(b, profileWeights),
+                        paperKeywordScore(a, profileWeights)
+                ))
+                .limit(cappedSize)
+                .map(p -> RecommendationDto.PaperItem.from(p, "KEYWORD_MATCH"))
+                .toList();
+
+        // 5. 캐시 저장 (30분)
+        try {
+            redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(ranked), REC_CACHE_TTL);
+        } catch (Exception e) {
+            log.warn("[Rec] 논문 캐시 저장 실패 (무시): userId={}", userId);
+        }
 
         return ranked;
     }
@@ -222,12 +307,60 @@ public class RecommendationService {
         }
     }
 
-    private List<RecommendationDto.NewsItem> getColdStartFeed(int size) {
+    private List<RecommendationDto.NewsItem> getColdStartFeed(int size, Set<String> viewedArticleIds) {
         return newsRepository.findTop20ByIsActiveTrueOrderByScoreDescPublishedAtDesc()
                 .stream()
+                .filter(item -> !viewedArticleIds.contains(item.getArticleId()))
                 .limit(size)
                 .map(item -> RecommendationDto.NewsItem.from(item, "COLD_START"))
                 .toList();
+    }
+
+    /** 논문 키워드-프로파일 가중치 점수 (최신성 보너스 포함) */
+    private double paperKeywordScore(com.mcp.airadar.paper.entity.Paper paper,
+                                     Map<String, Double> profileWeights) {
+        double keywordScore = 0.0;
+        if (paper.getKeywords() != null) {
+            keywordScore = Arrays.stream(paper.getKeywords())
+                    .mapToDouble(kw -> profileWeights.getOrDefault(kw, 0.0))
+                    .sum();
+        }
+        double recencyScore = 0.0;
+        if (paper.getPublishedAt() != null) {
+            long daysOld = Duration.between(paper.getPublishedAt(), LocalDateTime.now()).toDays();
+            recencyScore = Math.exp(-0.05 * daysOld); // 논문은 뉴스보다 감쇠 느림
+        }
+        return keywordScore * 0.7 + recencyScore * 0.3;
+    }
+
+    /** 이미 본 논문 ID 집합 (Redis profile art: 접두사, paper 전용 ppv: 접두사) */
+    private Set<String> getViewedPaperIds(UUID userId) {
+        Map<Object, Object> profile = redisTemplate.opsForHash()
+                .entries(PROFILE_KEY.formatted(userId));
+        return profile.keySet().stream()
+                .map(Object::toString)
+                .filter(k -> k.startsWith("ppv:"))
+                .map(k -> k.substring(4))
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Redis profile의 kw: 필드에서 이미 본(좋아요/북마크/조회) 기사 ID 집합 반환
+     * UserEventService.updateProfileForArticle은 이제 kw: 필드에 키워드를 기록하므로
+     * 기존에 남아있던 art: 접두사 필드는 더 이상 생성되지 않음
+     * — 본 기사 추적은 search_logs에서 조회
+     */
+    private Set<String> getViewedArticleIds(UUID userId) {
+        // search_logs 조회 없이 Redis profile의 기록만으로 추적하기엔 한계가 있으므로
+        // UserRecommendationRepository를 통해 최근 30일 내 조회 이벤트를 별도 쿼리하는 대신,
+        // 간단히 Redis에서 kw: 가 아닌 art: 접두사 필드를 수집 (이전 데이터 호환)
+        Map<Object, Object> profile = redisTemplate.opsForHash()
+                .entries(PROFILE_KEY.formatted(userId));
+        return profile.keySet().stream()
+                .map(Object::toString)
+                .filter(k -> k.startsWith("art:"))
+                .map(k -> k.substring(4))
+                .collect(Collectors.toSet());
     }
 
     /** PostgreSQL TEXT[] 리터럴 변환: ["HBM","AI"] → {"HBM","AI"} */

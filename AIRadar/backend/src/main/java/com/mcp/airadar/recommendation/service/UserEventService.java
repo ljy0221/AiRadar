@@ -1,5 +1,7 @@
 package com.mcp.airadar.recommendation.service;
 
+import com.mcp.airadar.news.repository.NewsRepository;
+import com.mcp.airadar.paper.repository.PaperRepository;
 import com.mcp.airadar.recommendation.entity.EventType;
 import com.mcp.airadar.recommendation.entity.SearchLog;
 import com.mcp.airadar.recommendation.repository.SearchLogRepository;
@@ -50,6 +52,8 @@ public class UserEventService {
 
     private final StringRedisTemplate redisTemplate;
     private final SearchLogRepository searchLogRepository;
+    private final NewsRepository newsRepository;
+    private final PaperRepository paperRepository;
 
     // ─── 공개 API (Controller에서 호출) ────────────────────────────────
 
@@ -72,26 +76,28 @@ public class UserEventService {
     @Transactional
     public void onArticleSearched(UUID userId, String query) {
         try {
+            // 소문자 정규화: news_items.keywords가 영어 소문자이므로 매칭을 위해 통일
+            String normalizedQuery = query.trim().toLowerCase();
             boolean isAnonymous = (userId == null);
             double trendingWeight = isAnonymous ? W_TRENDING_ANON : W_TRENDING_AUTH;
 
-            // 트렌딩 업데이트 (전체 + 시간대별)
-            redisTemplate.opsForZSet().incrementScore(TRENDING_KEY, query, trendingWeight);
+            // 트렌딩 업데이트 (전체 + 시간대별) — 정규화된 쿼리 사용
+            redisTemplate.opsForZSet().incrementScore(TRENDING_KEY, normalizedQuery, trendingWeight);
             String hourlyKey = TRENDING_HOURLY.formatted(
                     LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
                             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH"))
             );
-            redisTemplate.opsForZSet().incrementScore(hourlyKey, query, trendingWeight);
+            redisTemplate.opsForZSet().incrementScore(hourlyKey, normalizedQuery, trendingWeight);
             redisTemplate.expire(hourlyKey, Duration.ofHours(2));
 
             // 로그인 사용자만 프로파일 반영
             if (!isAnonymous) {
                 String key = PROFILE_KEY.formatted(userId);
-                redisTemplate.opsForHash().increment(key, "kw:" + query, W_SEARCH);
+                redisTemplate.opsForHash().increment(key, "kw:" + normalizedQuery, W_SEARCH);
                 refreshProfileTtl(key);
             }
 
-            saveLog(userId, null, query, EventType.ARTICLE_SEARCHED);
+            saveLog(userId, null, normalizedQuery, EventType.ARTICLE_SEARCHED);
         } catch (Exception e) {
             log.warn("[Event] ARTICLE_SEARCHED 처리 실패 (무시): {}", e.getMessage());
         }
@@ -107,6 +113,28 @@ public class UserEventService {
             saveLog(userId, articleId, null, EventType.ARTICLE_LIKED);
         } catch (Exception e) {
             log.warn("[Event] ARTICLE_LIKED 처리 실패 (무시): {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 논문 조회 이벤트 (30초 이상 체류 시만 프로파일 반영)
+     * ppv:{paperId} 필드로 본 논문 추적 → 추천 필터링에 활용
+     */
+    @Async("eventExecutor")
+    @Transactional
+    public void onPaperViewed(UUID userId, String paperId, int dwellTimeSeconds) {
+        try {
+            if (userId == null) return;
+            String key = PROFILE_KEY.formatted(userId);
+            // 본 논문 ID 기록 (추천 필터링용)
+            redisTemplate.opsForHash().increment(key, "ppv:" + paperId, 1.0);
+            if (dwellTimeSeconds >= 30) {
+                updateProfileForPaper(userId, paperId, W_VIEW_LONG);
+            }
+            refreshProfileTtl(key);
+            saveLog(userId, paperId, null, EventType.ARTICLE_VIEWED);
+        } catch (Exception e) {
+            log.warn("[Event] PAPER_VIEWED 처리 실패 (무시): {}", e.getMessage());
         }
     }
 
@@ -144,15 +172,41 @@ public class UserEventService {
     // ─── 내부 헬퍼 ────────────────────────────────────────────────────
 
     /**
-     * 기사의 keywords 컬럼 기반으로 프로파일 가중치 업데이트.
-     * keywords를 DB에서 가져오는 대신 articleId를 직접 저장 — 키워드 조회는 추후 구현.
-     * 현재는 articleId를 "art:{id}" 필드로 기록하여 배치에서 매핑 가능하게 함.
+     * 기사의 keywords 컬럼을 DB에서 조회하여 프로파일 가중치 업데이트.
+     * kw:{keyword} 필드에 가중치를 누적 → RecommendationService 재랭킹에 반영.
      */
     private void updateProfileForArticle(UUID userId, String articleId, double weight) {
         if (userId == null) return;
         String key = PROFILE_KEY.formatted(userId);
+
+        // 본 기사 ID 기록 (추천 필터링용)
         redisTemplate.opsForHash().increment(key, "art:" + articleId, weight);
+
+        // 기사의 실제 키워드를 DB에서 조회해 kw: 필드에 반영
+        newsRepository.findByArticleIdAndIsActiveTrue(articleId).ifPresent(article -> {
+            String[] keywords = article.getKeywords();
+            if (keywords != null) {
+                for (String kw : keywords) {
+                    redisTemplate.opsForHash().increment(key, "kw:" + kw, weight);
+                }
+            }
+        });
+
         refreshProfileTtl(key);
+    }
+
+    /** 논문의 실제 keywords를 DB에서 조회해 프로파일 kw: 필드에 반영 */
+    private void updateProfileForPaper(UUID userId, String paperId, double weight) {
+        if (userId == null) return;
+        String key = PROFILE_KEY.formatted(userId);
+        paperRepository.findByPaperIdAndIsActiveTrue(paperId).ifPresent(paper -> {
+            String[] keywords = paper.getKeywords();
+            if (keywords != null) {
+                for (String kw : keywords) {
+                    redisTemplate.opsForHash().increment(key, "kw:" + kw, weight);
+                }
+            }
+        });
     }
 
     private void refreshProfileTtl(String key) {
@@ -177,17 +231,26 @@ public class UserEventService {
 
     // ─── 스케줄 작업 ──────────────────────────────────────────────────
 
-    /** 매일 자정 트렌딩 점수 50% 감쇠 — 오래된 키워드 자연 하락 */
+    /** 매일 자정 트렌딩 점수 50% 감쇠 — 오래된 키워드 자연 하락 (pipeline 일괄 처리) */
     @Scheduled(cron = "0 0 0 * * *")
     public void decayTrendingScores() {
         var entries = redisTemplate.opsForZSet().rangeWithScores(TRENDING_KEY, 0, -1);
         if (entries == null || entries.isEmpty()) return;
 
-        entries.forEach(entry -> {
-            if (entry.getValue() != null) {
-                redisTemplate.opsForZSet().add(TRENDING_KEY, entry.getValue(), entry.getScore() * 0.5);
-            }
+        // pipeline으로 감쇠 업데이트 — 키워드 수만큼 Redis 왕복 발생하던 문제 해결
+        redisTemplate.executePipelined((org.springframework.data.redis.core.RedisCallback<Object>) conn -> {
+            entries.forEach(entry -> {
+                if (entry.getValue() != null) {
+                    conn.zSetCommands().zAdd(
+                        TRENDING_KEY.getBytes(),
+                        entry.getScore() * 0.5,
+                        entry.getValue().getBytes()
+                    );
+                }
+            });
+            return null;
         });
+
         // 0.1 미만 제거 (오래된 키워드 정리)
         redisTemplate.opsForZSet().removeRangeByScore(TRENDING_KEY, 0, 0.1);
         log.info("[Trending] 감쇠 완료. 잔여 키워드: {}",
