@@ -5,6 +5,7 @@ import Loading from '@/app/loading';
 import { TimelineFilter } from './TimelineFilter';
 import { TimelineItem, TimelineItemData } from './TimelineItem';
 import { useNewsListQuery, useInfiniteNewsQuery } from '@/hooks/queries/useNewsQuery';
+import { useBookmarksQuery } from '@/hooks/queries/useUserQuery';
 import { usePersonalizedNewsQuery } from '@/hooks/queries/useRecommendationQuery';
 import { useAuth } from '../auth/AuthContext';
 import { useTracking } from '@/hooks/useTracking';
@@ -12,9 +13,10 @@ import { Sparkles, ExternalLink } from 'lucide-react';
 import type { NewsListItem, DailyNewsGroup } from '@/types/news';
 
 // NewsListItem → TimelineItemData 매핑 함수
-function toTimelineItemData(news: NewsListItem): TimelineItemData {
+function toTimelineItemData(news: NewsListItem, bookmarkedIds: Set<string>): TimelineItemData {
   return {
     id: news.articleId,
+    type: 'news',
     category: categoryLabel(news.category),
     region: news.region === 'DOMESTIC' ? '국내' : '해외',
     title: news.title,
@@ -24,6 +26,7 @@ function toTimelineItemData(news: NewsListItem): TimelineItemData {
     hashtags: [],
     isHot: news.score >= 0.8,
     url: news.url,
+    isBookmarked: news.isBookmarked || bookmarkedIds.has(news.articleId),
   };
 }
 
@@ -47,6 +50,10 @@ export const NewsTimelineTab = () => {
   const { trackArticleClick } = useTracking();
   const [regionFilter, setRegionFilter] = useState<'all' | 'domestic' | 'international'>('all');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // 0) 북마크 목록 조회 (로그인 시에만)
+  const { data: bookmarks } = useBookmarksQuery();
+  const bookmarkedIds = useMemo(() => new Set(bookmarks?.map(b => b.articleId) || []), [bookmarks]);
 
   const region =
     regionFilter === 'domestic' ? 'DOMESTIC' : regionFilter === 'international' ? 'GLOBAL' : undefined;
@@ -221,7 +228,7 @@ export const NewsTimelineTab = () => {
               <div className="relative border-l-2 border-gray-200 dark:border-gray-800 ml-2">
                 <div className="flex flex-col gap-4">
                   {group.items.map((item, iIdx) => (
-                    <TimelineItem key={item.articleId || iIdx} data={toTimelineItemData(item)} />
+                    <TimelineItem key={item.articleId || iIdx} data={toTimelineItemData(item, bookmarkedIds)} />
                   ))}
                 </div>
               </div>

@@ -30,10 +30,6 @@ export const useTracking = () => {
     eventApi.trackSearch(query);
   }, []);
 
-  // 좋아요 트래킹
-  const trackLike = useCallback((articleId: string) => {
-    eventApi.trackLike(articleId);
-  }, []);
 
   // 북마크 트래킹
   const trackBookmark = useCallback((articleId: string) => {
@@ -49,7 +45,6 @@ export const useTracking = () => {
   return {
     useArticleViewTracking,
     trackSearch,
-    trackLike,
     trackBookmark,
     trackArticleClick
   };

@@ -1,9 +1,12 @@
-import { useState } from 'react';
-import { TrendingUp, ExternalLink, Heart, Bookmark } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { TrendingUp, ExternalLink, Bookmark } from 'lucide-react';
 import { useTracking } from '@/hooks/useTracking';
+import { useAuth } from '../auth/AuthContext';
+import { bookmarkApi } from '@/services/bookmarks/bookmarkApi';
 
 export interface TimelineItemData {
   id: string;
+  type: 'news' | 'paper';
   category: string;
   region: string;
   title: string;
@@ -13,6 +16,7 @@ export interface TimelineItemData {
   hashtags: string[];
   isHot?: boolean;
   url?: string;
+  isBookmarked?: boolean;
 }
 
 interface TimelineItemProps {
@@ -20,22 +24,38 @@ interface TimelineItemProps {
 }
 
 export const TimelineItem = ({ data }: TimelineItemProps) => {
-  const { trackLike, trackBookmark, trackArticleClick } = useTracking();
-  const [isLiked, setIsLiked] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const { isLoggedIn } = useAuth();
+  const { trackBookmark, trackArticleClick } = useTracking();
+  const [isBookmarked, setIsBookmarked] = useState(data.isBookmarked || false);
 
-  const handleLike = (e: React.MouseEvent) => {
+  // 데이터(props) 변경 시 북마크 상태 동기화
+  useEffect(() => {
+    setIsBookmarked(data.isBookmarked || false);
+  }, [data.isBookmarked]);
+
+  const handleBookmark = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsLiked(!isLiked);
-    if (!isLiked) trackLike(data.id);
-  };
-
-  const handleBookmark = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsBookmarked(!isBookmarked);
-    if (!isBookmarked) trackBookmark(data.id);
+    
+    const newStatus = !isBookmarked;
+    setIsBookmarked(newStatus);
+    
+    // 트래킹 이벤트는 기존처럼 유지
+    if (newStatus) trackBookmark(data.id);
+    
+    try {
+      if (data.type === 'news') {
+        if (newStatus) await bookmarkApi.addNewsBookmark(data.id);
+        else await bookmarkApi.removeNewsBookmark(data.id);
+      } else {
+        if (newStatus) await bookmarkApi.addPaperBookmark(data.id);
+        else await bookmarkApi.removePaperBookmark(data.id);
+      }
+    } catch (error) {
+      // 에러 발생 시 상태 롤백 (사용자 경험 향상)
+      setIsBookmarked(!newStatus);
+      console.error('Bookmark error:', error);
+    }
   };
 
   return (
@@ -62,18 +82,14 @@ export const TimelineItem = ({ data }: TimelineItemProps) => {
               </div>
             )}
             <div className="flex items-center gap-1">
-              <button 
-                onClick={handleLike}
-                className={`p-1.5 rounded-lg transition-colors ${isLiked ? 'text-red-500 bg-red-50 dark:bg-red-500/10' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
-              >
-                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-              </button>
-              <button 
-                onClick={handleBookmark}
-                className={`p-1.5 rounded-lg transition-colors ${isBookmarked ? 'text-blue-500 bg-blue-50 dark:bg-blue-500/10' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
-              >
-                <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
-              </button>
+              {isLoggedIn && (
+                <button 
+                  onClick={handleBookmark}
+                  className={`p-1.5 rounded-lg transition-colors ${isBookmarked ? 'text-blue-500 bg-blue-50 dark:bg-blue-500/10' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                >
+                  <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
+                </button>
+              )}
             </div>
           </div>
         </div>
