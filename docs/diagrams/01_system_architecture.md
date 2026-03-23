@@ -7,15 +7,15 @@ graph TB
         SRC2[GDELT 뉴스]
         SRC3[arXiv 논문]
         SRC4[GitHub Archive]
-        SRC5[Anthropic API\nGMS 프록시]
+        SRC5["Anthropic API<br/>GMS 프록시"]
     end
 
     subgraph COLLECT["수집 계층"]
-        CRAWL["Crawling Server\nFastAPI :8002"]
+        CRAWL["Crawling Server<br/>FastAPI :8002"]
     end
 
     subgraph BROKER["메시지 브로커"]
-        KAFKA["Apache Kafka\n:9092\n─────────────\nairader.raw.news\nairader.raw.paper\nairader.raw.github_archive"]
+        KAFKA["Apache Kafka :9092<br/>─────────────<br/>airader.raw.news<br/>airader.raw.paper<br/>airader.raw.github_archive"]
     end
 
     subgraph PIPELINE["데이터 파이프라인 (Medallion Architecture)"]
@@ -33,32 +33,32 @@ graph TB
             G1[(news_items)]
             G2[(papers)]
             G3[(github_repos)]
-            G4[(content_embeddings\npgvector 768차원)]
+            G4[("content_embeddings<br/>pgvector 768차원")]
         end
     end
 
     subgraph AI["AI 분석 서버"]
-        AISVR["AI Server\nFastAPI :8000\n─────────────\nClaude Haiku\n+ sentence-transformers"]
+        AISVR["AI Server FastAPI :8000<br/>─────────────<br/>Claude Haiku<br/>+ sentence-transformers"]
     end
 
     subgraph ORCH["오케스트레이션"]
-        AF["Apache Airflow\n:8081\n─────────────\nbronze_kafka_ingestion\nsilver_refinement\ngold_serving\nrecommendation_batch"]
-        SP["Apache Spark\n3.5.0\n:7077 / :8080"]
+        AF["Apache Airflow :8081<br/>─────────────<br/>bronze_kafka_ingestion<br/>silver_refinement<br/>gold_serving<br/>recommendation_batch"]
+        SP["Apache Spark 3.5.0<br/>:7077 / :8080"]
     end
 
     subgraph CACHE["캐시 계층"]
-        REDIS["Redis :6379\n─────────────\nuser:{id}:profile\nsearch:trending\nrefresh:{userId}"]
+        REDIS["Redis :6379<br/>─────────────<br/>user:{id}:profile<br/>search:trending<br/>refresh:{userId}"]
     end
 
     subgraph API["API 서버"]
-        BOOT["Spring Boot\nJava 17 :8888\n─────────────\nnews / paper / github\ndashboard / search\nauth / user / events\nrecommendation / mail"]
+        BOOT["Spring Boot Java 17 :8888<br/>─────────────<br/>news / paper / github<br/>dashboard / search<br/>auth / user / events<br/>recommendation / mail"]
     end
 
     subgraph FE["프론트엔드"]
-        NEXT["Next.js 16\nReact 19 :3000\n─────────────\n랜딩 / 대시보드\n뉴스 / 직업분석\n프로필"]
+        NEXT["Next.js 16 React 19 :3000<br/>─────────────<br/>랜딩 / 대시보드<br/>뉴스 / 직업분석 / 프로필"]
     end
 
-    USER([사용자\n브라우저])
+    USER(["사용자<br/>브라우저"])
 
     SRC1 & SRC2 & SRC3 & SRC4 -->|HTTP 크롤링| CRAWL
     SRC5 -->|HTTPS| AISVR
@@ -66,13 +66,13 @@ graph TB
     KAFKA -->|Structured Streaming| SP
     AF -->|트리거| SP
     SP -->|Append| B1 & B2 & B3
-    SP -->|HTTP POST /analyze/batch| AISVR
+    SP -->|"HTTP POST /analyze/batch"| AISVR
     AISVR -->|분석 결과 반환| SP
     AISVR -->|embedding 직접 저장| G4
     SP -->|replaceWhere Overwrite| S1 & S2 & S3
     SP -->|JDBC Upsert| G1 & G2 & G3
     G1 & G2 & G3 & G4 --> BOOT
     REDIS <-->|캐시 읽기/쓰기| BOOT
-    BOOT -->|REST API / JSON| NEXT
+    BOOT -->|"REST API / JSON"| NEXT
     NEXT <-->|상호작용| USER
 ```
