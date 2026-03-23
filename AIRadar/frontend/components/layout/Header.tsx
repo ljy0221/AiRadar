@@ -10,6 +10,7 @@ import { ThemeToggle } from '../common';
 import { AuthModal } from '../features/auth/AuthModal';
 import { useAuth } from '../features/auth/AuthContext';
 import { useUserQuery } from '@/hooks/queries/useUserQuery';
+import { useTheme } from 'next-themes';
 
 const navigation = [
   { name: '대시보드', href: '/dashboard' },
@@ -29,6 +30,12 @@ export const Header = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
   const [isScrolled, setIsScrolled] = useState(false);
+  const { theme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -74,7 +81,9 @@ export const Header = () => {
                   href="/"
                   className={classNames(
                     "font-serif text-2xl font-normal tracking-tight transition-all",
-                    shouldBeTransparent ? "text-white" : "text-[var(--color-text-primary)] hover:opacity-80"
+                    shouldBeTransparent 
+                      ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? "text-white" : "text-gray-900 dark:text-white") 
+                      : "text-[var(--color-text-primary)] hover:opacity-80"
                   )}
                 >
                   AI Radar
@@ -92,7 +101,9 @@ export const Header = () => {
                           className={classNames(
                             isCurrent
                               ? 'text-[var(--color-accent)] font-bold'
-                              : shouldBeTransparent ? 'text-white/80 hover:text-white' : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]',
+                              : shouldBeTransparent 
+                                ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? 'text-white/80 hover:text-white' : 'text-gray-600 hover:text-gray-900 dark:text-white/80 dark:hover:text-white') 
+                                : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]',
                             'rounded-md px-3 py-2 text-base transition-colors',
                           )}
                         >
@@ -113,7 +124,9 @@ export const Header = () => {
                       isLoggedIn && user
                         ? "bg-[var(--color-accent)] text-white text-base font-bold border-transparent"
                         : shouldBeTransparent
-                          ? "bg-white/10 hover:bg-white/20 text-white border-white/20"
+                          ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') 
+                              ? "bg-white/10 hover:bg-white/20 text-white border-white/20" 
+                              : "bg-black/5 hover:bg-black/10 text-gray-900 border-black/10")
                           : "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-[var(--color-text-primary)] border-gray-200 dark:border-gray-700"
                     )}
                   >
@@ -125,7 +138,9 @@ export const Header = () => {
                     ) : (
                       <User className={classNames(
                         "size-5 transition-colors",
-                        shouldBeTransparent ? "text-white group-hover:text-white" : "text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]"
+                        shouldBeTransparent 
+                          ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? "text-white group-hover:text-white" : "text-gray-900 group-hover:text-gray-900") 
+                          : "text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]"
                       )} />
                     )}
                   </PopoverButton>
@@ -203,7 +218,9 @@ export const Header = () => {
                 </Popover>
                 <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1"></div>
                 <ThemeToggle
-                  className={shouldBeTransparent ? "border-white/20 hover:bg-white/10 text-white" : ""}
+                  className={shouldBeTransparent 
+                    ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? "border-white/20 hover:bg-white/10 text-white" : "border-black/10 hover:bg-black/5 text-gray-900") 
+                    : ""}
                 />
               </div>
             </div>
