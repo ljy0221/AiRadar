@@ -255,28 +255,28 @@ export const NewsTimelineTab = () => {
           {currentGroup ? (
             <div className="relative">
               {/* 날짜 헤더 영역과 좌우 화살표 */}
-              <div className="flex items-center gap-3 mb-6 relative z-10 bg-white dark:bg-[#0b0c10] py-2">
-                <div className="w-4 h-4 rounded-full bg-[var(--color-accent)] opacity-80 shrink-0" />
+              <div className="inline-flex items-center gap-3 mb-8 relative z-10 bg-gray-50/50 dark:bg-gray-800/30 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+                <div className="w-3 h-3 rounded-full bg-[var(--color-accent)] opacity-90 shrink-0" />
                 
                 <button
                   onClick={() => handlePrevDay(currentGroup.date)}
-                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors group ml-2"
+                  className="p-1 px-2 hover:bg-gray-200 dark:hover:bg-gray-700/50 rounded-lg transition-colors group"
                   title="이전 날짜 (과거)"
                 >
-                  <ChevronLeft className="w-5 h-5 text-gray-400 group-hover:text-[var(--color-accent)]" />
+                  <ChevronLeft className="w-4 h-4 text-gray-400 group-hover:text-[var(--color-accent)]" />
                 </button>
                 
-                <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200 min-w-[140px] text-center">
+                <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-200 min-w-[100px] text-center tracking-tight">
                   {currentGroup.date.replace(/-/g, '.')}
                 </h3>
                 
                 <button
                   onClick={() => handleNextDay(currentGroup.date)}
-                  className={`p-1.5 rounded-full transition-colors group ${availableDates[0] === currentGroup.date || !availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date() ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer'}`}
+                  className={`p-1 px-2 rounded-lg transition-colors group ${availableDates[0] === currentGroup.date || !availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date() ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-700/50 cursor-pointer'}`}
                   disabled={availableDates[0] === currentGroup.date || !availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date()}
                   title="다음 날짜 (최신)"
                 >
-                  <ChevronRight className={`w-5 h-5 text-gray-400 ${availableDates[0] === currentGroup.date || !availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date() ? '' : 'group-hover:text-[var(--color-accent)]'}`} />
+                  <ChevronRight className={`w-4 h-4 text-gray-400 ${availableDates[0] === currentGroup.date || !availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date() ? '' : 'group-hover:text-[var(--color-accent)]'}`} />
                 </button>
               </div>
 
@@ -292,13 +292,13 @@ export const NewsTimelineTab = () => {
           ) : (
             displayDate && (
               <div className="w-full flex flex-col items-center justify-center py-20 text-gray-400">
-                <div className="flex items-center gap-4 mb-4">
-                  <button onClick={() => handlePrevDay(displayDate)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-                    <ChevronLeft className="w-5 h-5 text-gray-400" />
+                <div className="flex items-center gap-3 mb-6 bg-gray-50/50 dark:bg-gray-800/30 backdrop-blur-sm px-4 py-2 rounded-2xl border border-gray-100 dark:border-white/5">
+                  <button onClick={() => handlePrevDay(displayDate)} className="p-1 px-2 hover:bg-gray-200 dark:hover:bg-gray-700/50 rounded-lg transition-colors">
+                    <ChevronLeft className="w-4 h-4 text-gray-400" />
                   </button>
-                  <span className="text-lg font-bold">{displayDate.replace(/-/g, '.')}</span>
-                  <button onClick={() => handleNextDay(displayDate)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  <span className="text-lg font-semibold text-gray-700 dark:text-gray-300 min-w-[100px] text-center">{displayDate.replace(/-/g, '.')}</span>
+                  <button onClick={() => handleNextDay(displayDate)} className="p-1 px-2 hover:bg-gray-200 dark:hover:bg-gray-700/50 rounded-lg transition-colors">
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
                   </button>
                 </div>
                 <p className="text-sm">해당 날짜에 조회된 뉴스가 없습니다.</p>

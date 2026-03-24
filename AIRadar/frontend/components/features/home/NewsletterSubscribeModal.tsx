@@ -40,7 +40,7 @@ export const NewsletterSubscribeModal = ({ isOpen, onClose, onSuccess }: Newslet
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="flex flex-col gap-6 py-4 px-4 md:px-6">
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-[#C8432A] tracking-tighter mb-1">Join the Intel</h2>
+          <h2 className="text-3xl font-semibold text-[#C8432A] tracking-tighter mb-1">Join the Intel</h2>
           <p className="text-gray-400 text-xs">최신 AI 동향을 누구보다 빠르게 받아보세요.</p>
         </div>
         <form className="flex flex-col w-full gap-4" onSubmit={handleSubmit}>
@@ -86,7 +86,7 @@ export const NewsletterSubscribeModal = ({ isOpen, onClose, onSuccess }: Newslet
           <button 
             type="submit" 
             disabled={mutation.isPending}
-            className="w-full py-3.5 text-base bg-[#C8432A] text-white font-bold rounded-lg shadow-lg hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3.5 text-base bg-[#C8432A] text-white font-semibold rounded-lg shadow-lg hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {mutation.isPending ? (
               <>
