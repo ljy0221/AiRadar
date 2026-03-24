@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
 import { MetricCard, KeywordTrendList, KeywordBarChart, KeywordRadarChart, KeywordDictionary, GithubTrendingCard, ModelComparison, WordCloudChart, KeywordInsightPanel, GithubTabContents } from '@/components/features/dashboard';
 import { TrendingUp, TrendingDown, Activity, ListOrdered, Loader2 } from 'lucide-react';
@@ -9,13 +10,32 @@ import Loading from '@/app/loading';
 
 type DashboardTab = 'overview' | 'analytics' | 'dictionary' | 'github';
 
-export default function DashboardPage() {
+function DashboardContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const { data, isLoading, isError } = useDashboardSummary();
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [mouseNearTop, setMouseNearTop] = useState(false);
   const [scrollDir, setScrollDir] = useState<'up' | 'down'>('up');
   const [isAtTop, setIsAtTop] = useState(true);
   const { scrollY } = useScroll();
+
+  // URL 쿼리 파라미터에서 탭 상태를 읽어와 초기화 및 동기화
+  useEffect(() => {
+    const tabParam = searchParams.get('tab') as DashboardTab;
+    if (tabParam && ['overview', 'analytics', 'dictionary', 'github'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  // 탭 변경 시 상태 업데이트 및 URL 쿼리 파라미터 반영
+  const handleTabChange = (tab: DashboardTab) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious() ?? 0;
@@ -85,7 +105,7 @@ export default function DashboardPage() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as DashboardTab)}
+                onClick={() => handleTabChange(tab.id as DashboardTab)}
                 className={`relative h-full px-1 text-[14px] font-bold transition-all duration-200 ${activeTab === tab.id
                   ? 'text-[var(--color-accent)]'
                   : 'text-gray-500 hover:text-[var(--color-accent)]'
@@ -164,5 +184,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <DashboardContent />
+    </Suspense>
   );
 }
