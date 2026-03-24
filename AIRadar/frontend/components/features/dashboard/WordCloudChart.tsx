@@ -23,7 +23,7 @@ export const WordCloudChart = ({ title = "주간 기술 키워드 워드클라�
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const cloudData = await fetchWordCloudData(activeTab, 80);
+        const cloudData = await fetchWordCloudData(activeTab, 30);
         if (isMounted) {
           setData(cloudData);
         }
