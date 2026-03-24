@@ -44,8 +44,8 @@ export const eventService = {
    */
   trackArticleView: (articleId: string, dwellTimeSeconds: number): void => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-    if (!token || dwellTimeSeconds < 5) return; 
-    
+    if (!token) return;
+
     api.post('/events/article-view', { articleId, dwellTimeSeconds })
       .catch(() => { /* 이벤트 발송 실패는 무시 */ });
   },
@@ -57,7 +57,7 @@ export const eventService = {
   trackSearch: (query: string): void => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
     if (!token || !query.trim()) return;
-    
+
     api.post('/events/search', { query })
       .catch(() => { /* 무시 */ });
   },
@@ -69,7 +69,7 @@ export const eventService = {
   trackArticleLike: (articleId: string): void => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
     if (!token) return;
-    
+
     api.post('/events/article-like', { articleId })
       .catch(() => { /* 무시 */ });
   },
@@ -81,7 +81,7 @@ export const eventService = {
   trackArticleBookmark: (articleId: string): void => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
     if (!token) return;
-    
+
     api.post('/events/article-bookmark', { articleId })
       .catch(() => { /* 무시 */ });
   },
