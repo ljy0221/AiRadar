@@ -28,6 +28,14 @@ public class PaperController {
         return ResponseEntity.ok(paperService.getPaperList(category, researchArea, date));
     }
 
+    @GetMapping("/available-dates")
+    public ResponseEntity<PaperDto.AvailableDates> getAvailableDates(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String researchArea
+    ) {
+        return ResponseEntity.ok(paperService.getAvailableDates(category, researchArea));
+    }
+
     @GetMapping("/{paperId}")
     public ResponseEntity<PaperDto.Detail> getPaperDetail(@PathVariable String paperId) {
         return ResponseEntity.ok(paperService.getPaperDetail(paperId));
