@@ -49,7 +49,7 @@ class PaperServiceTest {
     }
 
     @Test
-    @DisplayName("date가 있으면 해당 날짜 논문만 그룹으로 반환한다")
+    @DisplayName("given date when get paper list then groups by that date")
     void getPaperList_withDate() {
         LocalDate targetDate = LocalDate.of(2026, 3, 19);
         when(paperRepository.findRecentPaperFeed("NLP", "cs.CL", targetDate.atStartOfDay(), targetDate.plusDays(1).atStartOfDay()))
@@ -65,7 +65,7 @@ class PaperServiceTest {
     }
 
     @Test
-    @DisplayName("날짜 미지정 시 최근 10일 범위를 최신순으로 묶는다")
+    @DisplayName("given no date when get paper list then returns grouped recent ten days")
     void getPaperList_withoutDate_returnsRecentTenDays() {
         Paper olderPaper = new Paper();
         ReflectionTestUtils.setField(olderPaper, "paperId", "paper-002");
@@ -90,7 +90,22 @@ class PaperServiceTest {
     }
 
     @Test
-    @DisplayName("paperId로 상세 조회를 반환한다")
+    @DisplayName("filters apply to available paper dates response")
+    void getAvailableDates() {
+        when(paperRepository.findAvailableDates("NLP", "cs.CL"))
+                .thenReturn(List.of(LocalDate.of(2026, 3, 19), LocalDate.of(2026, 3, 17)));
+
+        PaperDto.AvailableDates result = paperService.getAvailableDates("NLP", "cs.CL");
+
+        assertThat(result.dates()).containsExactly(LocalDate.of(2026, 3, 19), LocalDate.of(2026, 3, 17));
+        assertThat(result.count()).isEqualTo(2);
+        assertThat(result.startDate()).isEqualTo(LocalDate.of(2026, 3, 17));
+        assertThat(result.endDate()).isEqualTo(LocalDate.of(2026, 3, 19));
+        verify(paperRepository).findAvailableDates("NLP", "cs.CL");
+    }
+
+    @Test
+    @DisplayName("given paper id when get detail then returns paper detail")
     void getPaperDetail_found() {
         when(paperRepository.findByPaperIdAndIsActiveTrue("paper-001")).thenReturn(Optional.of(samplePaper));
 
@@ -101,7 +116,7 @@ class PaperServiceTest {
     }
 
     @Test
-    @DisplayName("없는 paperId면 EntityNotFoundException을 던진다")
+    @DisplayName("given missing paper id when get detail then throws")
     void getPaperDetail_notFound() {
         when(paperRepository.findByPaperIdAndIsActiveTrue("no-paper")).thenReturn(Optional.empty());
 

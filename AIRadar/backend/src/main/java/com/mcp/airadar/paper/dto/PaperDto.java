@@ -43,6 +43,14 @@ public class PaperDto {
     ) {}
 
     @Builder
+    public record AvailableDates(
+            List<LocalDate> dates,
+            int count,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {}
+
+    @Builder
     public record Detail(
             String paperId,
             String title,

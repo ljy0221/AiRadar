@@ -51,6 +51,17 @@ public class PaperService {
                 .toList();
     }
 
+    public PaperDto.AvailableDates getAvailableDates(String category, String researchArea) {
+        List<LocalDate> dates = paperRepository.findAvailableDates(category, researchArea);
+
+        return PaperDto.AvailableDates.builder()
+                .dates(dates)
+                .count(dates.size())
+                .startDate(dates.isEmpty() ? null : dates.get(dates.size() - 1))
+                .endDate(dates.isEmpty() ? null : dates.get(0))
+                .build();
+    }
+
     public PaperDto.Detail getPaperDetail(String paperId) {
         Paper paper = paperRepository.findByPaperIdAndIsActiveTrue(paperId)
                 .orElseThrow(() -> new EntityNotFoundException("Paper not found: " + paperId));

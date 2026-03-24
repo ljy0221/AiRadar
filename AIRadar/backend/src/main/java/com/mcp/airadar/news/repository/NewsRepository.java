@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +30,19 @@ public interface NewsRepository extends JpaRepository<NewsItem, String> {
             @Param("category") String category,
             @Param("startInclusive") LocalDateTime startInclusive,
             @Param("endExclusive") LocalDateTime endExclusive);
+
+    @Query(value = """
+        SELECT DISTINCT DATE(published_at)
+        FROM news_items
+        WHERE is_active = TRUE
+          AND published_at IS NOT NULL
+          AND (:region IS NULL OR region = :region)
+          AND (:category IS NULL OR category = :category)
+        ORDER BY DATE(published_at) DESC
+        """, nativeQuery = true)
+    List<LocalDate> findAvailableDates(
+            @Param("region") String region,
+            @Param("category") String category);
 
     @Query(value = """
         SELECT n.*

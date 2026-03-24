@@ -47,6 +47,14 @@ public class NewsDto {
     ) {}
 
     @Builder
+    public record AvailableDates(
+            List<LocalDate> dates,
+            int count,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {}
+
+    @Builder
     public record CompanyNewsGroup(
             String company,
             List<ListItem> items
