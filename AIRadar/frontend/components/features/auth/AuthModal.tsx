@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/react';
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, X, Loader2 } from 'lucide-react';
 import { useAuth } from './AuthContext';
@@ -13,6 +14,7 @@ interface AuthModalProps {
 }
 
 export const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) => {
+  const router = useRouter();
   const { loginState } = useAuth();
   const [isLoginView, setIsLoginView] = useState(initialView === 'login');
   const [showPassword, setShowPassword] = useState(false);
@@ -56,10 +58,8 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalP
       }
 
       if (res.accessToken) {
-        // 회원가입 시에는 명시적 응답이 없으면 false(미완료)로 처리, 로그인 시에는 true(완료)로 처리
-        const isCompleted = res.onboardingCompleted !== undefined 
-          ? res.onboardingCompleted 
-          : (isLoginView ? true : false);
+        // 백엔드 응답에서 온보딩 완료 여부 추출
+        const isCompleted = res.onboardingCompleted === true;
         
         loginState(res.accessToken, res.refreshToken, isCompleted, email);
         onClose();
