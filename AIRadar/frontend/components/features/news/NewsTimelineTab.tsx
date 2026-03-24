@@ -5,7 +5,7 @@ import Loading from '@/app/loading';
 import { TimelineFilter } from './TimelineFilter';
 import { TimelineItem, TimelineItemData } from './TimelineItem';
 import { TrendingKeywords } from './TrendingKeywords';
-import { useNewsListQuery, useInfiniteNewsQuery } from '@/hooks/queries/useNewsQuery';
+import { useNewsListQuery, useInfiniteNewsQuery, useAvailableNewsDates } from '@/hooks/queries/useNewsQuery';
 import { useBookmarksQuery } from '@/hooks/queries/useUserQuery';
 import { usePersonalizedNewsQuery } from '@/hooks/queries/useRecommendationQuery';
 import { useAuth } from '../auth/AuthContext';
@@ -60,16 +60,15 @@ export const NewsTimelineTab = () => {
   const region =
     regionFilter === 'domestic' ? 'DOMESTIC' : regionFilter === 'international' ? 'GLOBAL' : undefined;
 
-  // 1) 기본 조회 (최근 일자 확인용)
-  const {
-    data: recentGroups,
-    isLoading: isRecentLoading,
-    isError: isRecentError
-  } = useNewsListQuery({ region }); // API 필터 제거 (전체 뉴스를 가져와 로컬 필터링 수행)
+  // 1) 가용 날짜 조회 (필터 연동)
+  const { data: availableData } = useAvailableNewsDates({
+    region,
+    category: activeCategory !== 'ALL' ? activeCategory : undefined
+  });
 
   const availableDates = useMemo(() =>
-    recentGroups ? recentGroups.map(group => group.date) : [],
-    [recentGroups]
+    availableData?.dates || [],
+    [availableData]
   );
 
   // 화면에 표시할 날짜 결정 (선택된 날짜가 없으면 가장 최신 날짜)
@@ -88,7 +87,7 @@ export const NewsTimelineTab = () => {
   // 0) 개인화 추천 피드 (로그인 시 & 기본 상태일 때만)
   const { data: recommendations } = usePersonalizedNewsQuery(5, isLoggedIn);
 
-  // 날짜 기반 데이터 병합 처리 (displayDate 단일 날짜만)
+  // 날짜 기반 데이터 병합 처리 (displayDate 기준 필터링)
   const mergedGroups = useMemo<DailyNewsGroup[]>(() => {
     if (infiniteData && infiniteData.pages.length > 0) {
       const flattened = infiniteData.pages.flat();
@@ -97,33 +96,44 @@ export const NewsTimelineTab = () => {
         if (!map.has(group.date)) map.set(group.date, []);
         map.get(group.date)!.push(...group.items);
       }
-      return Array.from(map.entries())
-        .filter(([date]) => date === displayDate)
-        .map(([date, items]) => ({ date, items }));
-    }
-    
-    if (recentGroups && displayDate) {
-      const targetGroup = recentGroups.find(g => g.date === displayDate);
-      if (targetGroup) return [targetGroup];
+
+      const entries = Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+
+      // 1순위: displayDate와 일치하는 그룹
+      if (displayDate) {
+        const matched = entries.filter(([date]) => date === displayDate);
+        if (matched.length > 0) {
+          return matched.map(([date, items]) => ({ date, items }));
+        }
+      } else if (entries.length > 0) {
+        // 2순위: displayDate가 없는 경우(초기 진입 & available-dates 실패), 가장 최신 날짜 그룹 사용
+        return [{ date: entries[0][0], items: entries[0][1] }];
+      }
     }
 
     return [];
-  }, [displayDate, infiniteData, recentGroups]);
+  }, [displayDate, infiniteData]);
+
+  // 헤더 표시용 날짜
+  const headerDate = useMemo(() => {
+    if (mergedGroups.length > 0) return mergedGroups[0].date;
+    return displayDate || new Date().toISOString().split('T')[0];
+  }, [mergedGroups, displayDate]);
 
   // 화살표 네비게이션 핸들러
   const handlePrevDay = (currentStr: string) => {
-    setActiveCategory('ALL'); // 날짜 변경 시 필터 초기화
+    setActiveCategory('ALL');
     const d = new Date(currentStr);
     d.setDate(d.getDate() - 1);
     setSelectedDate(d.toISOString().split('T')[0]);
   };
   const handleNextDay = (currentStr: string) => {
-    setActiveCategory('ALL'); // 날짜 변경 시 필터 초기화
+    setActiveCategory('ALL');
     const d = new Date(currentStr);
     d.setDate(d.getDate() + 1);
     setSelectedDate(d.toISOString().split('T')[0]);
   };
-  
+
   // 렌더링할 단일 날짜 그룹 (없으면 null)
   const currentGroup = mergedGroups.length > 0 ? mergedGroups[0] : null;
 
@@ -132,8 +142,8 @@ export const NewsTimelineTab = () => {
     if (!currentGroup) return [];
     const keys = new Set<string>();
     currentGroup.items.forEach(item => {
-      const itemKeys = item.keywords && item.keywords.length > 0 
-        ? item.keywords 
+      const itemKeys = item.keywords && item.keywords.length > 0
+        ? item.keywords
         : [categoryLabel(item.category)];
       itemKeys.forEach(k => keys.add(k));
     });
@@ -144,18 +154,18 @@ export const NewsTimelineTab = () => {
   const filteredItems = useMemo(() => {
     if (!currentGroup) return [];
     if (activeCategory === 'ALL') return currentGroup.items;
-    
+
     return currentGroup.items.filter(item => {
-      const itemKeys = item.keywords && item.keywords.length > 0 
-        ? item.keywords 
+      const itemKeys = item.keywords && item.keywords.length > 0
+        ? item.keywords
         : [categoryLabel(item.category)];
       return itemKeys.includes(activeCategory);
     });
   }, [currentGroup, activeCategory]);
 
   // 로딩 밑 에러 상태 체크
-  const isLoading = displayDate ? (isInfiniteLoading && mergedGroups.length === 0) : isRecentLoading;
-  const isError = displayDate ? (isInfiniteError && mergedGroups.length === 0) : (isRecentError && recentGroups === undefined);
+  const isLoading = (isInfiniteLoading && mergedGroups.length === 0);
+  const isError = (isInfiniteError && mergedGroups.length === 0);
 
   // 무한 스크롤 Intersection Observer 세팅
   const observerRef = useRef<HTMLDivElement | null>(null);
@@ -257,7 +267,7 @@ export const NewsTimelineTab = () => {
               {/* 날짜 헤더 영역과 좌우 화살표 */}
               <div className="inline-flex items-center gap-3 mb-8 relative z-10 bg-gray-50/50 dark:bg-gray-800/30 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="w-3 h-3 rounded-full bg-[var(--color-accent)] opacity-90 shrink-0" />
-                
+
                 <button
                   onClick={() => handlePrevDay(currentGroup.date)}
                   className="p-1 px-2 hover:bg-gray-200 dark:hover:bg-gray-700/50 rounded-lg transition-colors group"
@@ -265,18 +275,18 @@ export const NewsTimelineTab = () => {
                 >
                   <ChevronLeft className="w-4 h-4 text-gray-400 group-hover:text-[var(--color-accent)]" />
                 </button>
-                
+
                 <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-200 min-w-[100px] text-center tracking-tight">
                   {currentGroup.date.replace(/-/g, '.')}
                 </h3>
-                
+
                 <button
                   onClick={() => handleNextDay(currentGroup.date)}
-                  className={`p-1 px-2 rounded-lg transition-colors group ${availableDates[0] === currentGroup.date || !availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date() ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-700/50 cursor-pointer'}`}
-                  disabled={availableDates[0] === currentGroup.date || !availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date()}
+                  className={`p-1 px-2 rounded-lg transition-colors group ${availableDates[0] === currentGroup.date || (!availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date()) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-700/50 cursor-pointer'}`}
+                  disabled={availableDates[0] === currentGroup.date || (!availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date())}
                   title="다음 날짜 (최신)"
                 >
-                  <ChevronRight className={`w-4 h-4 text-gray-400 ${availableDates[0] === currentGroup.date || !availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date() ? '' : 'group-hover:text-[var(--color-accent)]'}`} />
+                  <ChevronRight className={`w-4 h-4 text-gray-400 ${availableDates[0] === currentGroup.date || (!availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date()) ? '' : 'group-hover:text-[var(--color-accent)]'}`} />
                 </button>
               </div>
 

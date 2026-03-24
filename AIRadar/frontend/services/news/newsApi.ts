@@ -19,4 +19,9 @@ export const fetchNewsDetail = async (articleId: string): Promise<any> => {
   return api.get(`/news/${articleId}`);
 };
 
+// GET /api/v1/news/available-dates
+export const fetchAvailableDates = async (params: { region?: string; category?: string } = {}): Promise<{ dates: string[]; count: number; startDate: string | null; endDate: string | null }> => {
+  return api.get('/news/available-dates', { params });
+};
+
 

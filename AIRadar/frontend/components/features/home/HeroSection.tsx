@@ -56,14 +56,14 @@ export const HeroSection = () => {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
+        transition={{ duration: 0.6, ease: "easeOut", delay: 0 }}
         className="relative z-10 flex flex-col items-center justify-center px-4 max-w-6xl w-full flex-grow -mt-16"
       >
         {/* Floating Badge */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.4 }}
+          transition={{ duration: 0.5, delay: 0.05 }}
           className="px-5 py-2.5 rounded-full border border-accent/20 bg-bg-secondary/50 backdrop-blur-md mb-12 flex items-center gap-2 cursor-default"
         >
           <div className="w-1.5 h-1.5 bg-[var(--color-accent)] rounded-full shadow-[0_0_6px_var(--color-accent)]" />
@@ -76,9 +76,9 @@ export const HeroSection = () => {
         <div className="relative group text-center flex flex-col items-center mb-10 w-full overflow-visible py-4">
           <motion.h1
             style={{ x: mousePos.x * 0.1, y: mousePos.y * 0.1, fontFamily: 'var(--font-audiowide-next)' }}
-            initial={{ opacity: 0, y: 30, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            transition={{ duration: 1.2, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col items-center leading-[0.95] select-none relative z-10 font-audiowide tracking-tight w-full"
           >
             <span style={{ fontFamily: 'var(--font-audiowide-next)' }} className="font-audiowide text-[14vw] md:text-[7.5rem] lg:text-[8.5rem] text-text-primary uppercase tracking-wider mb-1">
@@ -92,9 +92,9 @@ export const HeroSection = () => {
 
         {/* Sub-headline */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.8 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
           className="flex flex-col items-center text-center max-w-2xl mb-12"
         >
           <p className="text-sm md:text-lg lg:text-xl font-normal text-text-primary/70 leading-relaxed tracking-wide">
@@ -109,7 +109,7 @@ export const HeroSection = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1.2 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
           className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-3 gap-y-10 md:gap-0"
         >
           <div className="flex flex-col items-center gap-2">
