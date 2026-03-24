@@ -61,9 +61,7 @@ public class UserEventService {
     @Transactional
     public void onArticleViewed(UUID userId, String articleId, int dwellTimeSeconds) {
         try {
-            if (dwellTimeSeconds >= 30) {
-                updateProfileForArticle(userId, articleId, W_VIEW_LONG);
-            }
+            updateProfileForArticle(userId, articleId, W_VIEW_LONG);
             saveLog(userId, articleId, null, EventType.ARTICLE_VIEWED);
         } catch (Exception e) {
             log.warn("[Event] ARTICLE_VIEWED 처리 실패 (무시): {}", e.getMessage());
@@ -114,9 +112,7 @@ public class UserEventService {
             String key = PROFILE_KEY.formatted(userId);
             // 본 논문 ID 기록 (추천 필터링용)
             redisTemplate.opsForHash().increment(key, "ppv:" + paperId, 1.0);
-            if (dwellTimeSeconds >= 30) {
-                updateProfileForPaper(userId, paperId, W_VIEW_LONG);
-            }
+            updateProfileForPaper(userId, paperId, W_VIEW_LONG);
             refreshProfileTtl(key);
             saveLog(userId, paperId, null, EventType.ARTICLE_VIEWED);
         } catch (Exception e) {
