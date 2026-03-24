@@ -71,6 +71,11 @@ export interface DashboardResponse {
   popularSearches: RankingItem[];
 }
 
+export interface WordCloudData {
+  text: string;
+  value: number;
+}
+
 import { mockKeywordDictionary } from './KeywordDict';
 
 
@@ -123,5 +128,23 @@ export const fetchDashboardData = async (token?: string | null): Promise<Dashboa
     // 만약 백엔드 서버가 아직 재배포가 안 돼서 404가 뜨면?
     // 무식하게 뻗지 말고 조용히 기존 가짜 데이터를 띄워줍니다 (안전 장치)
     return analyzeDashboardData(mockKeywordDictionary);
+  }
+};
+
+export const fetchWordCloudData = async (source: 'NEWS' | 'PAPER' | 'GITHUB', limit: number = 50): Promise<WordCloudData[]> => {
+  try {
+    const response: any = await api.get('/dashboard/wordcloud', { params: { source, limit } });
+    const rawData = Array.isArray(response) ? response : response?.data;
+    
+    if (rawData && rawData.length > 0) {
+      return rawData.map((item: any) => ({
+        text: item.keyword,
+        value: item.count
+      }));
+    }
+    return [];
+  } catch (error) {
+    console.error("WordCloud API Error:", error);
+    return [];
   }
 };
