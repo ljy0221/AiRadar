@@ -23,8 +23,7 @@ public class WordCloudAggregationJob {
             "for", "if", "in", "into", "is", "it",
             "no", "not", "of", "on", "or", "such",
             "that", "the", "their", "then", "there", "these",
-            "they", "this", "to", "was", "will", "with"
-    );
+            "they", "this", "to", "was", "will", "with");
 
     public static void main(String[] args) throws Exception {
         String weekStartStr = getArg(args, "--week-start");
@@ -59,7 +58,7 @@ public class WordCloudAggregationJob {
 
     private static void processAggregation(SparkSession spark, String weekStartStr) throws Exception {
         String silverBasePath = System.getenv().getOrDefault("SILVER_BASE_PATH", "/tmp/silver");
-        System.out.println("☁️ 주간 워드클라우드 집계 시작 (Spark): 주 시작일=" + weekStartStr);
+        System.out.println("주간 워드클라우드 집계 시작 (Spark): 주 시작일=" + weekStartStr);
 
         LocalDate weekStartDate = LocalDate.parse(weekStartStr, DateTimeFormatter.ISO_LOCAL_DATE);
         LocalDate weekEndDate = weekStartDate.plusDays(6);
@@ -80,7 +79,8 @@ public class WordCloudAggregationJob {
 
             // 2. PAPER 집계
             try {
-                Dataset<Row> paperDf = spark.read().format("delta").load(silverBasePath + "/paper").where(dateCondition);
+                Dataset<Row> paperDf = spark.read().format("delta").load(silverBasePath + "/paper")
+                        .where(dateCondition);
                 aggregateAndUpsert(paperDf, "keywords", "PAPER", weekStartDate, conn);
             } catch (Exception e) {
                 System.err.println("Paper Data Not Found: " + e.getMessage());
@@ -88,7 +88,8 @@ public class WordCloudAggregationJob {
 
             // 3. GITHUB 집계
             try {
-                Dataset<Row> githubDf = spark.read().format("delta").load(silverBasePath + "/github").where(dateCondition);
+                Dataset<Row> githubDf = spark.read().format("delta").load(silverBasePath + "/github")
+                        .where(dateCondition);
                 // GITHUB는 topics 배열 사용
                 aggregateAndUpsert(githubDf, "topics", "GITHUB", weekStartDate, conn);
             } catch (Exception e) {
@@ -98,14 +99,15 @@ public class WordCloudAggregationJob {
             conn.commit();
         }
 
-        System.out.println("✅ 주간 워드클라우드 집계 완료: " + weekStartStr);
+        System.out.println("주간 워드클라우드 집계 완료: " + weekStartStr);
     }
 
-    private static void aggregateAndUpsert(Dataset<Row> df, String arrayColName, String sourceType, LocalDate weekStart, Connection conn) throws Exception {
-        System.out.println("  📊 [" + sourceType + "] 데이터 집계 중...");
+    private static void aggregateAndUpsert(Dataset<Row> df, String arrayColName, String sourceType, LocalDate weekStart,
+            Connection conn) throws Exception {
+        System.out.println("[" + sourceType + "] 데이터 집계 중...");
 
         Dataset<Row> exploded = df.select(functions.explode(functions.col(arrayColName)).alias("keyword"));
-        
+
         // 불용어 및 빈 문자열 소문자 처리 후 필터링
         exploded = exploded.withColumn("keyword", functions.lower(functions.trim(functions.col("keyword"))))
                 .filter(functions.col("keyword").isNotNull())
@@ -123,11 +125,12 @@ public class WordCloudAggregationJob {
         upsertBatch(conn, results, sourceType, weekStart);
     }
 
-    private static void upsertBatch(Connection conn, List<Row> results, String sourceType, LocalDate statDate) throws Exception {
+    private static void upsertBatch(Connection conn, List<Row> results, String sourceType, LocalDate statDate)
+            throws Exception {
         String sql = "INSERT INTO tech_keyword_daily (keyword, stat_date, source_type, mention_count, created_at) " +
-                     "VALUES (?, ?, ?, ?, NOW()) " +
-                     "ON CONFLICT (keyword, stat_date, source_type) DO UPDATE SET " +
-                     "mention_count = EXCLUDED.mention_count, updated_at = NOW()";
+                "VALUES (?, ?, ?, ?, NOW()) " +
+                "ON CONFLICT (keyword, stat_date, source_type) DO UPDATE SET " +
+                "mention_count = EXCLUDED.mention_count, updated_at = NOW()";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             for (Row row : results) {
