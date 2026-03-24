@@ -8,6 +8,34 @@ import { api } from './api';
  * - 실패하더라도 사용자 경험(UI)에는 영향을 주지 않아야 합니다.
  */
 
+export interface UserEventPayload {
+  event_type: string;
+  page: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * 범용 이벤트 트래킹 함수 (useEventTracking 훅에서 사용)
+ */
+export const trackUserEvent = (payload: UserEventPayload): void => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  if (!token) return;
+
+  api.post('/events/user-action', payload)
+    .catch(() => { /* 무시 */ });
+};
+
+/**
+ * 피드백(좋아요/싫어요 등) 제출 함수
+ */
+export const submitFeedback = (payload: UserEventPayload): void => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  if (!token) return;
+
+  api.post('/events/feedback', payload)
+    .catch(() => { /* 무시 */ });
+};
+
 export const eventService = {
   /**
    * 뉴스/논문 상세 조회 이벤트 (체류 시간 기반)
