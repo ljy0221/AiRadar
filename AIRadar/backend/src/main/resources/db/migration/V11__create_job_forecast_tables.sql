@@ -56,14 +56,14 @@ CREATE TABLE job_forecast_task (
 INSERT INTO job_role (code, name) VALUES
 ('developer', '개발자'),
 ('marketer', '마케터'),
-('admin_assistant', '행정 보조'),
+('admin-assistant', '행정 보조'),
 ('interpreter', '통역사'),
-('customer_support', '고객 상담원'),
+('customer-support', '고객 상담원'),
 ('lawyer', '변호사'),
 ('accountant', '회계사'),
 ('counselor', '심리상담사'),
-('fashion_designer', '패션 디자이너'),
-('police_officer', '경찰관');
+('fashion-designer', '패션 디자이너'),
+('police-officer', '경찰관');
 
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'markup_automation', '피그마 시안을 바탕으로 하는 단순 마크업 자동화',
@@ -94,15 +94,15 @@ FROM job_role WHERE code = 'marketer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'document_drafting', '반복 문서 작성 초안 생성',
        '정형화된 공문, 보고서, 안내문 초안을 자동으로 만드는 업무입니다.', 1
-FROM job_role WHERE code = 'admin_assistant';
+FROM job_role WHERE code = 'admin-assistant';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'schedule_coordination', '일정 및 회의 조율 자동화',
        '회의 요청, 일정 충돌 확인, 메일 초안 작성 등 반복 행정을 처리하는 업무입니다.', 2
-FROM job_role WHERE code = 'admin_assistant';
+FROM job_role WHERE code = 'admin-assistant';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'record_classification', '문서 분류 및 정리',
        '내부 문서, 첨부파일, 회의록을 규칙에 맞게 분류하고 저장하는 업무입니다.', 3
-FROM job_role WHERE code = 'admin_assistant';
+FROM job_role WHERE code = 'admin-assistant';
 
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'speech_translation', '실시간 회의 발화 1차 번역',
@@ -120,15 +120,15 @@ FROM job_role WHERE code = 'interpreter';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'faq_response', 'FAQ 기반 1차 상담 응답',
        '반복 문의에 대해 빠르게 표준 답변을 제시하는 업무입니다.', 1
-FROM job_role WHERE code = 'customer_support';
+FROM job_role WHERE code = 'customer-support';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'ticket_classification', '문의 유형 자동 분류',
        '고객 문의를 환불, 배송, 기술 문제 등으로 분류하는 업무입니다.', 2
-FROM job_role WHERE code = 'customer_support';
+FROM job_role WHERE code = 'customer-support';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'call_summary', '상담 내역 요약 및 후속조치 정리',
        '통화나 채팅 기록을 요약하고 다음 액션을 정리하는 업무입니다.', 3
-FROM job_role WHERE code = 'customer_support';
+FROM job_role WHERE code = 'customer-support';
 
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'precedent_search', '판례 및 법령 1차 검색',
@@ -172,25 +172,25 @@ FROM job_role WHERE code = 'counselor';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'moodboard_generation', '트렌드 기반 무드보드 초안 생성',
        '시즌 키워드와 참고 이미지를 바탕으로 초기 컨셉 보드를 만드는 업무입니다.', 1
-FROM job_role WHERE code = 'fashion_designer';
+FROM job_role WHERE code = 'fashion-designer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'pattern_variation', '패턴 및 컬러 변형안 생성',
        '기존 디자인의 색상, 패턴, 소재 조합을 여러 버전으로 시도하는 업무입니다.', 2
-FROM job_role WHERE code = 'fashion_designer';
+FROM job_role WHERE code = 'fashion-designer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'product_description', '상품 설명문 자동 초안 작성',
        '디자인 특징과 착장 포인트를 반영한 설명문을 작성하는 업무입니다.', 3
-FROM job_role WHERE code = 'fashion_designer';
+FROM job_role WHERE code = 'fashion-designer';
 
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'incident_report_draft', '사건 보고서 초안 정리',
        '현장 기록과 진술을 토대로 기본 보고서 구조를 정리하는 업무입니다.', 1
-FROM job_role WHERE code = 'police_officer';
+FROM job_role WHERE code = 'police-officer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'cctv_log_review', 'CCTV 및 로그 1차 검토',
        '대량 영상과 로그 중 이상 징후 구간을 우선 탐지하는 업무입니다.', 2
-FROM job_role WHERE code = 'police_officer';
+FROM job_role WHERE code = 'police-officer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
 SELECT id, 'patrol_briefing', '순찰 브리핑 요약 생성',
        '지역 사건 이력과 주의 대상을 요약해 순찰 전 브리핑 자료로 만드는 업무입니다.', 3
-FROM job_role WHERE code = 'police_officer';
+FROM job_role WHERE code = 'police-officer';

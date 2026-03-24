@@ -5,11 +5,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcp.airadar.jobforecast.dto.JobForecastGenerationResultDto;
 import com.mcp.airadar.jobforecast.dto.JobForecastResponse;
-import com.mcp.airadar.jobforecast.dto.JobRoleCatalogDto;
 import com.mcp.airadar.jobforecast.entity.JobForecast;
 import com.mcp.airadar.jobforecast.entity.JobForecastTask;
 import com.mcp.airadar.jobforecast.entity.JobRole;
 import com.mcp.airadar.jobforecast.entity.JobRoleCoreTask;
+import com.mcp.airadar.jobforecast.entity.JobRoleType;
 import com.mcp.airadar.jobforecast.repository.JobForecastRepository;
 import com.mcp.airadar.jobforecast.repository.JobRoleRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -41,24 +41,6 @@ public class JobForecastService {
         this.jobForecastRepository = jobForecastRepository;
         this.jobForecastAiClient = jobForecastAiClient;
         this.objectMapper = objectMapper;
-    }
-
-    @Transactional(readOnly = true)
-    public List<JobRoleCatalogDto> getJobCatalog() {
-        return jobRoleRepository.findAllByActiveTrueOrderByIdAsc().stream()
-                .map(role -> new JobRoleCatalogDto(
-                        role.getCode(),
-                        role.getName(),
-                        role.getCoreTasks().stream()
-                                .map(task -> new JobRoleCatalogDto.CoreTask(
-                                        task.getTaskKey(),
-                                        task.getTaskTitle(),
-                                        task.getTaskDescription(),
-                                        task.getDisplayOrder()
-                                ))
-                                .toList()
-                ))
-                .toList();
     }
 
     @Transactional
@@ -121,8 +103,9 @@ public class JobForecastService {
     }
 
     private JobRole getActiveJobRole(String jobCode) {
+        JobRoleType roleType = JobRoleType.fromCode(jobCode);
         return jobRoleRepository.findByCodeAndActiveTrue(jobCode)
-                .orElseThrow(() -> new EntityNotFoundException("Job role not found: " + jobCode));
+                .orElseThrow(() -> new EntityNotFoundException("Job role not found: " + roleType.getCode()));
     }
 
     private JobForecastResponse generateAndSaveForecast(JobRole role, LocalDate forecastMonth, boolean stale) {
