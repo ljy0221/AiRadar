@@ -19,6 +19,7 @@ export interface TimelineItemData {
   isHot?: boolean;
   url?: string;
   isBookmarked?: boolean;
+  reason?: string;
 }
 
 interface TimelineItemProps {
