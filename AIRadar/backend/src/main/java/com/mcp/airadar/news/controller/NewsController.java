@@ -28,6 +28,14 @@ public class NewsController {
         return ResponseEntity.ok(newsService.getNewsList(region, category, date));
     }
 
+    @GetMapping("/available-dates")
+    public ResponseEntity<NewsDto.AvailableDates> getAvailableDates(
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String category
+    ) {
+        return ResponseEntity.ok(newsService.getAvailableDates(region, category));
+    }
+
     @GetMapping("/companies")
     public ResponseEntity<List<NewsDto.CompanyNewsGroup>> getCompanyNews(
             @RequestParam(required = false) String company,

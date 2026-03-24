@@ -103,6 +103,28 @@ class PaperControllerTest {
     }
 
     @Test
+    @DisplayName("GET /api/v1/papers/available-dates returns wrapped calendar metadata")
+    void getAvailablePaperDates_returns200() throws Exception {
+        PaperDto.AvailableDates availableDates = PaperDto.AvailableDates.builder()
+                .dates(List.of(LocalDate.of(2026, 3, 19), LocalDate.of(2026, 3, 17)))
+                .count(2)
+                .startDate(LocalDate.of(2026, 3, 17))
+                .endDate(LocalDate.of(2026, 3, 19))
+                .build();
+        when(paperService.getAvailableDates("NLP", "cs.CL")).thenReturn(availableDates);
+
+        mockMvc.perform(get("/api/v1/papers/available-dates")
+                        .param("category", "NLP")
+                        .param("researchArea", "cs.CL"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.path").value("/api/v1/papers/available-dates"))
+                .andExpect(jsonPath("$.data.count").value(2))
+                .andExpect(jsonPath("$.data.startDate").value("2026-03-17"))
+                .andExpect(jsonPath("$.data.endDate").value("2026-03-19"))
+                .andExpect(jsonPath("$.data.dates[1]").value("2026-03-17"));
+    }
+
+    @Test
     @DisplayName("GET /api/v1/papers/{id} returns wrapped detail response")
     void getPaperDetail_found() throws Exception {
         when(paperService.getPaperDetail("paper-001")).thenReturn(sampleDetail());
