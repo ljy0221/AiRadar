@@ -42,7 +42,9 @@ export const CalendarModal = ({
   }, []);
 
   const getFirstDayOfMonth = useCallback((year: number, month: number) => {
-    return new Date(year, month, 1).getDay();
+    const day = new Date(year, month, 1).getDay();
+    // 일요일(0) -> 6, 월요일(1) -> 0, ... 토요일(6) -> 5 (월요일 시작)
+    return day === 0 ? 6 : day - 1;
   }, []);
 
   const handlePrevMonth = useCallback(() => {
@@ -78,7 +80,7 @@ export const CalendarModal = ({
 
   const days = useMemo(() => {
     const blanks = Array.from({ length: firstDay }).map((_, i) => (
-      <div key={`blank-start-${i}`} className="w-10 h-10" />
+      <div key={`blank-start-${i}`} className="w-full h-12 border border-gray-100/50 dark:border-gray-800/30 rounded-md" />
     ));
 
     const monthDays = Array.from({ length: daysInMonth }).map((_, i) => {
@@ -93,10 +95,15 @@ export const CalendarModal = ({
           key={`day-${day}`}
           onClick={() => handleDateClick(dateString)}
           disabled={isFuture}
-          className={`relative w-10 h-10 flex items-center justify-center rounded-full text-sm font-medium transition-[background-color] duration-75
-            ${isSelected ? 'bg-[var(--color-accent)] text-white' : ''}
-            ${!isSelected && !isFuture ? 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100' : ''}
-            ${isFuture ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' : ''}
+          className={`relative w-full h-12 flex flex-col items-center justify-center rounded-md text-sm font-bold border transition-all duration-200
+            ${isSelected 
+              ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white shadow-sm z-10' 
+              : isAvailable && !isFuture
+                ? 'bg-[var(--color-accent)]/10 border-[var(--color-accent)]/20 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/25' 
+                : !isFuture 
+                  ? 'border-gray-100 dark:border-gray-800/50 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50' 
+                  : 'border-gray-50 dark:border-gray-900/50 text-gray-200 dark:text-gray-800 cursor-not-allowed'
+            }
           `}
         >
           {day}
@@ -107,7 +114,7 @@ export const CalendarModal = ({
     const totalCells = blanks.length + monthDays.length;
     // 달력은 무조건 6줄(42칸)로 고정하여 모달 크기가 달에 따라 변하지 않게 처리합니다.
     const paddingCells = Array.from({ length: 42 - totalCells }).map((_, i) => (
-      <div key={`blank-end-${i}`} className="w-10 h-10" />
+      <div key={`blank-end-${i}`} className="w-full h-12 border border-gray-100/50 dark:border-gray-800/30 rounded-md" />
     ));
 
     return [...blanks, ...monthDays, ...paddingCells];
@@ -115,13 +122,13 @@ export const CalendarModal = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="pt-2 px-6 pb-6">
+        <div className="flex items-center justify-between mb-8">
           <h3 className="text-xl font-bold dark:text-gray-100">날짜 선택</h3>
           {selectedDate && (
             <button
               onClick={handleReset}
-              className="text-sm text-gray-500 hover:text-[var(--color-accent)] transition-colors"
+              className="text-sm font-semibold text-gray-400 hover:text-[var(--color-accent)] transition-colors"
             >
               초기화
             </button>
@@ -130,8 +137,8 @@ export const CalendarModal = ({
 
         {viewMode === 'calendar' && (
           <>
-            <div className="flex items-center justify-between mb-6 px-2">
-              <button onClick={handlePrevMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors dark:text-gray-300">
+            <div className="flex items-center justify-between mb-8 px-2">
+              <button onClick={handlePrevMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors dark:text-gray-300">
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <div className="flex gap-2">
@@ -148,16 +155,16 @@ export const CalendarModal = ({
                   {month + 1}월
                 </button>
               </div>
-              <button onClick={handleNextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors dark:text-gray-300">
+              <button onClick={handleNextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors dark:text-gray-300">
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-7 gap-y-2 mb-2 text-center text-sm font-semibold text-gray-500 dark:text-gray-400">
-              <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+            <div className="grid grid-cols-7 gap-px mb-4 text-center text-sm font-bold text-gray-400 dark:text-gray-500">
+              <div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div><div>일</div>
             </div>
 
-            <div className="grid grid-cols-7 gap-y-2 place-items-center">
+            <div className="grid grid-cols-7 gap-1.5 border-gray-100 dark:border-gray-800">
               {days}
             </div>
           </>
