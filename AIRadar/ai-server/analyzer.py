@@ -151,13 +151,15 @@ def _parse_json_response(raw: str) -> list[dict]:
 NEWS_SYSTEM = (
     "You are an expert IT/AI technology news analyst. "
     "Analyze the given news articles and respond with a JSON array only. "
-    "Output only the JSON array with no additional text."
+    "Output only the JSON array with no additional text. "
+    "ALL text fields (summary, keywords, companies) MUST be written in English regardless of the input language."
 )
 
 PAPER_SYSTEM = (
     "You are an expert AI/ML research paper analyst. "
     "Analyze the given papers and respond with a JSON array only. "
-    "Output only the JSON array with no additional text."
+    "Output only the JSON array with no additional text. "
+    "ALL text fields (summary, keywords) MUST be written in English regardless of the input language."
 )
 
 
@@ -196,7 +198,7 @@ Rules:
 - summary: 1-2 sentences in English
 - category: LLM | Vision | NLP | RL | Multimodal | Robotics | Semiconductor | Cloud | ETC
 - region: "DOMESTIC" | "GLOBAL"
-- companies: official company names (e.g. "Samsung Electronics"), empty array if none
+- companies: official company names in English only (e.g. "Samsung Electronics", "Baidu"), empty array if none
 
 Articles:
 {json.dumps(items, ensure_ascii=False)}
@@ -248,17 +250,30 @@ async def analyze_paper_batch(papers: list[PaperRequest]) -> list[PaperResponse]
     ]
 
     user_prompt = f"""Analyze the following {len(papers)} papers.
-Return a JSON array with these fields for each paper:
-- paper_id (copy from input)
-- keywords: up to 5 key technical keywords (English lowercase list)
-- summary: 1 sentence English summary (string, max 30 words)
+Return a JSON array of objects. Each object must have exactly these keys:
+
+Example format:
+[
+  {{
+    "paper_id": "id-from-input",
+    "keywords": ["transformer", "attention", "nlp"],
+    "summary": "A brief one-sentence summary of the paper.",
+    "category": "NLP",
+    "research_area": "cs.CL"
+  }}
+]
+
+Rules:
+- paper_id: copy exactly from input
+- keywords: up to 5 English lowercase strings in a JSON array
+- summary: 1 sentence in English (max 30 words), must be a string
 - category: Vision | NLP | RL | Multimodal | Robotics | ETC
 - research_area: cs.AI | cs.LG | cs.CV | cs.CL | cs.RO | cs.NE
 
 Papers:
 {json.dumps(items, ensure_ascii=False)}
 
-Output only the JSON array."""
+Output only the JSON array, no other text."""
 
     import time
     logger.info(f"[논문] LLM 추론 시작 ({len(papers)}건)")
@@ -270,6 +285,11 @@ Output only the JSON array."""
     logger.info(f"[논문] LLM 추론 완료 ({time.time()-t0:.1f}초), 임베딩 시작")
 
     structured: list[dict] = _parse_json_response(raw)
+
+    # 모델이 dict 대신 string을 반환한 경우 필터링
+    structured = [s for s in structured if isinstance(s, dict) and "paper_id" in s]
+    if not structured:
+        raise ValueError(f"유효한 논문 분석 결과 없음. 원문: {raw[:300]}")
 
     texts = [f"{p.title}\n{p.abstract[:500]}" for p in papers]
     embeddings = embed_texts(texts)
