@@ -31,13 +31,13 @@ public interface NewsRepository extends JpaRepository<NewsItem, String> {
             @Param("endExclusive") LocalDateTime endExclusive);
 
     @Query(value = """
-        SELECT DISTINCT CAST(DATE(published_at) AS TEXT)
+        SELECT DISTINCT CAST(DATE(published_at) AS TEXT) AS published_date
         FROM news_items
         WHERE is_active = TRUE
           AND published_at IS NOT NULL
           AND (:region IS NULL OR region = :region)
           AND (:category IS NULL OR category = :category)
-        ORDER BY DATE(published_at) DESC
+        ORDER BY published_date DESC
         """, nativeQuery = true)
     List<String> findAvailableDateStrings(
             @Param("region") String region,

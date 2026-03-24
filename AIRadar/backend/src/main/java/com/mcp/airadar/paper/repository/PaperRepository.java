@@ -30,13 +30,13 @@ public interface PaperRepository extends JpaRepository<Paper, String> {
             @Param("endExclusive") LocalDateTime endExclusive);
 
     @Query(value = """
-        SELECT DISTINCT CAST(DATE(published_at) AS TEXT)
+        SELECT DISTINCT CAST(DATE(published_at) AS TEXT) AS published_date
         FROM papers
         WHERE is_active = TRUE
           AND published_at IS NOT NULL
           AND (:category IS NULL OR category = :category)
           AND (:researchArea IS NULL OR research_area = :researchArea)
-        ORDER BY DATE(published_at) DESC
+        ORDER BY published_date DESC
         """, nativeQuery = true)
     List<String> findAvailableDateStrings(
             @Param("category") String category,
