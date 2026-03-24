@@ -31,19 +31,20 @@ public interface NewsRepository extends JpaRepository<NewsItem, String> {
             @Param("endExclusive") LocalDateTime endExclusive);
 
     @Query(value = """
-        SELECT *
-        FROM news_items
-        WHERE is_active = TRUE
-          AND companies && CAST(:companyNames AS TEXT[])
+        SELECT n.*
+        FROM company_news_timeline cnt
+        JOIN news_items n ON n.article_id = cnt.article_id
+        WHERE LOWER(cnt.company_name) = :companyName
+          AND n.is_active = TRUE
         ORDER BY
-          published_at DESC NULLS LAST,
-          CASE WHEN score IS NULL THEN 1 ELSE 0 END,
-          score DESC,
-          published_at DESC
+          cnt.published_at DESC NULLS LAST,
+          CASE WHEN n.score IS NULL THEN 1 ELSE 0 END,
+          n.score DESC,
+          n.published_at DESC
         LIMIT :limit
         """, nativeQuery = true)
     List<NewsItem> findCompanyNews(
-            @Param("companyNames") String companyNames,
+            @Param("companyName") String companyName,
             @Param("limit") int limit);
 
     Optional<NewsItem> findByArticleIdAndIsActiveTrue(String articleId);
