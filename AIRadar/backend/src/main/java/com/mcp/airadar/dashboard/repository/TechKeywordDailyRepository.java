@@ -21,4 +21,16 @@ public interface TechKeywordDailyRepository extends JpaRepository<TechKeywordDai
             """, nativeQuery = true)
     @Modifying
     void upsertSearchCount(@Param("keyword") String keyword, @Param("statDate") LocalDate statDate);
+
+    @Query(value = """
+            SELECT keyword, mention_count
+            FROM tech_keyword_daily
+            WHERE stat_date = (
+                SELECT MAX(stat_date) FROM tech_keyword_daily WHERE source_type = :sourceType
+            )
+            AND source_type = :sourceType
+            ORDER BY mention_count DESC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<Object[]> findTopKeywordsByLatestWeekAndSourceType(@Param("sourceType") String sourceType, @Param("limit") int limit);
 }

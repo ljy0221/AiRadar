@@ -6,6 +6,7 @@ import com.mcp.airadar.dashboard.dto.LifecycleDto;
 import com.mcp.airadar.dashboard.repository.JobAiRiskRepository;
 import com.mcp.airadar.dashboard.repository.TechKeywordDailyRepository;
 import com.mcp.airadar.dashboard.repository.TechLifecycleRepository;
+import com.mcp.airadar.dashboard.dto.WordCloudDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,5 +50,16 @@ public class DashboardService {
     public List<JobRiskDto> getJobRisks() {
         return jobAiRiskRepository.findAllByOrderByRiskScoreDesc()
                 .stream().map(JobRiskDto::from).toList();
+    }
+
+    public List<WordCloudDto> getWordCloud(String sourceType, int limit) {
+        return keywordDailyRepository.findTopKeywordsByLatestWeekAndSourceType(sourceType, limit)
+                .stream()
+                .map(obj -> new WordCloudDto(
+                        (String) obj[0],
+                        ((Number) obj[1]).intValue(),
+                        sourceType
+                ))
+                .toList();
     }
 }

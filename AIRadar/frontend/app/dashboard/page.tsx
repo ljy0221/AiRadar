@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
-import { MetricCard, KeywordTrendList, KeywordBarChart, KeywordRadarChart, KeywordDictionary, GithubTrendingCard, ModelComparison, RankingList, KeywordInsightPanel, GithubTabContents } from '@/components/features/dashboard';
+import { MetricCard, KeywordTrendList, KeywordBarChart, KeywordRadarChart, KeywordDictionary, GithubTrendingCard, ModelComparison, WordCloudChart, KeywordInsightPanel, GithubTabContents } from '@/components/features/dashboard';
 import { TrendingUp, TrendingDown, Activity, ListOrdered, Loader2 } from 'lucide-react';
 import { useDashboardSummary } from '@/hooks/queries/useDashboardData';
 import Loading from '@/app/loading';
@@ -119,13 +119,9 @@ export default function DashboardPage() {
                 ))}
               </div>
 
-              {/* Rankings Row: 실시간 기술 랭킹 (Header Inside Reverted) */}
-              <div className="grid grid-cols-1 gap-6">
-                <RankingList
-                  title="실시간 기술 랭킹"
-                  subtitle="최근 검색 및 인용 빈도가 급격하게 상승 중인 핵심 AI 기술"
-                  data={data.rankingData}
-                />
+              {/* Technical Analysis: Restore KeywordInsightPanel */}
+              <div className="grid grid-cols-1 gap-6 mt-6">
+                <WordCloudChart />
               </div>
 
               {/* Technical Analysis: Restore KeywordInsightPanel */}
