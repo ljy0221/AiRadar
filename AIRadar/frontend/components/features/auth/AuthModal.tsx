@@ -26,7 +26,6 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalP
   const [isLoading, setIsLoading] = useState(false);
   const [initialViewApplied, setInitialViewApplied] = useState(false);
 
-  // Sync internal view state with initialView prop when modal opens
   useEffect(() => {
     if (isOpen) {
       setIsLoginView(initialView === 'login');
@@ -60,7 +59,7 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalP
       if (res.accessToken) {
         // 백엔드 응답에서 온보딩 완료 여부 추출
         const isCompleted = res.onboardingCompleted === true;
-        
+
         loginState(res.accessToken, res.refreshToken, isCompleted, email);
         onClose();
       }
@@ -83,7 +82,6 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalP
   return (
     <Transition show={isOpen} as="div">
       <Dialog onClose={onClose} className="relative z-50">
-        {/* Backdrop */}
         <TransitionChild
           as="div"
           enter="ease-out duration-300"

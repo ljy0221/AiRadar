@@ -10,8 +10,6 @@ export default function ProfilePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // 실제 환경에서는 미들웨어나 서버 사이드 체크가 권장되지만, 
-    // 현재 구조에서는 클라이언트 사이드에서 간단히 체크합니다.
     const token = localStorage.getItem('accessToken');
     if (!token && !isLoggedIn) {
       router.push('/');
