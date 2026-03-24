@@ -72,7 +72,9 @@ public class NewsService {
     }
 
     public NewsDto.AvailableDates getAvailableDates(String region, String category) {
-        List<LocalDate> dates = newsRepository.findAvailableDates(region, category);
+        List<LocalDate> dates = newsRepository.findAvailableDateStrings(region, category).stream()
+                .map(LocalDate::parse)
+                .toList();
 
         return NewsDto.AvailableDates.builder()
                 .dates(dates)

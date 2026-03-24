@@ -94,8 +94,8 @@ class NewsServiceTest {
     @Test
     @DisplayName("given filters when get available news dates then returns descending date metadata")
     void getAvailableDates() {
-        when(newsRepository.findAvailableDates("GLOBAL", "LLM"))
-                .thenReturn(List.of(LocalDate.of(2026, 3, 19), LocalDate.of(2026, 3, 18)));
+        when(newsRepository.findAvailableDateStrings("GLOBAL", "LLM"))
+                .thenReturn(List.of("2026-03-19", "2026-03-18"));
 
         NewsDto.AvailableDates result = newsService.getAvailableDates("GLOBAL", "LLM");
 
@@ -103,7 +103,7 @@ class NewsServiceTest {
         assertThat(result.count()).isEqualTo(2);
         assertThat(result.startDate()).isEqualTo(LocalDate.of(2026, 3, 18));
         assertThat(result.endDate()).isEqualTo(LocalDate.of(2026, 3, 19));
-        verify(newsRepository).findAvailableDates("GLOBAL", "LLM");
+        verify(newsRepository).findAvailableDateStrings("GLOBAL", "LLM");
     }
 
     @Test
