@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import WordCloud from 'react-d3-cloud';
+import { motion } from 'framer-motion';
 import { fetchWordCloudData, WordCloudData } from '@/services/dashboard/dashboardApi';
 import { Loader2 } from 'lucide-react';
 
@@ -74,29 +74,40 @@ export const WordCloudChart = ({ title = "주간 기술 키워드 워드클라�
             <span className="text-sm font-medium">이번 주 데이터 집계 중...</span>
           </div>
         ) : data.length > 0 ? (
-          <div className="w-full h-full flex items-center justify-center pointer-events-none">
-            {/* pointer-events-none to prevent tooltip/interaction issues if any */}
-            <div className="w-full h-[400px]">
-              <WordCloud
-                data={data}
-                width={800}
-                height={400}
-                font="Inter, sans-serif"
-                fontStyle="italic"
-                fontWeight="bold"
-                fontSize={(word) => Math.log2(word.value) * 10 + 10}
-                spiral="rectangular"
-                rotate={(word) => word.value % 3 === 0 ? 0 : 90}
-                padding={5}
-                random={() => 0.5}
-                fill={(d: any, i: number) => {
-                  const colors = activeTab === 'NEWS' ? ['#3b82f6', '#1d4ed8', '#60a5fa', '#93c5fd'] : 
-                                 activeTab === 'PAPER' ? ['#10b981', '#047857', '#34d399', '#6ee7b7'] : 
-                                 ['#8b5cf6', '#6d28d9', '#a78bfa', '#c4b5fd'];
-                  return colors[i % colors.length];
-                }}
-              />
-            </div>
+          <div className="w-full h-full flex flex-wrap content-center justify-center gap-3 p-4 overflow-hidden">
+            {data.map((word, i) => {
+              const fontSize = Math.max(14, Math.min(64, Math.log2(word.value) * 10 + 10));
+              
+              const colors = activeTab === 'NEWS' ? ['#3b82f6', '#1d4ed8', '#60a5fa', '#2563eb'] : 
+                             activeTab === 'PAPER' ? ['#10b981', '#047857', '#34d399', '#059669'] : 
+                             ['#8b5cf6', '#6d28d9', '#a78bfa', '#7c3aed'];
+              const color = colors[i % colors.length];
+              
+              return (
+                <motion.div
+                  key={word.text}
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ 
+                    duration: 0.5, 
+                    delay: i * 0.015,
+                    type: "spring",
+                    stiffness: 100
+                  }}
+                  whileHover={{ scale: 1.1, zIndex: 10 }}
+                  className="font-bold italic cursor-pointer transition-colors duration-200"
+                  style={{
+                    fontSize: `${fontSize}px`,
+                    color: color,
+                    lineHeight: 1.2,
+                    padding: '2px 8px',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                  }}
+                >
+                  {word.text}
+                </motion.div>
+              );
+            })}
           </div>
         ) : (
           <div className="flex flex-col items-center text-gray-400">
