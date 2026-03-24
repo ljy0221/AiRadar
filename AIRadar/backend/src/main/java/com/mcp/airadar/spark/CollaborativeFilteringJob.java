@@ -261,12 +261,12 @@ public class CollaborativeFilteringJob {
             conn.setAutoCommit(false);
             stmt.execute("""
                 DELETE FROM user_recommendations
-                WHERE user_id IN (SELECT DISTINCT user_id FROM user_recommendations_staging)
+                WHERE user_id IN (SELECT DISTINCT user_id::uuid FROM user_recommendations_staging)
                 """);
             stmt.execute("""
                 INSERT INTO user_recommendations
                     (user_id, article_id, score, reason, content_type, generated_at, expires_at)
-                SELECT user_id, article_id, score, reason, content_type, generated_at, expires_at
+                SELECT user_id::uuid, article_id, score, reason, content_type, generated_at, expires_at
                 FROM user_recommendations_staging
                 """);
             stmt.execute("TRUNCATE TABLE user_recommendations_staging");
