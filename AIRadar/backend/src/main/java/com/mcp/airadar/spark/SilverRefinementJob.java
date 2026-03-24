@@ -396,7 +396,7 @@ public class SilverRefinementJob {
                 item.get("summary").asText(),
                 item.get("category").asText(),
                 item.get("region").asText(),
-                null,           // companies
+                parseStringArray(item.get("companies")),  // companies
                 null,           // error_log
                 batchDate
             ));
