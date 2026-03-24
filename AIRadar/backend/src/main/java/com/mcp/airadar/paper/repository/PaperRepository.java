@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -30,16 +29,16 @@ public interface PaperRepository extends JpaRepository<Paper, String> {
             @Param("startInclusive") LocalDateTime startInclusive,
             @Param("endExclusive") LocalDateTime endExclusive);
 
-    @Query("""
-        SELECT DISTINCT FUNCTION('DATE', p.publishedAt)
-        FROM Paper p
-        WHERE p.isActive = true
-          AND p.publishedAt IS NOT NULL
-          AND (:category IS NULL OR p.category = :category)
-          AND (:researchArea IS NULL OR p.researchArea = :researchArea)
-        ORDER BY FUNCTION('DATE', p.publishedAt) DESC
-        """)
-    List<LocalDate> findAvailableDates(
+    @Query(value = """
+        SELECT DISTINCT CAST(DATE(published_at) AS TEXT)
+        FROM papers
+        WHERE is_active = TRUE
+          AND published_at IS NOT NULL
+          AND (:category IS NULL OR category = :category)
+          AND (:researchArea IS NULL OR research_area = :researchArea)
+        ORDER BY DATE(published_at) DESC
+        """, nativeQuery = true)
+    List<String> findAvailableDateStrings(
             @Param("category") String category,
             @Param("researchArea") String researchArea);
 
