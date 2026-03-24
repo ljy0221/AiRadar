@@ -10,9 +10,16 @@
   --color-text-primary: var(--text-primary);
   --color-accent: var(--accent);
   /* 폰트 토큰: layout.tsx에서 next/font가 주입한 CSS 변수와 연결 */
-  --font-sans: var(--font-sans), var(--font-korean), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-exo2-next), var(--font-korean), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-serif), var(--font-korean), ui-serif, Georgia, serif;
-  --font-syne: var(--font-syne), sans-serif;
+  --font-orbitron: var(--font-orbitron-next), sans-serif;
+  --font-audiowide: var(--font-audiowide-next), sans-serif;
+}
+
+body, button, input, textarea, select {
+  font-family: var(--font-exo2-next), var(--font-korean), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 @keyframes shimmer {

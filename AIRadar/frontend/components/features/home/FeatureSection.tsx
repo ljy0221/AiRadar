@@ -28,7 +28,7 @@ export const FeatureSection = () => {
 
   return (
     <section ref={sectionRef} className="w-full max-w-5xl px-4 py-32 flex flex-col items-center overflow-hidden">
-      <h3 className="text-2xl md:text-4xl lg:text-5xl font-extrabold text-center mb-20 leading-[1.2] tracking-tight text-gray-900 dark:text-white reveal-on-scroll">
+      <h3 className="text-2xl md:text-4xl lg:text-5xl font-semibold text-center mb-20 leading-[1.2] tracking-tight text-gray-900 dark:text-white reveal-on-scroll">
         주관적일 수 있는 <span className="text-[var(--color-accent)]">AI 트렌드 예측</span>,<br className="hidden md:block" />
         <span className="mt-4 md:mt-2 text-gray-800 dark:text-gray-100 inline-block pb-2">
           과거 데이터 백테스팅으로 검증했습니다.
@@ -41,18 +41,18 @@ export const FeatureSection = () => {
           {/* 시각적 무게중심을 맞추기 위해 md:mt-4를 추가해 살짝 내림 */}
           <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start gap-4 md:mt-4">
             {/* 1단계: Eyebrow */}
-            <div className="flex gap-2 text-base md:text-lg font-bold mb-3">
+            <div className="flex gap-2 text-base md:text-lg font-semibold mb-3">
               <span className="text-[var(--color-accent)]">SIGNAL 01</span>
               <span className="text-gray-500 dark:text-gray-400">데이터 검증</span>
             </div>
 
             {/* 2단계: 헤더 (더 작고 산뜻하게) */}
-            <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 dark:text-gray-200 leading-[1.3] tracking-tight mb-4">
+            <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-gray-800 dark:text-gray-200 leading-[1.3] tracking-tight mb-4">
               실제 데이터로 입증된<br />강력한 AI 예측 모델
             </h3>
 
             {/* 3단계: 체크리스트 (순차 등장 효과) */}
-            <ul className="text-base md:text-lg text-[#4b5563] dark:text-gray-300 flex flex-col gap-[6px] font-medium">
+            <ul className="text-base md:text-lg text-[#4b5563] dark:text-gray-300 flex flex-col gap-[6px] font-normal">
               <li className="flex items-center gap-3 reveal-on-scroll delay-300">
                 <Check className="w-5 h-5 text-[var(--color-accent)] shrink-0" strokeWidth={2} />
                 채용 공고 데이터와 교차 검증
@@ -77,18 +77,18 @@ export const FeatureSection = () => {
           {/* 왼쪽 정렬로 통일하여 가독성 확보 */}
           <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start gap-4 md:mt-4">
             {/* 1단계: Eyebrow */}
-            <div className="flex gap-2 text-base md:text-lg font-bold mb-3">
+            <div className="flex gap-2 text-base md:text-lg font-semibold mb-3">
               <span className="text-[var(--color-accent)]">SIGNAL 02</span>
               <span className="text-gray-500 dark:text-gray-400">다면적 분석</span>
             </div>
 
             {/* 2단계: 헤더 */}
-            <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 dark:text-gray-200 leading-[1.3] tracking-tight mb-4 text-left">
+            <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-gray-800 dark:text-gray-200 leading-[1.3] tracking-tight mb-4 text-left">
               3가지 데이터 소스,<br />하나의 인사이트
             </h3>
 
             {/* 3단계: 체크리스트 */}
-            <ul className="text-base md:text-lg text-[#4b5563] dark:text-gray-300 flex flex-col gap-[6px] font-medium">
+            <ul className="text-base md:text-lg text-[#4b5563] dark:text-gray-300 flex flex-col gap-[6px] font-normal">
               <li className="flex items-center gap-3 reveal-on-scroll delay-400">
                 <Check className="w-5 h-5 text-[var(--color-accent)] shrink-0" strokeWidth={2} />
                 GitHub 개발 생태계 동향

@@ -59,7 +59,7 @@ export const KeywordInsightPanel = ({ data, title, subtitle }: { data: KeywordDa
   const cfg = statusConfig[selected.status];
 
   return (
-    <div className="flex flex-col w-full h-[600px] rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#151726]">
+    <div className="flex flex-col w-full h-[500px] rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#151726]">
       {title && (
         <div className="px-8 py-6 border-b border-gray-100 dark:border-gray-800 flex flex-col gap-1">
           <h3 className="text-2xl font-black text-[var(--color-text-primary)]">{title}</h3>

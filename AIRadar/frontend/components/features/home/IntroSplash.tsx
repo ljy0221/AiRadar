@@ -166,8 +166,8 @@ export const IntroSplash = () => {
           animation: intro-fade-up 1s 0.1s ease both;
         }
         .intro-logo {
-          font-family: 'Syne', sans-serif;
-          font-weight: 800;
+          font-family: var(--font-audiowide-next), sans-serif;
+          font-weight: 400;
           font-size: clamp(32px, 5.5vw, 52px);
           letter-spacing: -0.01em;
           color: var(--color-text-primary, #e8f4f0);
@@ -241,9 +241,9 @@ export const IntroSplash = () => {
           animation: intro-fade-up 1s 0.6s ease both;
         }
         .intro-pct {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-audiowide-next), sans-serif;
           font-size: 12px;
-          font-weight: 700;
+          font-weight: 400;
           letter-spacing: 0.08em;
           color: var(--color-accent, #00d4c8);
           opacity: 0.8;
