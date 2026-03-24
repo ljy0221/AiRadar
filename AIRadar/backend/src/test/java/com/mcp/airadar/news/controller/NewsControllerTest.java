@@ -113,6 +113,28 @@ class NewsControllerTest {
     }
 
     @Test
+    @DisplayName("given filters when get available news dates then returns wrapped metadata")
+    void givenFiltersWhenGetAvailableNewsDatesThenReturnsWrappedMetadata() throws Exception {
+        NewsDto.AvailableDates availableDates = NewsDto.AvailableDates.builder()
+                .dates(List.of(LocalDate.of(2026, 3, 19), LocalDate.of(2026, 3, 18)))
+                .count(2)
+                .startDate(LocalDate.of(2026, 3, 18))
+                .endDate(LocalDate.of(2026, 3, 19))
+                .build();
+        when(newsService.getAvailableDates("GLOBAL", "LLM")).thenReturn(availableDates);
+
+        mockMvc.perform(get("/api/v1/news/available-dates")
+                        .param("region", "GLOBAL")
+                        .param("category", "LLM"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.path").value("/api/v1/news/available-dates"))
+                .andExpect(jsonPath("$.data.count").value(2))
+                .andExpect(jsonPath("$.data.startDate").value("2026-03-18"))
+                .andExpect(jsonPath("$.data.endDate").value("2026-03-19"))
+                .andExpect(jsonPath("$.data.dates[0]").value("2026-03-19"));
+    }
+
+    @Test
     @DisplayName("given company params when get company news then returns wrapped success response")
     void givenCompanyParamsWhenGetCompanyNewsThenReturnsWrappedSuccessResponse() throws Exception {
         when(newsService.getCompanyNews("naver", 5)).thenReturn(List.of(sampleCompanyGroup()));

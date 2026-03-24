@@ -71,6 +71,17 @@ public class NewsService {
                 .toList();
     }
 
+    public NewsDto.AvailableDates getAvailableDates(String region, String category) {
+        List<LocalDate> dates = newsRepository.findAvailableDates(region, category);
+
+        return NewsDto.AvailableDates.builder()
+                .dates(dates)
+                .count(dates.size())
+                .startDate(dates.isEmpty() ? null : dates.get(dates.size() - 1))
+                .endDate(dates.isEmpty() ? null : dates.get(0))
+                .build();
+    }
+
     public List<NewsDto.CompanyNewsGroup> getCompanyNews(String company, Integer limit) {
         int normalizedLimit = normalizeLimit(limit);
 

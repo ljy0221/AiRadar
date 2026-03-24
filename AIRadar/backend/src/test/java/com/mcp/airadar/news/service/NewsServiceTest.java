@@ -92,6 +92,21 @@ class NewsServiceTest {
     }
 
     @Test
+    @DisplayName("given filters when get available news dates then returns descending date metadata")
+    void getAvailableDates() {
+        when(newsRepository.findAvailableDates("GLOBAL", "LLM"))
+                .thenReturn(List.of(LocalDate.of(2026, 3, 19), LocalDate.of(2026, 3, 18)));
+
+        NewsDto.AvailableDates result = newsService.getAvailableDates("GLOBAL", "LLM");
+
+        assertThat(result.dates()).containsExactly(LocalDate.of(2026, 3, 19), LocalDate.of(2026, 3, 18));
+        assertThat(result.count()).isEqualTo(2);
+        assertThat(result.startDate()).isEqualTo(LocalDate.of(2026, 3, 18));
+        assertThat(result.endDate()).isEqualTo(LocalDate.of(2026, 3, 19));
+        verify(newsRepository).findAvailableDates("GLOBAL", "LLM");
+    }
+
+    @Test
     @DisplayName("given no company param when get company news then returns five supported companies")
     void getCompanyNewsReturnsSupportedCompanies() {
         when(newsRepository.findCompanyNews("openai", 10)).thenReturn(List.of(sampleItem));
