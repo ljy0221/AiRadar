@@ -79,10 +79,14 @@ import { analyzeDashboardData } from '@/lib/analyzers/dashboardAnalyzer';
 // --- Mock API Fetcher ---
 // 실제 백엔드 연동 전까지 네트워크 딜레이를 흉내내는 Mock API입니다.
 // 나중에는 return api.get('/dashboard') 형식으로 교체합니다.
-export const fetchDashboardData = async (): Promise<DashboardResponse> => {
+export const fetchDashboardData = async (token?: string | null): Promise<DashboardResponse> => {
+  // 토큰이 없으면 API 요청을 보내지 않고 즉시 모크 데이터 반환 (401 에러 방지)
+  if (!token) {
+    return analyzeDashboardData(mockKeywordDictionary);
+  }
+
   try {
     // 1. 진짜 백엔드 서버(172.26.5.50)에서 계산된 Lifecycle 데이터 훔쳐오기
-    // 데이터 형식: [{ keyword: "RAG", status: "GROWING", trendScore: 85.2, ... }]
     const response: any = await api.get('/dashboard/lifecycle');
     const realLifecycleData = Array.isArray(response) ? response : response?.data;
     // 2. 기존 프론트엔드 анали저(Analyzer)를 그대로 실행해서 UI 뼈대와 디자인 완성본 가져오기

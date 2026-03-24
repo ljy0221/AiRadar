@@ -255,7 +255,7 @@ export const NewsTimelineTab = () => {
           {currentGroup ? (
             <div className="relative">
               {/* 날짜 헤더 영역과 좌우 화살표 */}
-              <div className="flex items-center gap-3 mb-6 relative z-10 bg-white dark:bg-[#0b0c10] py-2 sticky top-[60px] md:top-[70px]">
+              <div className="flex items-center gap-3 mb-6 relative z-10 bg-white dark:bg-[#0b0c10] py-2">
                 <div className="w-4 h-4 rounded-full bg-[var(--color-accent)] opacity-80 shrink-0" />
                 
                 <button

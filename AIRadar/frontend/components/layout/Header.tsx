@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '../common';
 import { AuthModal } from '../features/auth/AuthModal';
+import { LogoutConfirmModal } from '../features/auth/LogoutConfirmModal';
 import { useAuth } from '../features/auth/AuthContext';
 import { useUserQuery } from '@/hooks/queries/useUserQuery';
 import { useTheme } from 'next-themes';
@@ -28,6 +29,7 @@ export const Header = () => {
   const { isLoggedIn, logoutState, setOnboardingCompleted } = useAuth();
   const { data: user } = useUserQuery();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
   const [isScrolled, setIsScrolled] = useState(false);
   const { theme, resolvedTheme } = useTheme();
@@ -171,18 +173,10 @@ export const Header = () => {
                             <User className="size-5 text-gray-400 group-hover:text-[var(--color-accent)] transition-colors" />
                             마이페이지
                           </PopoverButton>
-                          <PopoverButton
-                            as="button"
-                            onClick={() => setOnboardingCompleted(false)}
-                            className="flex items-center gap-3 w-full px-6 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-all group text-left"
-                          >
-                            <PlusCircle className="size-5 text-gray-400 group-hover:text-[var(--color-accent)] transition-colors" />
-                            관심사 설정
-                          </PopoverButton>
                           <div className="mx-4 my-2 border-t border-gray-100 dark:border-gray-800" />
                           <PopoverButton
                             as="button"
-                            onClick={() => logoutState()}
+                            onClick={() => setIsLogoutModalOpen(true)}
                             className="flex items-center gap-3 w-full px-6 py-3.5 text-sm font-bold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group text-left"
                           >
                             <LogOut className="size-5" />
@@ -271,16 +265,8 @@ export const Header = () => {
                 </DisclosureButton>
                 <DisclosureButton
                   as="button"
-                  onClick={() => setOnboardingCompleted(false)}
-                  className="flex items-center gap-3 w-full text-left rounded-md px-3 h-12 text-base font-medium text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-colors"
-                >
-                  <PlusCircle className="size-5" />
-                  관심사 설정
-                </DisclosureButton>
-                <DisclosureButton
-                  as="button"
-                  onClick={() => logoutState()}
-                  className="flex items-center gap-3 w-full text-left rounded-md px-3 h-12 text-base font-bold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  onClick={() => setIsLogoutModalOpen(true)}
+                  className="flex items-center gap-3 w-full text-left rounded-md px-3 h-12 text-base font-bold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all"
                 >
                   <LogOut className="size-5" />
                   로그아웃
@@ -314,6 +300,12 @@ export const Header = () => {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         initialView={authView}
+      />
+
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={logoutState}
       />
     </>
   );

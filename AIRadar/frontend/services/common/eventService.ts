@@ -1,32 +1,60 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8888';
+import { api } from './api';
 
-export interface UserEventPayload {
-  event_type: string;
-  page?: string;
-  user_id?: string;
-  metadata?: Record<string, unknown>;
-}
+/**
+ * 사용자 행동 이벤트 트래킹 서비스
+ * 
+ * [원칙] Fire-and-Forget
+ * - 모든 이벤트는 응답을 기다리지 않고 발송만 합니다.
+ * - 실패하더라도 사용자 경험(UI)에는 영향을 주지 않아야 합니다.
+ */
 
-export async function trackUserEvent(payload: UserEventPayload): Promise<void> {
-  try {
-    await fetch(`${API_BASE}/api/events/user`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-  } catch {
-    // 이벤트 발행 실패는 UX에 영향 주지 않음
-  }
-}
+export const eventService = {
+  /**
+   * 뉴스/논문 상세 조회 이벤트 (체류 시간 기반)
+   * @param articleId 기사 또는 논문 고유 ID
+   * @param dwellTimeSeconds 체류 시간 (초 단위)
+   */
+  trackArticleView: (articleId: string, dwellTimeSeconds: number): void => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    if (!token || dwellTimeSeconds < 5) return; 
+    
+    api.post('/events/article-view', { articleId, dwellTimeSeconds })
+      .catch(() => { /* 이벤트 발송 실패는 무시 */ });
+  },
 
-export async function submitFeedback(payload: UserEventPayload): Promise<void> {
-  try {
-    await fetch(`${API_BASE}/api/events/feedback`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-  } catch {
-    // 피드백 발행 실패는 UX에 영향 주지 않음
-  }
-}
+  /**
+   * 검색 이벤트 (트렌딩 키워드 수집용)
+   * @param query 검색어
+   */
+  trackSearch: (query: string): void => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    if (!token || !query.trim()) return;
+    
+    api.post('/events/search', { query })
+      .catch(() => { /* 무시 */ });
+  },
+
+  /**
+   * 좋아요 이벤트
+   * @param articleId 대상 ID
+   */
+  trackArticleLike: (articleId: string): void => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    if (!token) return;
+    
+    api.post('/events/article-like', { articleId })
+      .catch(() => { /* 무시 */ });
+  },
+
+  /**
+   * 북마크 이벤트
+   * @param articleId 대상 ID
+   */
+  trackArticleBookmark: (articleId: string): void => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    if (!token) return;
+    
+    api.post('/events/article-bookmark', { articleId })
+      .catch(() => { /* 무시 */ });
+  },
+};

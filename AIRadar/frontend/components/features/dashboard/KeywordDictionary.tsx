@@ -83,7 +83,6 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
   return (
     <div className="w-full bg-white dark:bg-[#151726] rounded-[32px] border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col h-[calc(100vh-140px)] min-h-[600px] md:min-h-[700px] overflow-hidden transition-all duration-300">
 
-      {/* ── Top Header Section (Title + Search) ─────────────────────────── */}
       <div className="px-6 md:px-10 py-6 md:py-8 flex flex-col md:flex-row md:items-end justify-between gap-6 shrink-0 border-b border-gray-50 dark:border-gray-800/50 md:border-none">
         <div
           className="flex items-start gap-3 md:gap-4 cursor-pointer group"
@@ -98,7 +97,6 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
           </div>
         </div>
 
-        {/* Search Bar: Full width on mobile */}
         <div className="relative w-full md:w-[280px]">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-3.5 md:h-3.5 text-gray-400" />
           <input
@@ -114,7 +112,6 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
       <div className="flex-1 min-h-0 relative">
         <AnimatePresence mode="wait">
           {viewMode === 'grid' ? (
-            /* ── Step 1: Pretty 4-Card Category Selection ────────────────────────── */
             <motion.div
               key="grid"
               initial={{ opacity: 0, y: 10 }}
@@ -146,7 +143,6 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
               })}
             </motion.div>
           ) : (
-            /* ── Step 2: Professional Split Panel View ────────────────────────────── */
             <motion.div
               key="split"
               initial={{ opacity: 0 }}
@@ -154,7 +150,6 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
               exit={{ opacity: 0 }}
               className="absolute inset-0 flex flex-col lg:flex-row overflow-hidden"
             >
-              {/* --- List Side: Hidden on mobile when item selected --- */}
               <div className={`flex-col w-full lg:w-[380px] px-6 md:px-10 pb-8 overflow-y-auto space-y-2.5 custom-scrollbar transition-all duration-300 ${selectedId ? 'hidden lg:flex' : 'flex'}`}>
                 <div className="lg:hidden py-4 shrink-0">
                   <button
@@ -185,9 +180,7 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
                 })}
               </div>
 
-              {/* --- Detail Side: Show on mobile only when item selected --- */}
               <div className={`flex-1 flex-col px-6 md:px-10 pb-8 overflow-y-auto custom-scrollbar transition-all duration-500 ${selectedId ? 'flex' : 'hidden lg:flex'}`}>
-                {/* Mobile Back Button */}
                 <div className="lg:hidden py-4 shrink-0">
                   <button
                     onClick={() => setSelectedId(null)}
