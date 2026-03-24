@@ -130,7 +130,7 @@ public class WordCloudAggregationJob {
         String sql = "INSERT INTO tech_keyword_daily (keyword, stat_date, source_type, mention_count, created_at) " +
                 "VALUES (?, ?, ?, ?, NOW()) " +
                 "ON CONFLICT (keyword, stat_date, source_type) DO UPDATE SET " +
-                "mention_count = EXCLUDED.mention_count, updated_at = NOW()";
+                "mention_count = EXCLUDED.mention_count";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             for (Row row : results) {
