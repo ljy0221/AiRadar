@@ -41,7 +41,7 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
               rel="noopener noreferrer"
               className="text-xl font-bold text-gray-900 dark:text-gray-100 truncate hover:text-[var(--color-accent)] transition-colors cursor-pointer block"
             >
-              github.com/{repo.repoName}
+              {repo.repoName.replace(/^github\.com\//, '')}
             </a>
             <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
               {repo.language && (

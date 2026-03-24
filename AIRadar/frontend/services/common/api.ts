@@ -63,10 +63,10 @@ api.interceptors.response.use(
 
         const refreshUrl = `${BASE_URL}/auth/refresh`;
         console.log('🔄 Attempting Refresh:', refreshUrl);
-        
+
         // 리프레시 토큰을 본문에 담아 요청 (백엔드 규격)
         const response: any = await axios.post(refreshUrl, { refreshToken }, { withCredentials: true });
-        
+
         // 백엔드 공통 응답 포맷 대응 ({ success, data: { accessToken, refreshToken } })
         const tokenData = response.data.data || response.data;
         const { accessToken, refreshToken: newRefreshToken } = tokenData;
