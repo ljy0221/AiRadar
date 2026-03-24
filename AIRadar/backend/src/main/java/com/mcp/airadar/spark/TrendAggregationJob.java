@@ -86,7 +86,7 @@ public class TrendAggregationJob {
 
     private static void processAggregation(SparkSession spark, String dateStr) throws Exception {
         String silverBasePath = System.getenv().getOrDefault("SILVER_BASE_PATH", "/tmp/silver");
-        System.out.println("🚀 트렌드 집계 시작 (Spark): " + dateStr);
+        System.out.println("트렌드 집계 시작 (Spark): " + dateStr);
 
         Dataset<Row> newsDf = null;
         try {
@@ -122,7 +122,7 @@ public class TrendAggregationJob {
                         .map(v -> "'" + v.replace("'", "''") + "'")
                         .reduce((a, b) -> a + "," + b).orElse("");
 
-                System.out.println("  📊 처리 중: [" + keyword + "]");
+                System.out.println("처리 중: [" + keyword + "]");
 
                 long newsMentions = 0;
                 double avgSentiment = 0.0;
@@ -133,9 +133,11 @@ public class TrendAggregationJob {
                             "COALESCE(AVG(CASE WHEN sentiment = 'POSITIVE' THEN 1.0 WHEN sentiment = 'NEGATIVE' THEN -1.0 ELSE 0.0 END), 0.0) as avg_s")
                             .first();
                     Number nCnt = r.getAs("cnt");
-                    if (nCnt != null) newsMentions = nCnt.longValue();
+                    if (nCnt != null)
+                        newsMentions = nCnt.longValue();
                     Number nAvg = r.getAs("avg_s");
-                    if (nAvg != null) avgSentiment = nAvg.doubleValue();
+                    if (nAvg != null)
+                        avgSentiment = nAvg.doubleValue();
                 }
 
                 long paperMentions = 0;
@@ -148,29 +150,30 @@ public class TrendAggregationJob {
                 if (githubDf != null) {
                     String cond = "EXISTS(topics, t -> lower(t) IN (" + variantsListStr + "))";
                     Row r = githubDf
-                        .where(cond).selectExpr("COALESCE(SUM(star_delta_7d), 0) as s").first();
+                            .where(cond).selectExpr("COALESCE(SUM(star_delta_7d), 0) as s").first();
                     Number val = r.getAs("s");
-                    if (val != null) githubActivity = Math.max(0, val.longValue());
+                    if (val != null)
+                        githubActivity = Math.max(0, val.longValue());
                 }
-                        
 
-                System.out.printf("     뉴스: %d건 | 논문: %d건 | 깃허브 ★: +%d | 감성: %.2f%n", newsMentions, paperMentions, githubActivity, avgSentiment);
+                System.out.printf("     뉴스: %d건 | 논문: %d건 | 깃허브 ★: +%d | 감성: %.2f%n", newsMentions, paperMentions,
+                        githubActivity, avgSentiment);
 
                 upsertKeywordDaily(conn, keyword, targetDate, "NEWS", newsMentions, avgSentiment, 0);
                 upsertKeywordDaily(conn, keyword, targetDate, "PAPER", paperMentions, 0.0, 0);
                 upsertKeywordDaily(conn, keyword, targetDate, "GITHUB", 0, 0.0, githubActivity);
 
                 double trendScore = calculateTrendScore(paperMentions, githubActivity, newsMentions, avgSentiment);
-                
+
                 Double lastWeekCount = getLastWeekNewsCount(conn, keyword, targetDate);
                 double weekOverWeek = 0.0;
                 if (lastWeekCount != null && lastWeekCount > 0) {
                     weekOverWeek = Math.round((newsMentions - lastWeekCount) / lastWeekCount * 100.0 * 1000.0) / 1000.0;
                 }
-                        
-                        
 
-                double velocity = Math.round((paperMentions + newsMentions - (lastWeekCount != null ? lastWeekCount : 0)) * 0.1 * 10000.0) / 10000.0;
+                double velocity = Math.round(
+                        (paperMentions + newsMentions - (lastWeekCount != null ? lastWeekCount : 0)) * 0.1 * 10000.0)
+                        / 10000.0;
 
                 String status = determineStatus(trendScore, weekOverWeek, velocity);
 
@@ -180,14 +183,15 @@ public class TrendAggregationJob {
             }
             conn.commit();
         }
-            
 
-            
-        if (newsDf != null) newsDf.unpersist();
-        if (paperDf != null) paperDf.unpersist();
-        if (githubDf != null) githubDf.unpersist();
+        if (newsDf != null)
+            newsDf.unpersist();
+        if (paperDf != null)
+            paperDf.unpersist();
+        if (githubDf != null)
+            githubDf.unpersist();
 
-        System.out.println("✅ 집계 완료: " + dateStr + " (Spark Java)");
+        System.out.println("집계 완료: " + dateStr + " (Spark Java)");
     }
 
     private static double calculateTrendScore(long paper, long github, long news, double avgSentiment) {
@@ -195,18 +199,18 @@ public class TrendAggregationJob {
         double githubScore = Math.min((double) github / 5000.0, 1.0) * 100.0;
         double newsScore = Math.min((double) news / 100.0, 1.0) * 100.0;
         double sentimentScore = (avgSentiment + 1.0) / 2.0 * 100.0;
-                
 
-        return Math.round((paperScore * WEIGHT_PAPER + githubScore * WEIGHT_GITHUB + newsScore * WEIGHT_NEWS + sentimentScore * WEIGHT_SENTIMENT) * 10000.0) / 10000.0;
+        return Math.round((paperScore * WEIGHT_PAPER + githubScore * WEIGHT_GITHUB + newsScore * WEIGHT_NEWS
+                + sentimentScore * WEIGHT_SENTIMENT) * 10000.0) / 10000.0;
     }
-            
 
-                
-    private static void upsertKeywordDaily(Connection conn, String keyword, LocalDate date, String sourceType, long mentions, double sentiment, long commits) throws Exception {
-        String sql = "INSERT INTO tech_keyword_daily (keyword, stat_date, source_type, mention_count, avg_sentiment, commit_count) " +
-                     "VALUES (?, ?, ?, ?, ?, ?) " +
-                     "ON CONFLICT (keyword, stat_date, source_type) DO UPDATE SET " +
-                     "mention_count = EXCLUDED.mention_count, avg_sentiment = EXCLUDED.avg_sentiment, commit_count = EXCLUDED.commit_count";
+    private static void upsertKeywordDaily(Connection conn, String keyword, LocalDate date, String sourceType,
+            long mentions, double sentiment, long commits) throws Exception {
+        String sql = "INSERT INTO tech_keyword_daily (keyword, stat_date, source_type, mention_count, avg_sentiment, commit_count) "
+                +
+                "VALUES (?, ?, ?, ?, ?, ?) " +
+                "ON CONFLICT (keyword, stat_date, source_type) DO UPDATE SET " +
+                "mention_count = EXCLUDED.mention_count, avg_sentiment = EXCLUDED.avg_sentiment, commit_count = EXCLUDED.commit_count";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, keyword);
             ps.setDate(2, java.sql.Date.valueOf(date));
@@ -233,26 +237,30 @@ public class TrendAggregationJob {
         return null;
     }
 
-            
     private static String determineStatus(double trendScore, double wow, double velocity) {
-        if (trendScore >= THRESHOLD_PEAK) return "PEAK";
-        if (wow >= THRESHOLD_RISING_WOW && velocity > 0) return "GROWING";
-        if (wow <= THRESHOLD_DECLINING) return "DECLINING";
-        if (trendScore < 10.0) return "DORMANT";
+        if (trendScore >= THRESHOLD_PEAK)
+            return "PEAK";
+        if (wow >= THRESHOLD_RISING_WOW && velocity > 0)
+            return "GROWING";
+        if (wow <= THRESHOLD_DECLINING)
+            return "DECLINING";
+        if (trendScore < 10.0)
+            return "DORMANT";
         return "EMERGING";
     }
-            
 
-                
-    private static void upsertLifecycle(Connection conn, String keyword, double score, double velocity, double wow, String status, LocalDate date) throws Exception {
-        String sql = "INSERT INTO tech_lifecycle (keyword, status, trend_score, velocity, week_over_week, first_seen_date, updated_at) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, NOW()) " +
+    private static void upsertLifecycle(Connection conn, String keyword, double score, double velocity, double wow,
+            String status, LocalDate date) throws Exception {
+        String sql = "INSERT INTO tech_lifecycle (keyword, status, trend_score, velocity, week_over_week, first_seen_date, updated_at) "
+                +
+                "VALUES (?, ?, ?, ?, ?, ?, NOW()) " +
                 "ON CONFLICT (keyword) DO UPDATE SET " +
                 "status = EXCLUDED.status, trend_score = EXCLUDED.trend_score, velocity = EXCLUDED.velocity, " +
-                
+
                 "week_over_week = EXCLUDED.week_over_week, " +
-                     "peak_date = CASE WHEN EXCLUDED.status = 'PEAK' AND tech_lifecycle.peak_date IS NULL THEN EXCLUDED.first_seen_date ELSE tech_lifecycle.peak_date END, " +
-                     "updated_at = NOW()";
+                "peak_date = CASE WHEN EXCLUDED.status = 'PEAK' AND tech_lifecycle.peak_date IS NULL THEN EXCLUDED.first_seen_date ELSE tech_lifecycle.peak_date END, "
+                +
+                "updated_at = NOW()";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, keyword);
             ps.setString(2, status);
