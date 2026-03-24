@@ -23,27 +23,27 @@ export const IntroSplash = () => {
     const msgInterval = setInterval(() => {
       msgIdx = Math.min(msgIdx + 1, statusMessages.length - 1);
       setStatusMsg(statusMessages[msgIdx]);
-    }, 300); // 700ms -> 300ms
+    }, 600); // 300ms -> 600ms
 
     const loadInterval = setInterval(() => {
-      // 증가량 상향 (1.5~5.5 -> 3~11)
-      const increment = currentPct < 60 ? Math.random() * 8 + 3 : Math.random() * 4 + 1;
+      // 증가량 하향 (3~11 -> 2~6)
+      const increment = currentPct < 60 ? Math.random() * 4 + 2 : Math.random() * 2 + 0.5;
       currentPct += increment;
       if (currentPct >= 100) {
         currentPct = 100;
         clearInterval(loadInterval);
         clearInterval(msgInterval);
         setStatusMsg('준비 완료');
-        
-        // startExit (500ms -> 100ms)
+
+        // startExit (100ms -> 400ms)
         setTimeout(() => {
           setIsExiting(true);
-          // 1100ms -> 500ms
-          setTimeout(() => { setIsVisible(false); }, 500);
-        }, 100);
+          // 500ms -> 800ms
+          setTimeout(() => { setIsVisible(false); }, 800);
+        }, 400);
       }
       setPct(currentPct);
-    }, 25); // 45ms -> 25ms
+    }, 40); // 25ms -> 40ms
 
     return () => {
       clearInterval(msgInterval);
@@ -261,7 +261,7 @@ export const IntroSplash = () => {
           to   { opacity: 1; transform: none; }
         }
       `}</style>
-      
+
       <div id="intro" className={isExiting ? 'intro-exit' : ''}>
         <div className="intro-bg"></div>
         <div className="intro-grain"></div>

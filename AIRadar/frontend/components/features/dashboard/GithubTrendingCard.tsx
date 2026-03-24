@@ -44,7 +44,7 @@ export const GithubTrendingCard = () => {
                 rel="noopener noreferrer"
                 className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate hover:text-[var(--color-accent)] transition-colors cursor-pointer block"
               >
-                github.com/{repo.repoName}
+                {repo.repoName.replace(/^github\.com\//, '')}
               </a>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                 {repo.description}
