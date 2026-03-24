@@ -21,7 +21,7 @@ with DAG(
         java_class='com.mcp.airadar.spark.WordCloudAggregationJob',
         conn_id='spark_default',
         application_args=[
-            '--week-start', '{{ ds }}', # ds는 실행일 기준(월요일)의 현재 주기 시작일(전주 월요일)
+            '--week-start', '{{ data_interval_end.subtract(days=7).strftime("%Y-%m-%d") }}', # 실행 시점 기준 7일 전을 시작일로 하여 최근 1주일치 집계
         ],
         conf=SPARK_CONF,
     )
