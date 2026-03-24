@@ -73,8 +73,11 @@ public class WordCloudAggregationJob {
             try {
                 Dataset<Row> newsDf = spark.read().format("delta").load(silverBasePath + "/news").where(dateCondition);
                 aggregateAndUpsert(newsDf, "keywords", "NEWS", weekStartDate, conn);
+                conn.commit();
             } catch (Exception e) {
-                System.err.println("News Data Not Found: " + e.getMessage());
+                System.err.println("News Data Error: " + e.getMessage());
+                conn.rollback();
+                throw e;
             }
 
             // 2. PAPER 집계
@@ -82,8 +85,11 @@ public class WordCloudAggregationJob {
                 Dataset<Row> paperDf = spark.read().format("delta").load(silverBasePath + "/paper")
                         .where(dateCondition);
                 aggregateAndUpsert(paperDf, "keywords", "PAPER", weekStartDate, conn);
+                conn.commit();
             } catch (Exception e) {
-                System.err.println("Paper Data Not Found: " + e.getMessage());
+                System.err.println("Paper Data Error: " + e.getMessage());
+                conn.rollback();
+                throw e;
             }
 
             // 3. GITHUB 집계
@@ -92,11 +98,12 @@ public class WordCloudAggregationJob {
                         .where(dateCondition);
                 // GITHUB는 topics 배열 사용
                 aggregateAndUpsert(githubDf, "topics", "GITHUB", weekStartDate, conn);
+                conn.commit();
             } catch (Exception e) {
-                System.err.println("Github Data Not Found: " + e.getMessage());
+                System.err.println("Github Data Error: " + e.getMessage());
+                conn.rollback();
+                throw e;
             }
-
-            conn.commit();
         }
 
         System.out.println("주간 워드클라우드 집계 완료: " + weekStartStr);
