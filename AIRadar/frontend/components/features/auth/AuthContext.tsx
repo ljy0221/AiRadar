@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const token = localStorage.getItem('accessToken');
     const savedEmail = localStorage.getItem('userEmail');
-    
+
     if (token) {
       setIsLoggedIn(true);
       if (savedEmail) {
@@ -98,7 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem(`onboarding_completed_${email}`, String(completed));
     // 구버전 및 임시 키 데이터 삭제
     localStorage.removeItem('onboardingCompleted');
-    
+
     setIsLoggedIn(true);
     setOnboardingCompleted(completed);
     queryClient.invalidateQueries({ queryKey: userQueryKeys.me });
@@ -110,18 +110,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // 사용자별 온보딩 기록은 유지 (나중에 다시 로그인했을 때 스킵하기 위함)
-      // localStorage.removeItem(`onboarding_completed_${userEmail}`); <- 제거하지 않음
-      
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
-      localStorage.removeItem('userEmail'); // 이메일 삭제 추가
+      localStorage.removeItem('userEmail');
       localStorage.removeItem('onboardingCompleted');
       setIsLoggedIn(false);
       setUserEmail(null);
       setOnboardingCompleted(true);
       queryClient.setQueryData(userQueryKeys.me, null);
-      queryClient.clear(); // 전체 캐시 비우기
+      queryClient.clear();
     }
   };
 
@@ -130,18 +127,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (userEmail) {
       localStorage.setItem(`onboarding_completed_${userEmail}`, String(completed));
     } else {
-      // 이메일을 모르는 경우(초기 진입 등) 글로벌 키에 백업
       localStorage.setItem('onboardingCompleted', String(completed));
     }
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      isLoggedIn, 
-      isInitialized, 
-      onboardingCompleted, 
+    <AuthContext.Provider value={{
+      isLoggedIn,
+      isInitialized,
+      onboardingCompleted,
       userEmail,
-      loginState, 
+      loginState,
       logoutState,
       setOnboardingCompleted: updateOnboardingState,
       updateOnboardingState

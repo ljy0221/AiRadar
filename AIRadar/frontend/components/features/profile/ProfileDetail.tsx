@@ -97,7 +97,7 @@ export const ProfileDetail = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-[1440px] mx-auto py-12 px-2">
       <h1 className="text-3xl font-bold mb-8 text-[var(--color-text-primary)]">내 프로필</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-8 items-start">
@@ -111,16 +111,16 @@ export const ProfileDetail = () => {
                 <p className="text-gray-500 text-sm">{user.email}</p>
               </div>
               <div className="flex gap-2">
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   onClick={() => setIsPasswordModalOpen(true)}
                   className="border border-gray-100 text-gray-400 hover:text-[var(--color-accent)] hover:border-[var(--color-accent)] transition-all"
                 >
                   비밀번호 변경
                 </Button>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   onClick={() => setIsEditModalOpen(true)}
                   className="border border-gray-100 text-gray-400 hover:text-[var(--color-accent)] hover:border-[var(--color-accent)] transition-all"

@@ -9,19 +9,23 @@ export const recommendationKeys = {
   hourly: (limit?: number) => [...recommendationKeys.all, 'hourly', limit] as const,
 };
 
+import { useAuth } from '@/components/features/auth/AuthContext';
+
 export const usePersonalizedNewsQuery = (size = 20, enabled = true) => {
+  const { isLoggedIn } = useAuth();
   return useQuery({
     queryKey: recommendationKeys.news(size),
     queryFn: () => recommendationApi.getPersonalizedFeed(size),
-    enabled,
+    enabled: isLoggedIn && enabled,
   });
 };
 
 export const usePersonalizedPapersQuery = (size = 20, enabled = true) => {
+  const { isLoggedIn } = useAuth();
   return useQuery({
     queryKey: recommendationKeys.papers(size),
     queryFn: () => recommendationApi.getPersonalizedPapers(size),
-    enabled,
+    enabled: isLoggedIn && enabled,
   });
 };
 
