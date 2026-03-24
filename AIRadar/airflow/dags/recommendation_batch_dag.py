@@ -14,13 +14,14 @@ default_args = {
     'execution_timeout': timedelta(hours=2),
 }
 
-# ALS Job은 메모리를 많이 사용하므로 executor 1개, 메모리 최대화
+# ALS Job: driver는 Airflow 컨테이너 내 실행 → 메모리 최소화, executor는 spark-master에서 실행
 SPARK_CONF = {
     'spark.master': 'spark://spark-master:7077',
     'spark.executor.memory': '2g',
     'spark.executor.cores': '2',
     'spark.executor.instances': '1',
-    'spark.driver.memory': '1g',
+    'spark.driver.memory': '512m',
+    'spark.driver.memoryOverhead': '256m',
     # ALS 반복 학습 중 broadcast 최적화
     'spark.sql.autoBroadcastJoinThreshold': '-1',
     'spark.serializer': 'org.apache.spark.serializer.KryoSerializer',
