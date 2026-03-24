@@ -52,7 +52,9 @@ public class PaperService {
     }
 
     public PaperDto.AvailableDates getAvailableDates(String category, String researchArea) {
-        List<LocalDate> dates = paperRepository.findAvailableDates(category, researchArea);
+        List<LocalDate> dates = paperRepository.findAvailableDateStrings(category, researchArea).stream()
+                .map(LocalDate::parse)
+                .toList();
 
         return PaperDto.AvailableDates.builder()
                 .dates(dates)

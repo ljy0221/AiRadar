@@ -92,8 +92,8 @@ class PaperServiceTest {
     @Test
     @DisplayName("filters apply to available paper dates response")
     void getAvailableDates() {
-        when(paperRepository.findAvailableDates("NLP", "cs.CL"))
-                .thenReturn(List.of(LocalDate.of(2026, 3, 19), LocalDate.of(2026, 3, 17)));
+        when(paperRepository.findAvailableDateStrings("NLP", "cs.CL"))
+                .thenReturn(List.of("2026-03-19", "2026-03-17"));
 
         PaperDto.AvailableDates result = paperService.getAvailableDates("NLP", "cs.CL");
 
@@ -101,7 +101,7 @@ class PaperServiceTest {
         assertThat(result.count()).isEqualTo(2);
         assertThat(result.startDate()).isEqualTo(LocalDate.of(2026, 3, 17));
         assertThat(result.endDate()).isEqualTo(LocalDate.of(2026, 3, 19));
-        verify(paperRepository).findAvailableDates("NLP", "cs.CL");
+        verify(paperRepository).findAvailableDateStrings("NLP", "cs.CL");
     }
 
     @Test
