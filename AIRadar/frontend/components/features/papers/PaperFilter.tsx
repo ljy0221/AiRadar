@@ -28,7 +28,7 @@ export const PaperFilter = ({
       <div className="w-fit flex items-center gap-2">
         <button 
           onClick={() => setIsCalendarOpen(true)}
-          className={`flex items-center gap-2 px-5 py-2.5 border-2 rounded-lg font-bold transition-colors ${
+          className={`flex items-center gap-2 px-5 py-2.5 border-2 rounded-lg font-semibold transition-colors ${
             selectedDate 
               ? 'border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--color-accent)]/10 dark:bg-[var(--color-accent)]/20' 
               : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-800/50 dark:hover:bg-gray-800'

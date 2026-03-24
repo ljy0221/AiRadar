@@ -82,13 +82,14 @@ export const Header = () => {
                 <Link
                   href="/"
                   className={classNames(
-                    "font-serif text-2xl font-normal tracking-tight transition-all",
-                    shouldBeTransparent 
-                      ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? "text-white" : "text-gray-900 dark:text-white") 
+                    "font-audiowide text-2xl tracking-tight transition-all",
+                    shouldBeTransparent
+                      ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? "text-white" : "text-gray-900 dark:text-white")
                       : "text-[var(--color-text-primary)] hover:opacity-80"
                   )}
+                  style={{ fontFamily: 'var(--font-audiowide-next)' }}
                 >
-                  AI Radar
+                  AI RADAR
                 </Link>
               </div>
               <div className="hidden sm:ml-6 sm:block">
@@ -102,9 +103,9 @@ export const Header = () => {
                           aria-current={isCurrent ? 'page' : undefined}
                           className={classNames(
                             isCurrent
-                              ? 'text-[var(--color-accent)] font-bold'
-                              : shouldBeTransparent 
-                                ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? 'text-white/80 hover:text-white' : 'text-gray-600 hover:text-gray-900 dark:text-white/80 dark:hover:text-white') 
+                              ? 'text-[var(--color-accent)] font-semibold'
+                              : shouldBeTransparent
+                                ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? 'text-white/80 hover:text-white' : 'text-gray-600 hover:text-gray-900 dark:text-white/80 dark:hover:text-white')
                                 : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]',
                             'rounded-md px-3 py-2 text-base transition-colors',
                           )}
@@ -124,11 +125,11 @@ export const Header = () => {
                     className={classNames(
                       "p-2 rounded-full border shadow-sm transition-all duration-200 flex items-center justify-center hover:scale-110 active:scale-95 group focus:outline-none",
                       isLoggedIn && user
-                        ? "bg-[var(--color-accent)] text-white text-base font-bold border-transparent"
+                        ? "bg-[var(--color-accent)] text-white text-base font-semibold border-transparent"
                         : shouldBeTransparent
-                          ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') 
-                              ? "bg-white/10 hover:bg-white/20 text-white border-white/20" 
-                              : "bg-black/5 hover:bg-black/10 text-gray-900 border-black/10")
+                          ? (mounted && (theme === 'dark' || resolvedTheme === 'dark')
+                            ? "bg-white/10 hover:bg-white/20 text-white border-white/20"
+                            : "bg-black/5 hover:bg-black/10 text-gray-900 border-black/10")
                           : "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-[var(--color-text-primary)] border-gray-200 dark:border-gray-700"
                     )}
                   >
@@ -140,8 +141,8 @@ export const Header = () => {
                     ) : (
                       <User className={classNames(
                         "size-5 transition-colors",
-                        shouldBeTransparent 
-                          ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? "text-white group-hover:text-white" : "text-gray-900 group-hover:text-gray-900") 
+                        shouldBeTransparent
+                          ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? "text-white group-hover:text-white" : "text-gray-900 group-hover:text-gray-900")
                           : "text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]"
                       )} />
                     )}
@@ -159,7 +160,7 @@ export const Header = () => {
                       {isLoggedIn && user ? (
                         <>
                           <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 mb-2">
-                            <p className="text-lg font-bold text-[var(--color-text-primary)] truncate">{user.nickname || user.name}</p>
+                            <p className="text-lg font-semibold text-[var(--color-text-primary)] truncate">{user.nickname || user.name}</p>
                             <div className="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
                               <Mail className="size-3 mr-1.5 shrink-0" />
                               <span className="truncate">{user.email}</span>
@@ -177,7 +178,7 @@ export const Header = () => {
                           <PopoverButton
                             as="button"
                             onClick={() => setIsLogoutModalOpen(true)}
-                            className="flex items-center gap-3 w-full px-6 py-3.5 text-sm font-bold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group text-left"
+                            className="flex items-center gap-3 w-full px-6 py-3.5 text-sm font-semibold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group text-left"
                           >
                             <LogOut className="size-5" />
                             로그아웃
@@ -186,7 +187,7 @@ export const Header = () => {
                       ) : (
                         <>
                           <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 mb-2">
-                            <p className="text-lg font-bold text-[var(--color-text-primary)]">AI Radar</p>
+                            <p className="text-lg font-semibold text-[var(--color-text-primary)]">AI Radar</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">로그인이 필요합니다</p>
                           </div>
                           <PopoverButton
@@ -212,8 +213,8 @@ export const Header = () => {
                 </Popover>
                 <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1"></div>
                 <ThemeToggle
-                  className={shouldBeTransparent 
-                    ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? "border-white/20 hover:bg-white/10 text-white" : "border-black/10 hover:bg-black/5 text-gray-900") 
+                  className={shouldBeTransparent
+                    ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? "border-white/20 hover:bg-white/10 text-white" : "border-black/10 hover:bg-black/5 text-gray-900")
                     : ""}
                 />
               </div>
@@ -233,7 +234,7 @@ export const Header = () => {
                   aria-current={isCurrent ? 'page' : undefined}
                   className={classNames(
                     isCurrent
-                      ? 'text-[var(--color-accent)] font-bold bg-gray-50 dark:bg-gray-800/50'
+                      ? 'text-[var(--color-accent)] font-semibold bg-gray-50 dark:bg-gray-800/50'
                       : 'text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)]',
                     'flex items-center w-full rounded-md px-3 h-12 text-base transition-colors',
                   )}
@@ -247,11 +248,11 @@ export const Header = () => {
             {isLoggedIn ? (
               <>
                 <div className="px-3 py-4 border-b border-gray-100 dark:border-gray-800 mb-2 flex items-center gap-3">
-                  <div className="size-10 flex items-center justify-center rounded-full bg-[var(--color-accent)] text-white font-bold text-lg select-none">
+                  <div className="size-10 flex items-center justify-center rounded-full bg-[var(--color-accent)] text-white font-semibold text-lg select-none">
                     {userInitial}
                   </div>
                   <div>
-                    <p className="text-base font-bold text-[var(--color-text-primary)] truncate">{user?.nickname || user?.name}</p>
+                    <p className="text-base font-semibold text-[var(--color-text-primary)] truncate">{user?.nickname || user?.name}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
                   </div>
                 </div>
@@ -266,7 +267,7 @@ export const Header = () => {
                 <DisclosureButton
                   as="button"
                   onClick={() => setIsLogoutModalOpen(true)}
-                  className="flex items-center gap-3 w-full text-left rounded-md px-3 h-12 text-base font-bold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all"
+                  className="flex items-center gap-3 w-full text-left rounded-md px-3 h-12 text-base font-semibold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all"
                 >
                   <LogOut className="size-5" />
                   로그아웃
@@ -277,7 +278,7 @@ export const Header = () => {
                 <DisclosureButton
                   as="button"
                   onClick={() => openAuthModal('login')}
-                  className="flex items-center gap-3 w-full text-left rounded-md px-3 h-12 text-base font-bold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  className="flex items-center gap-3 w-full text-left rounded-md px-3 h-12 text-base font-semibold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 >
                   <LogIn className="size-5" />
                   로그인하기
@@ -285,7 +286,7 @@ export const Header = () => {
                 <DisclosureButton
                   as="button"
                   onClick={() => openAuthModal('signup')}
-                  className="flex items-center gap-3 w-full text-left rounded-md px-3 h-12 text-base font-bold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  className="flex items-center gap-3 w-full text-left rounded-md px-3 h-12 text-base font-semibold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 >
                   <PlusCircle className="size-5" />
                   무료로 가입하기

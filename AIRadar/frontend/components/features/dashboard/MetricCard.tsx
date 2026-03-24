@@ -27,11 +27,11 @@ export const MetricCard = ({ title, value, subtitle, icon, trend }: MetricCardPr
       </div>
 
       <div className="flex flex-col">
-        <h4 className="text-xl font-extrabold text-[var(--color-text-primary)] tracking-tight leading-tight">
+        <h4 className="text-xl font-bold text-[var(--color-text-primary)] tracking-tight leading-tight">
           {displayBig}
         </h4>
         {displaySmallHeader && (
-          <p className="text-[12px] font-bold text-gray-700 dark:text-gray-300 mt-0.5">
+          <p className="text-[12px] font-semibold text-gray-700 dark:text-gray-300 mt-0.5">
             {displaySmallHeader}
           </p>
         )}

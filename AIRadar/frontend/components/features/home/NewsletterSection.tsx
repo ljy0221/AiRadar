@@ -88,16 +88,16 @@ const NewsletterCard = ({
     </div>
     <div className="w-[62%] h-full p-6 relative flex flex-col justify-center bg-[#1e100d]">
       <div className="absolute top-4 right-4 px-3 py-1 bg-[#C8432A] rounded-lg">
-        <span className="text-[10px] text-white font-bold tracking-wider">{card.tag}</span>
+        <span className="text-[10px] text-white font-semibold tracking-wider">{card.tag}</span>
       </div>
       <h4
-        className={`text-xl font-black mb-2 leading-snug transition-colors duration-500 ${isFront ? 'text-[#C8432A]' : 'text-white'}`}
+        className={`text-xl font-bold mb-2 leading-snug transition-colors duration-500 ${isFront ? 'text-[#C8432A]' : 'text-white'}`}
       >
         {card.title}
       </h4>
       {card.desc && (
         <p
-          className={`text-xs text-gray-400 font-medium line-clamp-3 leading-relaxed transition-opacity duration-500 ${isFront ? 'opacity-100' : 'opacity-55'}`}
+          className={`text-xs text-gray-400 font-normal line-clamp-3 leading-relaxed transition-opacity duration-500 ${isFront ? 'opacity-100' : 'opacity-55'}`}
         >
           {card.desc}
         </p>
@@ -116,8 +116,8 @@ const MobileCarousel = ({ onSubscribe }: { onSubscribe: () => void }) => {
   return (
     <section className="w-full bg-[#1a0e0b] py-16 px-5 w-screen max-w-[100vw] overflow-hidden">
       <div className="text-center mb-10 space-y-3">
-        <span className="text-[#C8432A] font-extrabold tracking-widest text-xs uppercase">Newsletter</span>
-        <h3 className="text-3xl font-black tracking-tight text-white leading-tight">
+        <span className="text-[#C8432A] font-bold tracking-widest text-xs uppercase">Newsletter</span>
+        <h3 className="text-2xl font-semibold tracking-tight text-white leading-tight">
           똑똑하게 앞서가는<br />AI 리더의 구독 리스트
         </h3>
       </div>
@@ -140,7 +140,7 @@ const MobileCarousel = ({ onSubscribe }: { onSubscribe: () => void }) => {
               <div className="w-14 h-14 bg-[#C8432A] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
                 <ArrowRight className="w-7 h-7" />
               </div>
-              <span className="text-lg font-bold group-hover:text-[#C8432A] transition-colors">지금 바로 구독하기</span>
+              <span className="text-lg font-semibold group-hover:text-[#C8432A] transition-colors">지금 바로 구독하기</span>
             </button>
           )}
         </motion.div>
@@ -250,7 +250,7 @@ const SpreadCard = ({
           <div className="w-16 h-16 bg-[#C8432A] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
             <ArrowRight className="w-8 h-8" />
           </div>
-          <span className="text-xl font-bold">지금 바로 구독하기</span>
+          <span className="text-xl font-semibold">지금 바로 구독하기</span>
         </button>
       ) : (
         <NewsletterCard card={item} isFront={isFront} />
@@ -298,10 +298,10 @@ const DesktopScrollSection = ({ onSubscribe }: { onSubscribe: () => void }) => {
 
         {/* 헤더 */}
         <div className="relative z-30 pt-16 text-center space-y-2 flex-shrink-0 px-4">
-          <span className="text-[#C8432A] font-extrabold tracking-widest text-xs uppercase">
+          <span className="text-[#C8432A] font-bold tracking-widest text-xs uppercase">
             Newsletter
           </span>
-          <h3 className="text-4xl xl:text-6xl font-black tracking-tight text-white leading-tight">
+          <h3 className="text-3xl xl:text-5xl font-semibold tracking-tight text-white leading-tight">
             똑똑하게 앞서가는 AI 리더의 구독 리스트
           </h3>
           <motion.p

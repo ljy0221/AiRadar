@@ -81,9 +81,9 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
   };
 
   return (
-    <div className="w-full bg-white dark:bg-[#151726] rounded-[32px] border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col h-[calc(100vh-140px)] min-h-[600px] md:min-h-[700px] overflow-hidden transition-all duration-300">
+    <div className="w-full bg-white dark:bg-[#070a0e] rounded-[32px] border border-gray-200 dark:border-gray-800/50 shadow-sm flex flex-col h-[calc(100vh-170px)] min-h-[600px] max-h-[900px] overflow-hidden transition-all duration-300">
 
-      <div className="px-6 md:px-10 py-6 md:py-8 flex flex-col md:flex-row md:items-end justify-between gap-6 shrink-0 border-b border-gray-50 dark:border-gray-800/50 md:border-none">
+      <div className="px-6 md:px-10 py-4 md:py-6 flex flex-col md:flex-row md:items-end justify-between gap-6 shrink-0 border-b border-gray-50 dark:border-gray-800/50 md:border-none">
         <div
           className="flex items-start gap-3 md:gap-4 cursor-pointer group"
           onClick={handleReset}
@@ -129,14 +129,14 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
                     onClick={() => handleCategorySelect(cat.id === '전체' ? null : cat.id)}
                     whileHover={{ scale: 1.02, translateY: -4 }}
                     whileTap={{ scale: 0.98 }}
-                    className="flex flex-col p-6 md:p-8 rounded-[24px] md:rounded-[28px] border border-gray-100 dark:border-gray-800 transition-all h-full min-h-[140px] md:min-h-[200px] text-left group relative bg-white dark:bg-[#1a1c2e] hover:shadow-xl hover:border-[var(--color-accent)]/30"
+                    className="flex flex-col p-6 md:p-7 rounded-[24px] md:rounded-[28px] border border-gray-100 dark:border-white/[0.08] transition-all h-full min-h-[140px] md:min-h-[160px] text-left group relative bg-white dark:bg-[#161d27] hover:shadow-xl hover:border-[var(--color-accent)]/30"
                   >
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center justify-center mb-4 md:mb-6 shadow-sm group-hover:bg-[var(--color-accent)]/10 transition-colors">
-                      <Icon className="w-4 h-4 md:w-5 md:h-5 text-gray-700 dark:text-gray-100 group-hover:text-[var(--color-accent)] transition-colors" strokeWidth={2.2} />
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-white/[0.15] flex items-center justify-center mb-4 md:mb-6 shadow-sm group-hover:bg-[var(--color-accent)]/10 transition-colors">
+                      <Icon className="w-4 h-4 md:w-5 md:h-5 text-gray-700 dark:text-white group-hover:text-[var(--color-accent)] transition-colors" strokeWidth={2.2} />
                     </div>
                     <div>
-                      <h4 className="text-lg md:text-[19px] font-extrabold text-gray-800 dark:text-gray-100 mb-0.5 md:mb-1 tracking-tight group-hover:text-[var(--color-accent)] transition-colors">{cat.id}</h4>
-                      <p className="text-[10px] md:text-[12px] font-bold text-gray-400 tracking-wider lowercase">{count} Keywords</p>
+                      <h4 className="text-lg md:text-[19px] font-bold text-gray-800 dark:text-[#ffffff] mb-0.5 md:mb-1 tracking-tight group-hover:text-[var(--color-accent)] transition-colors">{cat.id}</h4>
+                      <p className="text-[10px] md:text-[12px] font-bold text-gray-400 dark:text-[#6b7a8d] tracking-wider lowercase">{count} Keywords</p>
                     </div>
                   </motion.button>
                 );
@@ -166,13 +166,13 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
                       key={item.id}
                       onClick={() => setSelectedId(item.id)}
                       className={`w-full text-left p-4 md:p-5 rounded-[18px] md:rounded-[20px] border transition-all relative flex items-center justify-between group ${isActive
-                        ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 shadow-sm'
-                        : 'bg-white dark:bg-[#1a1c2e] border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30'
+                        ? 'bg-gray-50 dark:bg-[#161d27] border-gray-200 dark:border-white/[0.15] shadow-sm'
+                        : 'bg-white dark:bg-[#161d27] border-gray-100 dark:border-white/[0.08] hover:bg-gray-50 dark:hover:bg-white/[0.02]'
                         }`}
                     >
                       <div className="flex flex-col gap-0.5 min-w-0 pr-4">
-                        <span className={`font-bold text-[15px] md:text-base transition-colors ${isActive ? 'text-[var(--color-accent)]' : 'text-gray-800 dark:text-gray-100'}`}>{item.term}</span>
-                        <span className="text-[12px] md:text-[13px] font-medium text-gray-400">{item.englishTerm}</span>
+                        <span className={`font-bold text-[15px] md:text-base transition-colors ${isActive ? 'text-[var(--color-accent)]' : 'text-gray-800 dark:text-[#ffffff]'}`}>{item.term}</span>
+                        <span className="text-[12px] md:text-[13px] font-bold text-gray-400 dark:text-[#6b7a8d]">{item.englishTerm}</span>
                       </div>
                       <ChevronRight className={`w-3.5 h-3.5 md:w-4 md:h-4 ${isActive ? 'text-[var(--color-accent)]' : 'text-gray-300 opacity-0 lg:group-hover:opacity-100'} transition-all`} />
                     </button>
@@ -197,19 +197,19 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
-                      className="bg-white dark:bg-gray-900/40 rounded-[24px] md:rounded-[28px] border border-gray-100 dark:border-gray-800 p-6 md:p-10 min-h-fit lg:min-h-full shadow-sm"
+                      className="bg-white dark:bg-[#161d27] rounded-[24px] md:rounded-[28px] border border-gray-100 dark:border-white/[0.08] p-6 md:p-10 min-h-fit lg:min-h-full shadow-sm"
                     >
                       <div className="mb-6 md:mb-8">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                          <div className="inline-flex w-fit px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[var(--color-accent)] text-[9px] md:text-[10px] font-bold uppercase tracking-wider">
+                          <div className="inline-flex w-fit px-3 py-1 rounded-full border border-gray-200 dark:border-white/[0.15] bg-white dark:bg-white/5 text-[var(--color-accent)] text-[9px] md:text-[10px] font-bold uppercase tracking-wider">
                             {selectedItem.category}
                           </div>
 
                         </div>
-                        <h2 className="text-2xl md:text-[28px] font-black text-gray-900 dark:text-gray-50 mb-1 leading-tight tracking-tight">
+                        <h2 className="text-2xl md:text-[28px] font-bold text-gray-900 dark:text-[#ffffff] mb-1 leading-tight tracking-tight">
                           {selectedItem.term}
                         </h2>
-                        <p className="text-sm md:text-base font-semibold text-gray-400/80 tracking-tight italic">
+                        <p className="text-sm md:text-base font-bold text-gray-400 dark:text-[#6b7a8d] tracking-tight italic">
                           {selectedItem.englishTerm}
                         </p>
                       </div>

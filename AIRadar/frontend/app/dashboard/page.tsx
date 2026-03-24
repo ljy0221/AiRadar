@@ -106,7 +106,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* Main Content Area */}
-      <div className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-8 py-2">
+      <div className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-8 pt-6 pb-2">
         <div className="flex flex-col gap-0">
 
           {/* Tab Content: 트렌드 요약 (Overview) */}
