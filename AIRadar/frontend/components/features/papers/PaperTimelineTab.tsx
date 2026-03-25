@@ -102,30 +102,30 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
           {isLoggedIn && recommendations && recommendations.length > 0 && (activeTab === 'recommend' || (!selectedDate && activeTab === 'daily')) && (
             <div className="mb-12">
               <div className="flex items-center gap-2 mb-6">
-                <div className="p-2 bg-emerald-500/10 rounded-lg">
-                  <Sparkles className="w-5 h-5 text-emerald-500" />
+                <div className="p-2 bg-[var(--color-accent)]/10 rounded-lg">
+                  <Sparkles className="w-5 h-5 text-[var(--color-accent)]" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 italic tracking-tight uppercase">오늘의 추천 논문</h3>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {recommendations.slice(0, activeTab === 'recommend' ? 10 : 4).map((rec) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {recommendations.slice(0, activeTab === 'recommend' ? 12 : 3).map((rec) => (
                   <a
                     key={rec.paperId}
                     href={rec.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group relative bg-white dark:bg-[#1a1c2e] border border-gray-100 dark:border-gray-800 p-5 rounded-2xl hover:shadow-xl hover:border-emerald-500/30 transition-all duration-300 flex flex-col h-full"
+                    className="group relative bg-white dark:bg-[#1a1c2e] border border-gray-100 dark:border-gray-800 p-5 rounded-2xl hover:shadow-xl hover:border-[var(--color-accent)]/30 transition-all duration-300 flex flex-col h-full"
                   >
                     <div className="flex justify-between items-start mb-3">
-                      <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-[10px] font-black rounded-md uppercase tracking-wider">
+                      <span className="px-2 py-0.5 bg-[var(--color-accent)]/10 text-[var(--color-accent)] text-[10px] font-black rounded-md uppercase tracking-wider">
                         {rec.reason === 'ALS' ? '맞춤 추천' : rec.reason === 'KEYWORD_MATCH' ? '관심 키워드' : '인기 논문'}
                       </span>
                       <span className="text-[10px] font-bold text-gray-400">{rec.researchArea}</span>
                     </div>
-                    <h4 className="font-bold text-sm text-gray-800 dark:text-gray-200 line-clamp-2 leading-snug group-hover:text-emerald-500 transition-colors mb-3">
+                    <h4 className="font-bold text-sm text-gray-800 dark:text-gray-200 line-clamp-2 leading-snug group-hover:text-[var(--color-accent)] transition-colors mb-3">
                       {rec.title}
                     </h4>
                     <div className="flex items-center justify-between mt-auto">
@@ -134,7 +134,7 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
                           <span key={kw} className="text-[10px] text-gray-400 truncate">#{kw}</span>
                         ))}
                       </div>
-                      <div className="text-[10px] font-bold text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
+                      <div className="text-[10px] font-bold text-[var(--color-accent)] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
                         원문 보기 <ExternalLink className="w-2.5 h-2.5" />
                       </div>
                     </div>
@@ -223,19 +223,29 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
                       </button>
                     </div>
 
-                    {/* 타임라인 바 (Border left) */}
-                    <div className="relative border-l-2 border-gray-200 dark:border-gray-800 ml-2">
-                      <div className="flex flex-col gap-6">
-                        {currentGroup.items
-                          .filter((item: any) => activeCategory === 'ALL' || item.category === activeCategory)
-                          .map((item: any, iIdx: number) => (
-                            <TimelineItem key={item.paperId || iIdx} data={toTimelineItemData(item, bookmarkedIds)} />
-                          ))}
-                      </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {currentGroup.items
+                        .filter((item: any) => activeCategory === 'ALL' || item.category === activeCategory)
+                        .map((item: any, iIdx: number) => (
+                          <TimelineItem key={item.paperId || iIdx} data={toTimelineItemData(item, bookmarkedIds)} />
+                        ))}
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full flex justify-center py-20 text-gray-400 text-sm italic">해당 날짜에 조회된 논문이 없습니다.</div>
+                  displayDate && (
+                    <div className="w-full flex flex-col items-center justify-center py-20 text-gray-400">
+                      <div className="flex items-center gap-3 mb-6 bg-gray-50/50 dark:bg-gray-800/30 backdrop-blur-sm px-4 py-2 rounded-2xl border border-gray-100 dark:border-white/5">
+                        <button onClick={() => handlePrevDay(displayDate)} className="p-1 px-2 hover:bg-gray-200 dark:hover:bg-gray-700/50 rounded-lg transition-colors">
+                          <ChevronLeft className="w-4 h-4 text-gray-400" />
+                        </button>
+                        <span className="text-lg font-semibold text-gray-700 dark:text-gray-300 min-w-[100px] text-center">{displayDate.replace(/-/g, '.')}</span>
+                        <button onClick={() => handleNextDay(displayDate)} className="p-1 px-2 hover:bg-gray-200 dark:hover:bg-gray-700/50 rounded-lg transition-colors">
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                        </button>
+                      </div>
+                      <p className="text-sm">해당 날짜에 조회된 논문이 없습니다.</p>
+                    </div>
+                  )
                 )}
               </div>
             </>
