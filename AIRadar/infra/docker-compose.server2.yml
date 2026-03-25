@@ -68,7 +68,7 @@ services:
     image: airadar/ai-server:latest
     container_name: server2-ai-server
     hostname: ai-server
-    profiles: ["ai"]
+    profiles: [ "ai" ]
     depends_on:
       postgres:
         condition: service_healthy
@@ -83,13 +83,15 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-airadar}
       POSTGRES_USER: ${POSTGRES_USER:-airadar}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
+    volumes:
+      - /root/.cache/huggingface:/root/.cache/huggingface
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\"" ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
-    mem_limit: 3g
+      start_period: 600s
+    mem_limit: 10g
     restart: unless-stopped
 
   backend:
