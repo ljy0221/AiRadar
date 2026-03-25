@@ -4,15 +4,14 @@ import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 
 
-// 이미지 파일이 public 폴더에 존재해야 합니다: feature1.png, feature2.png, feature3.png
-const githubImg = '/feature1.png';
-const jobsImg = '/feature2.png';
-const newsImg = '/feature3.png';
+import githubImg from '@/public/feature1.png';
+import jobsImg from '@/public/feature2.png';
+import newsImg from '@/public/feature3.png';
 
 interface ServiceCardProps {
   title: string;
   description: string;
-  imagePath: string;
+  imagePath: string | any;
   className?: string;
   delay?: string;
   bgColor: string;
@@ -100,21 +99,21 @@ export const MainServiceSection = () => {
         <ServiceCard 
           title="실시간 오픈소스 트렌드"
           description="전 세계 GitHub 저장소 데이터를 분석해, 가장 뜨거운 기술 스택과 오픈소스 트렌드를 실시간으로 포착합니다."
-          imagePath={githubImg}
+          imagePath={githubImg.src}
           bgColor="bg-[#e2f3d8] dark:bg-[#2d3a28]"
           delay="delay-100"
         />
         <ServiceCard 
           title="채용 시장 역량 분석"
           description="IT 채용 공고를 정밀 분석하여, 현업에서 지금 가장 요구하는 핵심 스킬과 실무 역량 변화를 파악합니다."
-          imagePath={jobsImg}
+          imagePath={jobsImg.src}
           bgColor="bg-[#fde2d3] dark:bg-[#3d2f28]"
           delay="delay-200"
         />
         <ServiceCard 
           title="글로벌 기술 지식 피드"
           description="논문과 IT 미디어를 통합 모니터링하여, 파편화된 기술 정보를 의미 있는 인사이트로 묶어냅니다."
-          imagePath={newsImg}
+          imagePath={newsImg.src}
           bgColor="bg-[#ead9ff] dark:bg-[#322843]"
           delay="delay-300"
         />
