@@ -336,8 +336,7 @@ public class KafkaBronzeConsumerJob {
             lit(null).cast(DataTypes.IntegerType).as("star_delta_7d"),   // 크롤러 미제공
             col("msg.extra.readme_excerpt").as("readme_excerpt"),
             col("kafka_timestamp").as("crawled_at"),
-            when(col("msg.published_at").isNotNull(), to_date(col("msg.published_at")))
-                .otherwise(current_date()).as("batch_date")
+            to_date(col("kafka_timestamp")).as("batch_date")
         ).filter(col("repo_id").isNotNull());
     }
 }
