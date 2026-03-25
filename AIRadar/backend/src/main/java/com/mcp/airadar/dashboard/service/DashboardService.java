@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 public class DashboardService {
 
     private static final Logger log = LoggerFactory.getLogger(DashboardService.class);
-    private static final double SIMILARITY_THRESHOLD = 0.72;
+    private static final double SIMILARITY_THRESHOLD = 0.65;
 
     private final TechKeywordDailyRepository keywordDailyRepository;
     private final TechLifecycleRepository lifecycleRepository;
@@ -86,22 +86,18 @@ public class DashboardService {
 
         try {
             List<String> keywords = baseWords.stream().map(WordCloudDto::keyword).toList();
-            Set<String> keywordSet = new HashSet<>(keywords);
             syncMissingKeywordEmbeddings(sourceType, keywords);
 
             Map<String, List<SimilarKeywordDto>> similarKeywordMap = new HashMap<>();
             for (String keyword : keywords) {
-                List<SimilarKeywordDto> matchedKeywords = keywordEmbeddingRepository.findSimilarKeywords(
-                                sourceType,
-                                keyword,
-                                keywords.size(),
-                                SIMILARITY_THRESHOLD
-                        ).stream()
-                        .filter(similarKeyword -> keywordSet.contains(similarKeyword.keyword()))
-                        .toList();
                 similarKeywordMap.put(
                         keyword,
-                        matchedKeywords
+                        keywordEmbeddingRepository.findSimilarKeywords(
+                                sourceType,
+                                keyword,
+                                keywords,
+                                SIMILARITY_THRESHOLD
+                        )
                 );
             }
 
