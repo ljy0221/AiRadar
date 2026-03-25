@@ -88,7 +88,7 @@ export const PaperTimelineTab = () => {
 
   return (
     <div className="w-full flex justify-center py-6">
-      <div className="w-full max-w-4xl">
+      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="px-1">
           {/* 1. 필터 카드 섹션 (뉴스 섹션 TimelineFilter와 동일 구도) */}
           <div className="bg-gray-50/50 dark:bg-[#11121A] border border-gray-100 dark:border-gray-800/80 rounded-2xl p-4 sm:p-5 shadow-sm mb-12">
@@ -169,9 +169,8 @@ export const PaperTimelineTab = () => {
                   </button>
                 </div>
 
-                {/* 타임라인 바 (Border left) */}
-                <div className="relative border-l-2 border-gray-200 dark:border-gray-800 ml-2">
-                  <div className="flex flex-col gap-6">
+                <div className="relative">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {currentGroup.items
                       .filter((item: any) => activeCategory === 'ALL' || item.category === activeCategory)
                       .map((item: any, iIdx: number) => (

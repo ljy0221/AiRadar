@@ -35,7 +35,7 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = '2xl' }: Mo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
       <div 
         className={`w-full ${maxWidthClasses[maxWidth]} bg-white dark:bg-[#1a1c2e] text-[var(--color-text-primary)] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden transform-gpu`}
         onClick={(e) => e.stopPropagation()}

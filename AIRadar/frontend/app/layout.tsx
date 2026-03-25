@@ -46,6 +46,7 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <body className={`${spaceGrotesk.variable} ${exo2.variable} ${ibmPlexSansKR.variable} ${audiowide.variable} font-sans`}>
+        <div className="scanlines" />
         <Providers>
           <MainLayout>{children}</MainLayout>
         </Providers>
