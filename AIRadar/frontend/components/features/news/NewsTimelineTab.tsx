@@ -200,7 +200,7 @@ export const NewsTimelineTab = () => {
 
   return (
     <div className="w-full flex justify-center py-6">
-      <div className="w-full max-w-4xl">
+      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* 추천 뉴스 섹션 (로그인 시 & default 화면일 때만) */}
         {isLoggedIn && !selectedDate && recommendations && recommendations.length > 0 && (
           <div className="mb-12">
@@ -213,7 +213,7 @@ export const NewsTimelineTab = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {recommendations.slice(0, 4).map((rec) => (
                 <a
                   key={rec.articleId}
@@ -291,8 +291,8 @@ export const NewsTimelineTab = () => {
               </div>
 
               {/* 해당 날짜의 뉴스 아이템 리스트 래퍼 */}
-              <div className="relative border-l-2 border-gray-200 dark:border-gray-800 ml-2">
-                <div className="flex flex-col gap-4">
+              <div className="relative">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredItems.map((item, iIdx) => (
                     <TimelineItem key={item.articleId || iIdx} data={toTimelineItemData(item, bookmarkedIds)} />
                   ))}
