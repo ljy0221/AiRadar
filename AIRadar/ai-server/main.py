@@ -6,8 +6,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 
 from analyzer import analyze_news_batch, analyze_paper_batch, get_local_model
-from embedder import get_model
-from models import NewsRequest, NewsResponse, PaperRequest, PaperResponse
+from embedder import get_model, embed_texts
+from models import (
+    EmbedBatchRequest,
+    EmbedBatchResponse,
+    EmbedRequest,
+    EmbedResponse,
+    NewsRequest,
+    NewsResponse,
+    PaperRequest,
+    PaperResponse,
+)
 
 # 동시 분석 요청 제한 (LLM + 임베딩 메모리 보호)
 _semaphore = asyncio.Semaphore(2)
@@ -33,6 +42,22 @@ app = FastAPI(title="AI Radar Analysis Server", version="1.0.0", lifespan=lifesp
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.post("/embed", response_model=EmbedResponse)
+def embed(payload: EmbedRequest):
+    if not payload.text.strip():
+        raise HTTPException(status_code=400, detail="text must not be blank")
+    embedding = embed_texts([payload.text])[0]
+    return EmbedResponse(embedding=embedding)
+
+
+@app.post("/embed/batch", response_model=EmbedBatchResponse)
+def embed_batch(payload: EmbedBatchRequest):
+    texts = [text for text in payload.texts if text.strip()]
+    if not texts:
+        return EmbedBatchResponse(embeddings=[])
+    return EmbedBatchResponse(embeddings=embed_texts(texts))
 
 
 _NEWS_CHUNK_SIZE = int(os.getenv("NEWS_CHUNK_SIZE", "2"))
