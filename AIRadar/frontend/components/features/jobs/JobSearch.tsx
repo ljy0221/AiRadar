@@ -22,15 +22,26 @@ export const JobSearch = () => {
 
   const { trackSearch } = useTracking();
 
-  const handleJobClick = (jobName: string) => {
-    trackSearch(jobName);
-    router.push(`/jobs/${encodeURIComponent(jobName)}`);
+  const jobMap: Record<string, string> = {
+    '개발자': 'developer',
+    '마케터': 'marketer',
+    '행정 보조': 'admin-assistant',
+    '통역사': 'interpreter',
+    '고객 상담원': 'customer-support',
+    '변호사': 'lawyer',
+    '회계사': 'accountant',
+    '심리상담사': 'counselor',
+    '패션 디자이너': 'fashion-designer',
+    '경찰관': 'police-officer'
   };
 
-  const jobList = [
-    '개발자', '마케터', '행정 보조', '통역사', '고객 상담원', 
-    '변호사', '회계사', '심리상담사', '패션 디자이너', '경찰관'
-  ];
+  const handleJobClick = (jobName: string) => {
+    trackSearch(jobName);
+    const jobCode = jobMap[jobName] || encodeURIComponent(jobName);
+    router.push(`/jobs/${jobCode}`);
+  };
+
+  const jobList = Object.keys(jobMap);
 
   return (
     <div className="w-full flex-1 flex flex-col items-center justify-center min-h-[90vh] pb-32 px-4">
