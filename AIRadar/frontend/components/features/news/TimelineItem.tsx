@@ -70,9 +70,21 @@ export const TimelineItem = ({ data }: TimelineItemProps) => {
   };
 
   const getCategoryColor = (category: string) => {
-    if (category.includes('언어')) return 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50';
-    if (category.includes('반도체')) return 'bg-purple-50 text-purple-600 border border-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800/50';
-    if (category.includes('비전')) return 'bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/50';
+    const lowerCat = category.toLowerCase();
+    
+    // Green (Emerald): NLP, LLM, Language
+    if (lowerCat.includes('언어') || lowerCat.includes('nlp') || lowerCat.includes('llm')) {
+      return 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50';
+    }
+    // Purple: Semiconductor, RL, Agents
+    if (lowerCat.includes('반도체') || lowerCat.includes('rl') || lowerCat.includes('robotics')) {
+      return 'bg-purple-50 text-purple-600 border border-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800/50';
+    }
+    // Blue: Vision
+    if (lowerCat.includes('비전') || lowerCat.includes('vision')) {
+      return 'bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/50';
+    }
+    // Default: Cyan
     return 'bg-cyan-50 text-cyan-600 border border-cyan-100 dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-800/50';
   };
 
