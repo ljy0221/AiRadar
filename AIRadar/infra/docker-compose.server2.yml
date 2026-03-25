@@ -111,6 +111,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airadar_secret}
       REDIS_HOST: redis
       REDIS_PORT: "6379"
+      AI_SERVER_URL: http://ai-server:8000
       KAFKA_BOOTSTRAP_SERVERS: ${SERVER1_PRIVATE_HOST:-localhost}:${SERVER1_KAFKA_EXTERNAL_PORT:-29092}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
     mem_limit: 1g
