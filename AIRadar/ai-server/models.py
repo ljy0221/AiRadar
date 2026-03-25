@@ -35,3 +35,19 @@ class PaperResponse(BaseModel):
     summary: str
     category: str
     research_area: str
+
+
+class EmbedRequest(BaseModel):
+    text: str
+
+
+class EmbedResponse(BaseModel):
+    embedding: list[float]
+
+
+class EmbedBatchRequest(BaseModel):
+    texts: list[str]
+
+
+class EmbedBatchResponse(BaseModel):
+    embeddings: list[list[float]]

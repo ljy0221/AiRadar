@@ -19,5 +19,11 @@ export const paperApi = {
   // GET /api/v1/papers/{paperId}
   getPaperDetail: async (paperId: string): Promise<PaperListItem> => {
     return api.get(`/papers/${paperId}`);
+  },
+
+  // 가용 날짜 조회
+  // GET /api/v1/papers/available-dates
+  getAvailableDates: async (params: { category?: string; researchArea?: string } = {}): Promise<{ dates: string[]; count: number; startDate: string | null; endDate: string | null }> => {
+    return api.get('/papers/available-dates', { params });
   }
 };

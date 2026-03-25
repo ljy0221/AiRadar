@@ -275,17 +275,15 @@ curl -X POST "http://localhost:8002/crawl/dummy?date=$(date +%Y-%m-%d)&news_coun
 
 | 이름 | 역할 | GitHub |
 | --- | --- | --- |
-| 홍길동 | 팀장 / Backend | [@github_id](https://github.com) |
+| 이재영 | 팀장 / Backend / Data Pipeline | [@ljy0221](https://github.com/ljy0221/ljy0221) |
 | 김철수 | Backend / Data Pipeline | [@github_id](https://github.com) |
 | 이영희 | Frontend | [@github_id](https://github.com) |
 | 박민준 | AI / Crawling | [@github_id](https://github.com) |
 | 최수진 | Infra / DevOps | [@github_id](https://github.com) |
 | 정다운 | Frontend | [@github_id](https://github.com) |
 
-> 팀원 정보는 실제 정보로 업데이트해주세요.
-
 ---
 
 <p align="center">
-  <sub>SSAFY 14기 2학기 프로젝트 — AiRadar Team</sub>
+  <sub>SSAFY 14기 2학기 프로젝트 — AiRadar Team MCP</sub>
 </p>

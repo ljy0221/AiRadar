@@ -26,7 +26,7 @@ def _trigger_github_crawl() -> None:
         "provider": "github_trending_archive",
         "max_articles": 100,
         "github_window_minutes": 180,
-        "github_min_stars": 500,
+        "github_min_stars": 50,
         "github_top_n": 100,
     }
     resp = requests.post(url, json=payload, timeout=600)

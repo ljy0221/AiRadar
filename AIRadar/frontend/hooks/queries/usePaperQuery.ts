@@ -11,3 +11,12 @@ export const usePaperDailyQuery = (params?: PaperListParams) => {
     staleTime: 1000 * 60 * 10, // 10분
   });
 };
+
+// 가용 날짜 조회 훅
+export const useAvailablePaperDates = (params: { category?: string; researchArea?: string } = {}) => {
+  return useQuery({
+    queryKey: ['papers', 'available-dates', params],
+    queryFn: () => paperApi.getAvailableDates(params),
+    staleTime: 1000 * 60 * 5, // 5분
+  });
+};

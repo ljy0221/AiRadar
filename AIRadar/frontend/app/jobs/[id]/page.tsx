@@ -2,84 +2,46 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { JobHeader, CoreTaskCard, ScenarioModal, SkillPrepCard } from '@/components/features/jobs';
-
-// --- Dummy Data ---
-const jobData = {
-  title: '주니어 프론트엔드 개발자',
-  category: '개발',
-  aiRiskScore: 6.5,
-  coreTasks: [
-    {
-      title: '피그마 시안을 바탕으로 하는 단순 마크업 자동화',
-      description: 'AI가 디자인 파일을 인식하고 초기 React/HTML 코드를 빠르게 생성하여 개발 초기 세팅 시간을 대폭 단축합니다.',
-      sources: [
-        { type: 'paper' as const, text: '분석 완료', impact: 'HIGH' as const },
-        { type: 'news' as const, text: '12건 기반' }
-      ],
-      scenario: {
-        title: 'AI Code Gen - 상세 시나리오',
-        description: '피그마 시안을 바탕으로 하는 단순 마크업 자동화',
-        steps: [
-          'AI가 피그마 디자인을 분석하여 컴포넌트 구조를 파악합니다.',
-          '자동으로 HTML/CSS 코드를 생성하고 React 컴포넌트로 변환합니다.',
-          '개발자는 생성된 코드를 검토하고 비즈니스 로직을 추가합니다.',
-          '반복적인 마크업 작업 시간을 70% 단축할 수 있습니다.'
-        ]
-      }
-    },
-    {
-      title: '코드 리뷰 및 버그 탐지 자동화',
-      description: 'PR 시 AI가 린트 및 베스트 프랙티스 기반으로 기본 리뷰를 수행하여 코드 품질을 안정적으로 유지합니다.',
-      sources: [
-        { type: 'paper' as const, text: '분석 완료', impact: 'MEDIUM' as const },
-        { type: 'news' as const, text: '12건 기반' }
-      ],
-      scenario: {
-        title: 'AI Code Review - 상세 시나리오',
-        description: '코드 리뷰 및 버그 탐지 자동화',
-        steps: [
-          'GitHub PR이 생성되면 AI 봇이 즉각 코드를 분석합니다.',
-          '잠재적 버그, 안티 패턴, 성능 이슈를 코멘트로 남깁니다.',
-          '개발자는 AI의 피드백을 수용하여 코드 품질을 개선합니다.'
-        ]
-      }
-    },
-    {
-      title: '테스트 케이스 자동 생성',
-      description: '작성된 컴포넌트와 유틸 함수에 대응하는 Jest/Testing Library 테스트 보일러플레이트를 자동 생성합니다.',
-      sources: [
-        { type: 'paper' as const, text: '분석 완료', impact: 'MEDIUM' as const },
-        { type: 'news' as const, text: '12건 기반' }
-      ],
-      scenario: {
-        title: 'AI Test Gen - 상세 시나리오',
-        description: '테스트 케이스 자동 생성',
-        steps: [
-          '완성된 컴포넌트의 props와 로직을 텍스트 파일과 함께 분석합니다.',
-          'Edge case를 커버하는 TDD 기반 테스트 코드 초안을 출력합니다.',
-          '인간 개발자가 복잡한 상태 조건만 추가 보완하여 커버리지를 높입니다.'
-        ]
-      }
-    }
-  ],
-  prepInfo: {
-    uniqueSkills: ['UI/UX 디테일 조정', '복잡한 비즈니스 로직 설계'],
-    recommendedSkills: ['AI 기반 코딩 툴 숙련도', '시스템 아키텍처 이해'],
-    tools: ['v0.dev', 'Cursor', 'GitHub Copilot']
-  }
-};
+import { useJobForecast } from '@/hooks/queries/useJobForecast';
 
 export default function JobDetailPage() {
+  const params = useParams();
+  const idStr = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const decodedId = idStr ? decodeURIComponent(idStr) : '';
+
+  const { data: jobData, isLoading, isError } = useJobForecast(decodedId);
+
   const [activeTaskIdx, setActiveTaskIdx] = useState(0);
   const [selectedScenario, setSelectedScenario] = useState<any>(null);
 
+  if (isLoading) {
+    return (
+      <div className="w-full flex justify-center items-center min-h-[50vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent)]" />
+      </div>
+    );
+  }
+
+  if (isError || !jobData) {
+    return (
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-20 text-center flex flex-col items-center">
+        <h2 className="text-2xl font-bold mb-4">해당 직업 정보를 찾을 수 없거나 데이터를 불러오지 못했습니다.</h2>
+        <Link href="/jobs" className="px-6 py-2 bg-[var(--color-accent)] hover:opacity-80 transition text-white rounded-md">
+          직업 검색 페이지로 돌아가기
+        </Link>
+      </div>
+    );
+  }
+
   const handleCloseModal = () => setSelectedScenario(null);
+
+  const activeTask = jobData.tasks ? jobData.tasks[activeTaskIdx] : null;
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-8 flex flex-col min-h-screen">
-
       {/* 백 버튼 */}
       <div className="mb-4">
         <Link href="/jobs" className="inline-flex items-center text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-[var(--color-accent)] transition-colors">
@@ -88,59 +50,68 @@ export default function JobDetailPage() {
       </div>
 
       <JobHeader
-        jobTitle={jobData.title}
-        category={jobData.category}
-        aiRiskScore={jobData.aiRiskScore}
+        jobTitle={jobData.jobName}
+        category={`${jobData.forecastMonth ? jobData.forecastMonth + ' 기준 예측' : 'AI 예측 분석'}`}
+        aiRiskScore={0} // 백엔드 API 명세에 없으므로 기본값 0 처리
       />
 
       {/* 핵심업무 탭 메뉴 */}
-      <div className="flex flex-wrap gap-3 mb-6 mt-2">
-        {jobData.coreTasks.map((_, idx) => (
-          <button
-            key={idx}
-            onClick={() => setActiveTaskIdx(idx)}
-            className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all ${activeTaskIdx === idx
-              ? 'bg-[#1e293b] text-white shadow-md'
-              : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700'
-              }`}
-          >
-            핵심업무 {idx + 1}
-          </button>
-        ))}
-      </div>
-
-      <div className="lg:grid lg:grid-cols-12 gap-10 items-start">
-
-        {/* 왼쪽 핵심 업무 카드 영역 (선택된 탭 내용만 표시) - 비율 9/12 (75%) */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
-          <CoreTaskCard
-            number={activeTaskIdx + 1}
-            title={jobData.coreTasks[activeTaskIdx].title}
-            description={jobData.coreTasks[activeTaskIdx].description}
-            sources={jobData.coreTasks[activeTaskIdx].sources}
-            onOpenScenario={() => setSelectedScenario(jobData.coreTasks[activeTaskIdx].scenario)}
-          />
+      {jobData.tasks && jobData.tasks.length > 0 && (
+        <div className="flex flex-wrap gap-3 mb-6 mt-2">
+          {jobData.tasks.map((task: any, idx: number) => (
+            <button
+              key={task.taskKey || idx}
+              onClick={() => setActiveTaskIdx(idx)}
+              className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all ${activeTaskIdx === idx
+                ? 'bg-[#1e293b] text-white shadow-md'
+                : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700'
+                }`}
+            >
+              핵심업무 {idx + 1}
+            </button>
+          ))}
         </div>
+      )}
 
-        {/* 오른쪽 스킬 & 대비 방안 영역 - 비율 4/12 (33%) -> Wait, 8+4 is 12. Let's try 8:4 first for a clean split like levels.fyi sideboards. */}
-        <div className="hidden lg:block lg:col-span-4 sticky top-28">
-          <SkillPrepCard
-            uniqueSkills={jobData.prepInfo.uniqueSkills}
-            recommendedSkills={jobData.prepInfo.recommendedSkills}
-            tools={jobData.prepInfo.tools}
-          />
+      {activeTask && (
+        <div className="lg:grid lg:grid-cols-12 gap-10 items-start">
+          {/* 왼쪽 핵심 업무 카드 영역 */}
+          <div className="lg:col-span-8 flex flex-col gap-6">
+            <CoreTaskCard
+              number={activeTaskIdx + 1}
+              title={activeTask.taskTitle}
+              description={activeTask.impactSummary || activeTask.taskDescription}
+              sources={[
+                { type: 'paper', text: activeTask.evidence?.paper?.note || '분석 중', impact: activeTask.evidence?.paper?.level as any },
+                { type: 'news', text: activeTask.evidence?.news?.note || `${activeTask.evidence?.news?.count || 0}건 기반` }
+              ]}
+              onOpenScenario={() => setSelectedScenario({
+                title: activeTask.taskTitle + ' - 상세 시나리오',
+                description: activeTask.detailedScenario?.automationEffect || '',
+                steps: activeTask.detailedScenario?.steps || []
+              })}
+            />
+          </div>
+
+          {/* 오른쪽 스킬 & 대비 방안 영역 */}
+          <div className="hidden lg:block lg:col-span-4 sticky top-28">
+            <SkillPrepCard
+              uniqueSkills={activeTask.humanStrengths || []}
+              recommendedSkills={activeTask.recommendedSkills || []}
+              tools={activeTask.promisingTools || []}
+            />
+          </div>
+
+          {/* 모바일 화면용 스킬 카드 */}
+          <div className="lg:hidden mt-8">
+            <SkillPrepCard
+              uniqueSkills={activeTask.humanStrengths || []}
+              recommendedSkills={activeTask.recommendedSkills || []}
+              tools={activeTask.promisingTools || []}
+            />
+          </div>
         </div>
-
-        {/* 모바일 화면용 스킬 카드 (그리드 밖이나 아래에 배치) */}
-        <div className="lg:hidden mt-8">
-          <SkillPrepCard
-            uniqueSkills={jobData.prepInfo.uniqueSkills}
-            recommendedSkills={jobData.prepInfo.recommendedSkills}
-            tools={jobData.prepInfo.tools}
-          />
-        </div>
-
-      </div>
+      )}
 
       {/* 시나리오 팝업 모달 */}
       <ScenarioModal
@@ -150,7 +121,6 @@ export default function JobDetailPage() {
         description={selectedScenario?.description || ''}
         steps={selectedScenario?.steps || []}
       />
-
     </div>
   );
 }

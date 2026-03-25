@@ -21,7 +21,7 @@ default_args = {
 def _trigger_crawl(payload: dict) -> None:
     base_url = os.getenv("CRAWLING_API_BASE_URL", "http://host.docker.internal:8002").rstrip("/")
     url = f"{base_url}/crawl/jobs"
-    resp = requests.post(url, json=payload, timeout=180)
+    resp = requests.post(url, json=payload, timeout=300)
     resp.raise_for_status()
     data = resp.json()
     print(
