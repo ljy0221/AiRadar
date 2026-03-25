@@ -6,7 +6,9 @@ import com.mcp.airadar.dashboard.dto.LifecycleDto;
 import com.mcp.airadar.dashboard.entity.JobAiRisk;
 import com.mcp.airadar.dashboard.entity.TechKeywordDaily;
 import com.mcp.airadar.dashboard.entity.TechLifecycle;
+import com.mcp.airadar.dashboard.dto.SimilarKeywordDto;
 import com.mcp.airadar.dashboard.repository.JobAiRiskRepository;
+import com.mcp.airadar.dashboard.repository.KeywordEmbeddingRepository;
 import com.mcp.airadar.dashboard.repository.TechKeywordDailyRepository;
 import com.mcp.airadar.dashboard.repository.TechLifecycleRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -19,9 +21,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,6 +37,8 @@ class DashboardServiceTest {
     private TechLifecycleRepository lifecycleRepository;
     @Mock
     private JobAiRiskRepository jobAiRiskRepository;
+    @Mock
+    private KeywordEmbeddingRepository keywordEmbeddingRepository;
 
     @InjectMocks
     private DashboardService dashboardService;
@@ -91,5 +97,48 @@ class DashboardServiceTest {
 
         assertThat(result).isNotNull();
         verify(jobAiRiskRepository).findAllByOrderByRiskScoreDesc();
+    }
+
+    @Test
+    @DisplayName("wordcloud 조회는 기본 데이터를 그대로 반환한다")
+    void getWordCloud_returnsBaseDataWhenSimilaritySyncFails() {
+        List<Object[]> rows = new ArrayList<>();
+        rows.add(new Object[]{"rag", 12L});
+        when(keywordDailyRepository.findTopKeywordsByLatestWeekAndSourceType("NEWS", 5))
+                .thenReturn(rows);
+        when(keywordEmbeddingRepository.findExistingKeywords("NEWS", List.of("rag")))
+                .thenThrow(new RuntimeException("ai unavailable"));
+
+        var result = dashboardService.getWordCloud("NEWS", 5);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).keyword()).isEqualTo("rag");
+        assertThat(result.get(0).similarKeywords()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("wordcloud 유사 키워드는 현재 응답에 포함된 단어로만 제한한다")
+    void getWordCloud_filtersSimilarKeywordsToReturnedWords() {
+        List<Object[]> rows = new ArrayList<>();
+        rows.add(new Object[]{"rag", 12L});
+        rows.add(new Object[]{"llm", 10L});
+        when(keywordDailyRepository.findTopKeywordsByLatestWeekAndSourceType("NEWS", 5))
+                .thenReturn(rows);
+        when(keywordEmbeddingRepository.findExistingKeywords("NEWS", List.of("rag", "llm")))
+                .thenReturn(Set.of("rag", "llm"));
+        when(keywordEmbeddingRepository.findSimilarKeywords(eq("NEWS"), eq("rag"), eq(List.of("rag", "llm")), eq(0.65)))
+                .thenReturn(List.of(
+                        new SimilarKeywordDto("llm", 0.91)
+                ));
+        when(keywordEmbeddingRepository.findSimilarKeywords(eq("NEWS"), eq("llm"), eq(List.of("rag", "llm")), eq(0.65)))
+                .thenReturn(List.of(new SimilarKeywordDto("rag", 0.91)));
+
+        var result = dashboardService.getWordCloud("NEWS", 5);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).similarKeywords()).extracting(SimilarKeywordDto::keyword)
+                .containsExactly("llm");
+        assertThat(result.get(1).similarKeywords()).extracting(SimilarKeywordDto::keyword)
+                .containsExactly("rag");
     }
 }

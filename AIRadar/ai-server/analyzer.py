@@ -47,13 +47,17 @@ _model: AutoModelForCausalLM | None = None
 def get_local_model():
     global _tokenizer, _model
     if _model is None:
-        logger.info(f"로컬 LLM 로딩: {_LOCAL_MODEL_NAME}")
+        quantization = os.getenv("LLM_QUANTIZATION", "4bit")
+        load_in_4bit = quantization == "4bit"
+        load_in_8bit = quantization == "8bit"
+        logger.info(f"로컬 LLM 로딩: {_LOCAL_MODEL_NAME} (quantization={quantization})")
         _tokenizer = AutoTokenizer.from_pretrained(_LOCAL_MODEL_NAME)
         _model = AutoModelForCausalLM.from_pretrained(
             _LOCAL_MODEL_NAME,
             torch_dtype=torch.float16,
-            device_map="auto",          # GPU 자동 할당
-            load_in_4bit=True,          # 4bit 양자화 (VRAM ~4.5GB)
+            device_map="auto",
+            load_in_4bit=load_in_4bit,
+            load_in_8bit=load_in_8bit,
         )
         logger.info("로컬 LLM 로딩 완료")
     return _tokenizer, _model
@@ -62,6 +66,9 @@ def get_local_model():
 def _call_local(system: str, user_prompt: str) -> str:
     """로컬 Qwen 모델로 추론하고 텍스트 응답 반환"""
     tokenizer, model = get_local_model()
+
+    max_new_tokens = int(os.getenv("LLM_MAX_NEW_TOKENS", "1024"))
+    temperature = float(os.getenv("LLM_TEMPERATURE", "0.1"))
 
     messages = [
         {"role": "system", "content": system},
@@ -75,8 +82,8 @@ def _call_local(system: str, user_prompt: str) -> str:
     with torch.no_grad():
         output_ids = model.generate(
             **inputs,
-            max_new_tokens=512,
-            temperature=0.1,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
             do_sample=True,
             pad_token_id=tokenizer.eos_token_id,
         )
@@ -195,7 +202,7 @@ Rules:
 - sentiment: "POSITIVE" | "NEGATIVE" | "NEUTRAL"
 - keywords: up to 5 English lowercase strings
 - score: float 0.0~1.0, AI/tech relevance
-- summary: 1-2 sentences in English
+- summary: 3-4 sentences in English covering (1) main topic, (2) key findings or events, (3) significance or impact
 - category: LLM | Vision | NLP | RL | Multimodal | Robotics | Semiconductor | Cloud | ETC
 - region: "DOMESTIC" | "GLOBAL"
 - companies: official company names in English only (e.g. "Samsung Electronics", "Baidu"), empty array if none
@@ -266,7 +273,7 @@ Example format:
 Rules:
 - paper_id: copy exactly from input
 - keywords: up to 5 English lowercase strings in a JSON array
-- summary: 1 sentence in English (max 30 words), must be a string
+- summary: 2-3 sentences in English (max 80 words) covering (1) problem being solved, (2) proposed method, (3) key result or contribution. Must be a string.
 - category: Vision | NLP | RL | Multimodal | Robotics | ETC
 - research_area: cs.AI | cs.LG | cs.CV | cs.CL | cs.RO | cs.NE
 
