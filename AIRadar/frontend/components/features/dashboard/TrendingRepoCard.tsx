@@ -91,8 +91,8 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
             <button
               onClick={() => setChartTab('daily')}
               className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${chartTab === 'daily'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
             >
               일간
@@ -100,8 +100,8 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
             <button
               onClick={() => setChartTab('monthly')}
               className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${chartTab === 'monthly'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
             >
               월간
@@ -114,14 +114,20 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
             <LineChart data={currentData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(156, 163, 175, 0.2)" />
               <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} tickFormatter={(value) => value >= 1000 ? `${value / 1000}k` : value} />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 11, fill: '#9CA3AF' }} 
+                tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value}
+                domain={['auto', 'auto']}
+                padding={{ top: 20, bottom: 20 }}
+              />
               <Tooltip
                 contentStyle={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border)', borderRadius: '8px', color: 'var(--color-text-primary)' }}
                 itemStyle={{ fontSize: '12px' }}
               />
               <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-              <Line type="monotone" dataKey="stars" name="스타" stroke={CHART_COLORS.stars} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-              <Line type="monotone" dataKey="forks" name="포크" stroke={CHART_COLORS.forks} strokeWidth={2} dot={{ r: 2 }} />
+              <Line type="monotone" dataKey="stars" name="스타" stroke={CHART_COLORS.stars} strokeWidth={3} dot={{ r: 4, fill: CHART_COLORS.stars }} activeDot={{ r: 6, fill: '#fff', stroke: CHART_COLORS.stars, strokeWidth: 2 }} animationDuration={1000} />
             </LineChart>
           </ResponsiveContainer>
         </div>
