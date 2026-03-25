@@ -64,7 +64,14 @@ public class KeywordEmbeddingRepository {
         jdbcTemplate.batchUpdate(sql, batch);
     }
 
-    public List<SimilarKeywordDto> findSimilarKeywords(String sourceType, String keyword, int limit, double minSimilarity) {
+    public List<SimilarKeywordDto> findSimilarKeywords(String sourceType,
+                                                       String keyword,
+                                                       List<String> candidateKeywords,
+                                                       double minSimilarity) {
+        if (candidateKeywords.isEmpty()) {
+            return List.of();
+        }
+
         String sql = """
                 SELECT similar_keyword, similarity
                 FROM (
@@ -76,8 +83,8 @@ public class KeywordEmbeddingRepository {
                      AND source.keyword <> other.keyword
                     WHERE source.source_type = :sourceType
                       AND source.keyword = :keyword
+                      AND other.keyword IN (:candidateKeywords)
                     ORDER BY source.embedding <=> other.embedding
-                    LIMIT :limit
                 ) ranked
                 WHERE similarity >= :minSimilarity
                 ORDER BY similarity DESC, similar_keyword ASC
@@ -88,7 +95,7 @@ public class KeywordEmbeddingRepository {
                 new MapSqlParameterSource()
                         .addValue("sourceType", sourceType)
                         .addValue("keyword", keyword)
-                        .addValue("limit", limit)
+                        .addValue("candidateKeywords", candidateKeywords)
                         .addValue("minSimilarity", minSimilarity),
                 (rs, rowNum) -> new SimilarKeywordDto(
                         rs.getString("similar_keyword"),
