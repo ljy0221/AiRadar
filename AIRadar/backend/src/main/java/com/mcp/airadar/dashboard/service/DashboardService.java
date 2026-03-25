@@ -16,14 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -83,8 +76,7 @@ public class DashboardService {
                         (String) obj[0],
                         ((Number) obj[1]).intValue(),
                         sourceType,
-                        List.of(),
-                        (String) obj[0]
+                        List.of()
                 ))
                 .toList();
 
@@ -113,15 +105,12 @@ public class DashboardService {
                 );
             }
 
-            Map<String, String> clusterMap = buildClusterMap(keywords, similarKeywordMap);
-
             return baseWords.stream()
                     .map(word -> new WordCloudDto(
                             word.keyword(),
                             word.count(),
                             word.sourceType(),
-                            similarKeywordMap.getOrDefault(word.keyword(), List.of()),
-                            clusterMap.getOrDefault(word.keyword(), word.keyword())
+                            similarKeywordMap.getOrDefault(word.keyword(), List.of())
                     ))
                     .toList();
         } catch (Exception e) {
@@ -169,59 +158,6 @@ public class DashboardService {
             throw new IllegalStateException("AI server returned no keyword embeddings");
         }
         return response.embeddings();
-    }
-
-    private Map<String, String> buildClusterMap(List<String> keywords, Map<String, List<SimilarKeywordDto>> similarKeywordMap) {
-        Map<String, Set<String>> graph = new HashMap<>();
-        Set<String> keywordSet = new HashSet<>(keywords);
-
-        for (String keyword : keywords) {
-            graph.computeIfAbsent(keyword, ignored -> new HashSet<>());
-            for (SimilarKeywordDto similarKeyword : similarKeywordMap.getOrDefault(keyword, List.of())) {
-                if (!keywordSet.contains(similarKeyword.keyword())) {
-                    continue;
-                }
-                graph.get(keyword).add(similarKeyword.keyword());
-                graph.computeIfAbsent(similarKeyword.keyword(), ignored -> new HashSet<>()).add(keyword);
-            }
-        }
-
-        Map<String, String> clusterMap = new HashMap<>();
-        Set<String> visited = new HashSet<>();
-
-        for (String start : keywords) {
-            if (!visited.add(start)) {
-                continue;
-            }
-
-            List<String> component = new ArrayList<>();
-            ArrayDeque<String> queue = new ArrayDeque<>();
-            queue.add(start);
-
-            while (!queue.isEmpty()) {
-                String current = queue.poll();
-                component.add(current);
-                for (String neighbor : graph.getOrDefault(current, Set.of())) {
-                    if (visited.add(neighbor)) {
-                        queue.add(neighbor);
-                    }
-                }
-            }
-
-            String clusterKey = component.stream()
-                    .sorted(Comparator.comparingInt((String keyword) ->
-                                    similarKeywordMap.getOrDefault(keyword, List.of()).size())
-                            .reversed()
-                            .thenComparing(String::compareTo))
-                    .findFirst()
-                    .orElse(start);
-
-            for (String keyword : component) {
-                clusterMap.put(keyword, clusterKey);
-            }
-        }
-
-        return clusterMap;
     }
 
     private String toVectorLiteral(List<Float> embedding) {

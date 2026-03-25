@@ -6,7 +6,6 @@ public record WordCloudDto(
         String keyword,
         int count,
         String sourceType,
-        List<SimilarKeywordDto> similarKeywords,
-        String clusterKey
+        List<SimilarKeywordDto> similarKeywords
 ) {
 }

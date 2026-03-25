@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -111,7 +112,6 @@ class DashboardServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).keyword()).isEqualTo("rag");
         assertThat(result.get(0).similarKeywords()).isEmpty();
-        assertThat(result.get(0).clusterKey()).isEqualTo("rag");
     }
 
     @Test

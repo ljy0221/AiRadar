@@ -90,15 +90,13 @@ class DashboardControllerTest {
                 "RAG",
                 30,
                 "NEWS",
-                List.of(new SimilarKeywordDto("LLM", 0.91)),
-                "RAG"
+                List.of(new SimilarKeywordDto("LLM", 0.91))
         );
         when(dashboardService.getWordCloud("NEWS", 50)).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/v1/dashboard/wordcloud"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].keyword").value("RAG"))
-                .andExpect(jsonPath("$.data[0].similarKeywords[0].keyword").value("LLM"))
-                .andExpect(jsonPath("$.data[0].clusterKey").value("RAG"));
+                .andExpect(jsonPath("$.data[0].similarKeywords[0].keyword").value("LLM"));
     }
 }
