@@ -9,6 +9,9 @@ from analyzer import analyze_news_batch, analyze_paper_batch, get_local_model
 from embedder import get_model
 from models import NewsRequest, NewsResponse, PaperRequest, PaperResponse
 
+from prompt.job.schema import JobForecastRequest, JobForecastResponse
+from prompt.job.service import generate_forecast_batch
+
 # 동시 분석 요청 제한 (LLM + 임베딩 메모리 보호)
 _semaphore = asyncio.Semaphore(2)
 
@@ -71,4 +74,20 @@ async def analyze_papers(papers: list[PaperRequest]):
         return results
     except Exception as e:
         logger.error(f"논문 배치 분석 실패: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/job-forecasts/generate", response_model=JobForecastResponse)
+async def generate_job_forecast(request: JobForecastRequest):
+    try:
+        # 서비스 계층 호출
+        tasks_result = await generate_forecast_batch(request.jobName, request.coreTasks)
+        
+        return JobForecastResponse(
+            modelName=os.getenv("LOCAL_MODEL_NAME", "Qwen/Qwen2.5-3B-Instruct"),
+            promptVersion="job-forecast-v1",
+            tasks=tasks_result
+        )
+    except Exception as e:
+        logger.error(f"직무 예측 실패: {e}")
         raise HTTPException(status_code=500, detail=str(e))
