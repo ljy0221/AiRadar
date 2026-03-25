@@ -56,32 +56,29 @@ export const IntroSplash = () => {
   return (
     <>
       <style>{`
-        /* ─── INTRO SCREEN (Style 2 — Deep Ocean) ─── */
+        /* ─── INTRO SCREEN BASE ─── */
         #intro {
           position: fixed;
           inset: 0;
           z-index: 9999;
-          background: var(--color-bg-primary, #03080f);
           display: flex;
           align-items: center;
           justify-content: center;
           overflow: hidden;
           transition: opacity 0.9s ease, transform 0.9s ease;
         }
+
         #intro.intro-exit {
           opacity: 0;
           transform: scale(1.03) translateY(-10px);
           pointer-events: none;
         }
+
         .intro-bg {
           position: absolute;
           inset: 0;
-          background:
-            radial-gradient(ellipse 100% 70% at 50% 0%, rgba(10,60,80,0.9) 0%, transparent 60%),
-            radial-gradient(ellipse 80% 80% at 20% 100%, rgba(5,80,70,0.5) 0%, transparent 50%),
-            radial-gradient(ellipse 70% 60% at 80% 80%, rgba(10,40,90,0.4) 0%, transparent 50%),
-            linear-gradient(180deg, #0a1e2e 0%, var(--color-bg-primary, #03080f) 40%, #041810 100%);
         }
+
         .intro-grain {
           position: absolute;
           inset: 0;
@@ -89,25 +86,72 @@ export const IntroSplash = () => {
           background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
           background-size: 256px;
         }
+
         .intro-glow {
           position: absolute;
           width: 500px; height: 500px;
           top: 50%; left: 50%;
           transform: translate(-50%, -50%);
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(0,212,200,0.1) 0%, rgba(0,180,160,0.05) 40%, transparent 70%);
           animation: intro-glow-breathe 4s ease-in-out infinite;
         }
+
         @keyframes intro-glow-breathe {
           0%,100% { transform: translate(-50%,-50%) scale(1);    opacity: 0.7; }
           50%      { transform: translate(-50%,-50%) scale(1.15); opacity: 1;   }
         }
+
+        /* ─── LIGHT MODE (Default) - Red Theme ─── */
+        #intro { background: #f8fafc; }
+        .intro-bg {
+          background:
+            radial-gradient(ellipse 100% 70% at 50% 0%, rgba(255,255,255,1) 0%, transparent 60%),
+            radial-gradient(ellipse 80% 80% at 50% 100%, rgba(255,255,255,0.8) 0%, transparent 50%),
+            linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+        }
+        .intro-glow { background: radial-gradient(circle, rgba(229,62,62,0.1) 0%, rgba(229,62,62,0.05) 40%, transparent 70%); }
+        .intro-eyebrow { color: #c53030; font-weight: 600; }
+        .intro-logo { color: #0c202a; }
+        .intro-logo span { color: #e53e3e; }
+        .intro-accent-line { background: linear-gradient(90deg, #e53e3e, rgba(229,62,62,0.2)); }
+        .intro-tagline { color: #2d4a58; font-weight: 600; }
+        .intro-status { color: #2d4a58; font-weight: 600; }
+        .intro-pct { color: #b91c1c; font-weight: 600; }
+        .intro-bar-fill { background: linear-gradient(90deg, rgba(229,62,62,0.5), #ef4444); }
+        .intro-bar-fill::after { background: #ff4d4d; }
+        .intro-line { background: linear-gradient(90deg, transparent, rgba(229,62,62,0.18) 50%, transparent); }
+        .intro-vline { background: linear-gradient(to bottom, transparent, rgba(229,62,62,0.08), transparent); }
+        .intro-dot { background: rgba(229,62,62,0.5); }
+
+        /* ─── DARK MODE - Mint/Cyan Theme ─── */
+        :root.dark #intro { background: var(--color-bg-primary, #03080f); }
+        :root.dark .intro-bg {
+          background:
+            radial-gradient(ellipse 100% 70% at 50% 0%, rgba(10,60,80,0.9) 0%, transparent 60%),
+            radial-gradient(ellipse 80% 80% at 20% 100%, rgba(5,80,70,0.5) 0%, transparent 50%),
+            radial-gradient(ellipse 70% 60% at 80% 80%, rgba(10,40,90,0.4) 0%, transparent 50%),
+            linear-gradient(180deg, #0a1e2e 0%, var(--color-bg-primary, #03080f) 40%, #041810 100%);
+        }
+        :root.dark .intro-glow { background: radial-gradient(circle, rgba(0,212,200,0.1) 0%, rgba(0,180,160,0.05) 40%, transparent 70%); }
+        :root.dark .intro-eyebrow { color: var(--color-accent, #00d4c8); opacity: 0.8; font-weight: 500; }
+        :root.dark .intro-logo { color: var(--color-text-primary, #e8f4f0); }
+        :root.dark .intro-logo span { color: var(--color-accent, #00d4c8); }
+        :root.dark .intro-accent-line { background: linear-gradient(90deg, var(--color-accent, #00d4c8), rgba(0,212,200,0.2)); }
+        :root.dark .intro-tagline { color: rgba(200,230,225,0.4); font-weight: 400; }
+        :root.dark .intro-status { color: rgba(200,230,225,0.4); font-weight: 400; }
+        :root.dark .intro-pct { color: var(--color-accent, #00d4c8); opacity: 0.8; font-weight: 400; }
+        :root.dark .intro-bar-fill { background: linear-gradient(90deg, rgba(0,212,200,0.5), var(--color-accent, #00d4c8)); }
+        :root.dark .intro-bar-fill::after { background: #00e8d8; }
+        :root.dark .intro-line { background: linear-gradient(90deg, transparent, rgba(0,212,200,0.18) 50%, transparent); }
+        :root.dark .intro-vline { background: linear-gradient(to bottom, transparent, rgba(0,212,200,0.08), transparent); }
+        :root.dark .intro-dot { background: rgba(0,212,200,0.5); }
+
+        /* ─── COMMON UI ─── */
         .intro-lines { position: absolute; inset: 0; overflow: hidden; }
         .intro-line {
           position: absolute;
           left: 0; right: 0;
           height: 1px;
-          background: linear-gradient(90deg, transparent 0%, transparent 15%, rgba(0,212,200,0.18) 40%, rgba(0,212,200,0.28) 50%, rgba(0,212,200,0.18) 60%, transparent 85%, transparent 100%);
           animation: intro-line-sweep 5s ease-in-out infinite;
           transform-origin: center;
         }
@@ -124,7 +168,6 @@ export const IntroSplash = () => {
           position: absolute;
           top: 0; bottom: 0;
           width: 1px;
-          background: linear-gradient(to bottom, transparent, rgba(0,212,200,0.08), transparent);
           animation: intro-vline-fade 6s ease-in-out infinite;
         }
         .intro-vline:nth-child(1) { left: 20%; animation-delay: 0s; }
@@ -136,7 +179,6 @@ export const IntroSplash = () => {
         .intro-dot {
           position: absolute;
           border-radius: 50%;
-          background: rgba(0,212,200,0.5);
           animation: intro-dot-float 8s ease-in-out infinite;
         }
         .intro-dot:nth-child(1){width:3px;height:3px;top:22%;left:18%;animation-delay:0s;}
@@ -159,11 +201,8 @@ export const IntroSplash = () => {
         }
         .intro-eyebrow {
           font-size: 10px;
-          font-weight: 500;
           letter-spacing: 0.22em;
           text-transform: uppercase;
-          color: var(--color-accent, #00d4c8);
-          opacity: 0.8;
           margin-bottom: 20px;
           animation: intro-fade-up 1s 0.1s ease both;
         }
@@ -172,17 +211,14 @@ export const IntroSplash = () => {
           font-weight: 400;
           font-size: clamp(32px, 5.5vw, 52px);
           letter-spacing: -0.01em;
-          color: var(--color-text-primary, #e8f4f0);
           line-height: 1.1;
           margin-bottom: 24px;
           text-align: center;
           animation: intro-fade-up 1s 0s ease both;
         }
-        .intro-logo span { color: var(--color-accent, #00d4c8); }
         .intro-accent-line {
           width: 0;
           height: 2px;
-          background: linear-gradient(90deg, var(--color-accent, #00d4c8), rgba(0,212,200,0.2));
           border-radius: 2px;
           margin-bottom: 28px;
           animation: intro-line-grow 1.2s 0.4s cubic-bezier(0.4,0,0.2,1) both;
@@ -193,16 +229,15 @@ export const IntroSplash = () => {
         }
         .intro-tagline {
           font-size: 12px;
-          font-weight: 400;
           letter-spacing: 0.14em;
-          color: rgba(200,230,225,0.4);
           margin-bottom: 40px;
           animation: intro-fade-up 1s 0.5s ease both;
         }
         .intro-bar {
           width: 240px;
           height: 1px;
-          background: rgba(255,255,255,0.06);
+          background: rgba(0,0,0,0.06);
+          :root.dark & { background: rgba(255,255,255,0.06); }
           border-radius: 1px;
           overflow: hidden;
           margin-bottom: 12px;
@@ -213,7 +248,8 @@ export const IntroSplash = () => {
           content: '';
           position: absolute;
           inset: 0;
-          background: linear-gradient(90deg, transparent 0%, rgba(0,212,200,0.08) 50%, transparent 100%);
+          background: linear-gradient(90deg, transparent 0%, rgba(229,62,62,0.08) 50%, transparent 100%);
+          :root.dark & { background: linear-gradient(90deg, transparent 0%, rgba(0,212,200,0.08) 50%, transparent 100%); }
           animation: intro-bar-shimmer 2s linear infinite;
         }
         @keyframes intro-bar-shimmer {
@@ -222,7 +258,6 @@ export const IntroSplash = () => {
         }
         .intro-bar-fill {
           height: 100%;
-          background: linear-gradient(90deg, rgba(0,212,200,0.5), var(--color-accent, #00d4c8));
           border-radius: 1px;
           transition: width 0.06s linear;
           position: relative;
@@ -233,7 +268,6 @@ export const IntroSplash = () => {
           position: absolute;
           right: 0; top: -3px;
           width: 3px; height: 7px;
-          background: #00e8d8;
           border-radius: 1px;
         }
         .intro-meta {
@@ -245,15 +279,11 @@ export const IntroSplash = () => {
         .intro-pct {
           font-family: var(--font-audiowide-next), sans-serif;
           font-size: 12px;
-          font-weight: 400;
           letter-spacing: 0.08em;
-          color: var(--color-accent, #00d4c8);
-          opacity: 0.8;
           min-width: 36px;
         }
         .intro-status {
           font-size: 11px;
-          color: rgba(200,230,225,0.4);
           letter-spacing: 0.06em;
         }
         @keyframes intro-fade-up {

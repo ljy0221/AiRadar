@@ -96,7 +96,7 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
 
   return (
     <div className="w-full flex justify-center py-6">
-      <div className="w-full max-w-4xl">
+      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="px-1">
           {/* 추천 섹션 (로그인 중이며 추천 탭이거나 데일리 탭의 최상단일 때) */}
           {isLoggedIn && recommendations && recommendations.length > 0 && (activeTab === 'recommend' || (!selectedDate && activeTab === 'daily')) && (

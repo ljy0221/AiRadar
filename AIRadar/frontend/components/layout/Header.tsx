@@ -58,56 +58,136 @@ export const Header = () => {
 
   return (
     <>
+      <style>{`
+        /* 사이버 헤더 고유 스타일 */
+        .cyber-header-bg {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, 
+            rgba(0, 212, 200, 0.03) 0%, 
+            transparent 50%, 
+            rgba(0, 212, 200, 0.03) 100%
+          );
+          pointer-events: none;
+          z-index: -1;
+        }
+        
+        .cyber-header-grid {
+          position: absolute;
+          inset: 0;
+          background-image: linear-gradient(rgba(0, 212, 200, 0.05) 1px, transparent 1px);
+          background-size: 100% 4px;
+          pointer-events: none;
+          z-index: -1;
+          opacity: 0.5;
+        }
+
+        .cyber-nav-active {
+          position: relative;
+        }
+
+        .cyber-nav-active::after {
+          content: '';
+          position: absolute;
+          bottom: -2px;
+          left: 0;
+          width: 100%;
+          height: 2px;
+          background: var(--color-accent);
+          box-shadow: 0 0 12px var(--color-accent), 0 0 20px var(--color-accent);
+          transition: all 0.3s ease;
+        }
+        
+        .cyber-corner {
+          position: absolute;
+          width: 8px;
+          height: 8px;
+          border: 1.5px solid var(--color-accent);
+          opacity: 0.6;
+          pointer-events: none;
+        }
+        
+        .cyber-corner-tl { top: 0; left: 0; border-right: none; border-bottom: none; }
+        .cyber-corner-tr { top: 0; right: 0; border-left: none; border-bottom: none; }
+        .cyber-corner-bl { bottom: 0; left: 0; border-right: none; border-top: none; }
+        .cyber-corner-br { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+        @keyframes glitch-text {
+          0% { clip-path: inset(40% 0 61% 0); transform: translate(-2px, 2px); }
+          20% { clip-path: inset(92% 0 1% 0); transform: translate(1px, -3px); }
+          40% { clip-path: inset(43% 0 1% 0); transform: translate(-1px, 2px); }
+          60% { clip-path: inset(25% 0 58% 0); transform: translate(3px, 1px); }
+          80% { clip-path: inset(54% 0 7% 0); transform: translate(-2px, -3px); }
+          100% { clip-path: inset(58% 0 43% 0); transform: translate(1px, 2px); }
+        }
+
+        .hover-glitch:hover span:last-child {
+          animation: glitch-text 0.4s infinite linear alternate-reverse;
+          opacity: 0.75;
+          display: block;
+        }
+      `}</style>
+
       <Disclosure
         as="nav"
         className={classNames(
           "sticky top-0 z-50 w-full transition-all duration-300",
           shouldBeTransparent
-            ? "bg-transparent border-none"
-            : "bg-[var(--color-bg-primary)]/80 backdrop-blur-md border-none shadow-none"
+            ? "bg-black/10 backdrop-blur-sm border-b border-white/5 shadow-none"
+            : "bg-[var(--color-bg-primary)]/90 backdrop-blur-xl border-b border-[var(--color-accent)]/30 shadow-[0_4px_30px_rgba(0,212,200,0.15)]"
         )}
       >
-        <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
+        <div className="cyber-header-bg" />
+        <div className="cyber-header-grid" />
+        
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative">
+          {/* 장식용 코너 포인트 */}
+          {!shouldBeTransparent && (
+            <>
+              <div className="cyber-corner cyber-corner-tl" />
+              <div className="cyber-corner cyber-corner-tr" />
+            </>
+          )}
+
           <div className="relative flex h-14 items-center justify-between">
             <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
               <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 text-[var(--color-text-primary)] hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none transition-colors">
-                <span className="absolute -inset-0.5" />
                 <span className="sr-only">Open main menu</span>
                 <Bars3Icon aria-hidden="true" className="block size-6 group-data-open:hidden" />
                 <XMarkIcon aria-hidden="true" className="hidden size-6 group-data-open:block" />
               </DisclosureButton>
             </div>
+            
             <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
               <div className="flex shrink-0 items-center">
                 <Link
                   href="/"
                   className={classNames(
-                    "font-audiowide text-2xl tracking-tight transition-all",
-                    shouldBeTransparent
-                      ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? "text-white" : "text-gray-900 dark:text-white")
-                      : "text-[var(--color-text-primary)] hover:opacity-80"
+                    "font-audiowide text-2xl tracking-tighter transition-all animate-cyber-glow relative hover:scale-105 active:scale-95 group",
+                    shouldBeTransparent ? "text-white" : "text-[var(--color-text-primary)]"
                   )}
                   style={{ fontFamily: 'var(--font-audiowide-next)' }}
                 >
-                  AI RADAR
+                  <span className="relative z-10">AI RADAR</span>
+                  <div className="absolute -inset-2 bg-[var(--color-accent)]/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                 </Link>
               </div>
-              <div className="hidden sm:ml-6 sm:block">
-                <div className="flex space-x-4 h-14 items-center">
+              
+              <div className="hidden sm:ml-10 sm:block">
+                <div className="flex space-x-6 h-14 items-center">
                   {navigation.map((item) => {
                     const isCurrent = pathname.startsWith(item.href);
                     return (
                       <div key={item.name} className="relative h-full flex items-center">
                         <Link
                           href={item.href}
-                          aria-current={isCurrent ? 'page' : undefined}
                           className={classNames(
                             isCurrent
-                              ? 'text-[var(--color-accent)] font-semibold'
+                              ? 'text-[var(--color-accent)] font-bold cyber-nav-active'
                               : shouldBeTransparent
-                                ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? 'text-white/80 hover:text-white' : 'text-gray-600 hover:text-gray-900 dark:text-white/80 dark:hover:text-white')
-                                : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]',
-                            'rounded-md px-3 py-2 text-base transition-colors',
+                                ? 'text-white/70 hover:text-white'
+                                : 'text-[var(--color-text-primary)]/80 hover:text-[var(--color-accent)]',
+                            'px-2 py-1 text-sm font-semibold transition-all duration-200 uppercase tracking-widest animate-glitch',
                           )}
                         >
                           {item.name}
@@ -118,183 +198,89 @@ export const Header = () => {
                 </div>
               </div>
             </div>
-            <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
+
+            <div className="flex items-center gap-2">
               <div className="hidden sm:flex items-center gap-4">
                 <Popover className="relative">
                   <PopoverButton
                     className={classNames(
-                      "p-2 rounded-full border shadow-sm transition-all duration-200 flex items-center justify-center hover:scale-110 active:scale-95 group focus:outline-none",
+                      "p-2 rounded-lg border transition-all duration-200 flex items-center justify-center hover:bg-[var(--color-accent)]/10 active:scale-90 group focus:outline-none",
                       isLoggedIn && user
-                        ? "bg-[var(--color-accent)] text-white text-base font-semibold border-transparent"
+                        ? "bg-[var(--color-accent)] text-white border-transparent"
                         : shouldBeTransparent
-                          ? (mounted && (theme === 'dark' || resolvedTheme === 'dark')
-                            ? "bg-white/10 hover:bg-white/20 text-white border-white/20"
-                            : "bg-black/5 hover:bg-black/10 text-gray-900 border-black/10")
-                          : "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-[var(--color-text-primary)] border-gray-200 dark:border-gray-700"
+                          ? "bg-white/5 hover:bg-white/10 text-white border-white/10"
+                          : "bg-transparent text-[var(--color-text-primary)] border-gray-200 dark:border-gray-800"
                     )}
                   >
-                    <span className="sr-only">Open user menu</span>
                     {isLoggedIn && user ? (
-                      <div className="size-5 flex items-center justify-center select-none leading-none">
+                      <div className="size-5 flex items-center justify-center select-none font-bold">
                         {userInitial}
                       </div>
                     ) : (
-                      <User className={classNames(
-                        "size-5 transition-colors",
-                        shouldBeTransparent
-                          ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? "text-white group-hover:text-white" : "text-gray-900 group-hover:text-gray-900")
-                          : "text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]"
-                      )} />
+                      <User className="size-5" />
                     )}
                   </PopoverButton>
 
                   <Transition
-                    enter="transition ease-out duration-100"
-                    enterFrom="transform opacity-0 scale-95"
-                    enterTo="transform opacity-100 scale-100"
-                    leave="transition ease-in duration-75"
-                    leaveFrom="transform opacity-100 scale-100"
-                    leaveTo="transform opacity-0 scale-95"
+                    enter="transition duration-150 ease-out"
+                    enterFrom="opacity-0 translate-y-2 scale-95"
+                    enterTo="opacity-100 translate-y-0 scale-100"
+                    leave="transition duration-100 ease-in"
+                    leaveFrom="opacity-100 translate-y-0 scale-100"
+                    leaveTo="opacity-0 translate-y-2 scale-95"
                   >
-                    <PopoverPanel className="absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-3xl bg-white dark:bg-[#1a1c2e] py-2 shadow-2xl ring-1 ring-black/5 dark:ring-white/5 focus:outline-none backdrop-blur-xl bg-opacity-95 dark:bg-opacity-95 overflow-hidden transition-all border border-gray-100 dark:border-gray-800">
+                    <PopoverPanel className="absolute right-0 z-50 mt-3 w-64 origin-top-right rounded-2xl bg-white/95 dark:bg-[#11121A]/95 backdrop-blur-2xl py-2 shadow-2xl border border-gray-200 dark:border-[var(--color-accent)]/20">
                       {isLoggedIn && user ? (
                         <>
                           <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 mb-2">
-                            <p className="text-lg font-semibold text-[var(--color-text-primary)] truncate">{user.nickname || user.name}</p>
-                            <div className="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
-                              <Mail className="size-3 mr-1.5 shrink-0" />
-                              <span className="truncate">{user.email}</span>
-                            </div>
+                            <p className="text-lg font-bold truncate">{user.nickname || user.name}</p>
+                            <p className="text-xs text-gray-500 truncate mt-0.5">{user.email}</p>
                           </div>
                           <PopoverButton
                             as={Link}
                             href="/profile"
-                            className="flex items-center gap-3 px-6 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-all group"
+                            className="flex items-center gap-3 px-6 py-3 text-sm font-semibold hover:bg-[var(--color-accent)]/10 hover:text-[var(--color-accent)] transition-all"
                           >
-                            <User className="size-5 text-gray-400 group-hover:text-[var(--color-accent)] transition-colors" />
-                            마이페이지
+                            <User className="size-4" /> 프로필 설정
                           </PopoverButton>
-                          <div className="mx-4 my-2 border-t border-gray-100 dark:border-gray-800" />
+                          <div className="my-2 border-t border-gray-100 dark:border-gray-800" />
                           <PopoverButton
                             as="button"
                             onClick={() => setIsLogoutModalOpen(true)}
-                            className="flex items-center gap-3 w-full px-6 py-3.5 text-sm font-semibold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group text-left"
+                            className="flex items-center gap-3 w-full px-6 py-3 text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all text-left"
                           >
-                            <LogOut className="size-5" />
-                            로그아웃
+                            <LogOut className="size-4" /> 로그아웃
                           </PopoverButton>
                         </>
                       ) : (
-                        <>
-                          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 mb-2">
-                            <p className="text-lg font-semibold text-[var(--color-text-primary)]">AI Radar</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">로그인이 필요합니다</p>
-                          </div>
+                        <div className="p-4">
+                          <p className="text-sm font-bold mb-4">AI RADAR 시스템 접근</p>
                           <PopoverButton
-                            as="button"
                             onClick={() => openAuthModal('login')}
-                            className="flex items-center gap-3 w-full px-6 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-all group text-left outline-none"
+                            className="w-full bg-[var(--color-accent)] text-white py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:brightness-110 mb-2 transition-all"
                           >
-                            <LogIn className="size-5 text-gray-400 group-hover:text-[var(--color-accent)] transition-colors" />
-                            로그인
+                            <LogIn className="size-4" /> 로그인
                           </PopoverButton>
                           <PopoverButton
-                            as="button"
                             onClick={() => openAuthModal('signup')}
-                            className="flex items-center gap-3 w-full px-6 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-all group text-left outline-none"
+                            className="w-full bg-gray-100 dark:bg-gray-800 py-2.5 rounded-xl font-bold text-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
                           >
-                            <PlusCircle className="size-5 text-gray-400 group-hover:text-[var(--color-accent)] transition-colors" />
-                            회원가입
+                            무료 계정 생성
                           </PopoverButton>
-                        </>
+                        </div>
                       )}
                     </PopoverPanel>
                   </Transition>
                 </Popover>
-                <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1"></div>
+
+                <div className="h-4 w-px bg-gray-200 dark:bg-gray-800 mx-1 opacity-50"></div>
                 <ThemeToggle
-                  className={shouldBeTransparent
-                    ? (mounted && (theme === 'dark' || resolvedTheme === 'dark') ? "border-white/20 hover:bg-white/10 text-white" : "border-black/10 hover:bg-black/5 text-gray-900")
-                    : ""}
+                  className={shouldBeTransparent ? "border-white/10 text-white hover:bg-white/5" : ""}
                 />
               </div>
             </div>
           </div>
         </div>
-
-        <DisclosurePanel className="sm:hidden">
-          <div className="space-y-1 px-2 pt-2 pb-3">
-            {navigation.map((item) => {
-              const isCurrent = pathname.startsWith(item.href);
-              return (
-                <DisclosureButton
-                  key={item.name}
-                  as={Link}
-                  href={item.href}
-                  aria-current={isCurrent ? 'page' : undefined}
-                  className={classNames(
-                    isCurrent
-                      ? 'text-[var(--color-accent)] font-semibold bg-gray-50 dark:bg-gray-800/50'
-                      : 'text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)]',
-                    'flex items-center w-full rounded-md px-3 h-12 text-base transition-colors',
-                  )}
-                >
-                  {item.name}
-                </DisclosureButton>
-              );
-            })}
-
-            {/* 로그인 / 로그아웃 영역도 동일한 간격 유지 (별도 테두리/여백 제외) */}
-            {isLoggedIn ? (
-              <>
-                <div className="px-3 py-4 border-b border-gray-100 dark:border-gray-800 mb-2 flex items-center gap-3">
-                  <div className="size-10 flex items-center justify-center rounded-full bg-[var(--color-accent)] text-white font-semibold text-lg select-none">
-                    {userInitial}
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-[var(--color-text-primary)] truncate">{user?.nickname || user?.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
-                  </div>
-                </div>
-                <DisclosureButton
-                  as={Link}
-                  href="/profile"
-                  className="flex items-center gap-3 w-full text-left rounded-md px-3 h-12 text-base font-medium text-[var(--color-text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-[var(--color-accent)] transition-colors"
-                >
-                  <User className="size-5" />
-                  마이페이지
-                </DisclosureButton>
-                <DisclosureButton
-                  as="button"
-                  onClick={() => setIsLogoutModalOpen(true)}
-                  className="flex items-center gap-3 w-full text-left rounded-md px-3 h-12 text-base font-semibold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all"
-                >
-                  <LogOut className="size-5" />
-                  로그아웃
-                </DisclosureButton>
-              </>
-            ) : (
-              <>
-                <DisclosureButton
-                  as="button"
-                  onClick={() => openAuthModal('login')}
-                  className="flex items-center gap-3 w-full text-left rounded-md px-3 h-12 text-base font-semibold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                >
-                  <LogIn className="size-5" />
-                  로그인하기
-                </DisclosureButton>
-                <DisclosureButton
-                  as="button"
-                  onClick={() => openAuthModal('signup')}
-                  className="flex items-center gap-3 w-full text-left rounded-md px-3 h-12 text-base font-semibold text-[var(--color-accent)] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                >
-                  <PlusCircle className="size-5" />
-                  무료로 가입하기
-                </DisclosureButton>
-              </>
-            )}
-          </div>
-        </DisclosurePanel>
       </Disclosure>
 
       <AuthModal
