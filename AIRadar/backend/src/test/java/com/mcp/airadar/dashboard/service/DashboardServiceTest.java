@@ -102,8 +102,10 @@ class DashboardServiceTest {
     @Test
     @DisplayName("wordcloud 조회는 기본 데이터를 그대로 반환한다")
     void getWordCloud_returnsBaseDataWhenSimilaritySyncFails() {
+        List<Object[]> rows = new ArrayList<>();
+        rows.add(new Object[]{"rag", 12L});
         when(keywordDailyRepository.findTopKeywordsByLatestWeekAndSourceType("NEWS", 5))
-                .thenReturn(List.of(new Object[]{"rag", 12L}));
+                .thenReturn(rows);
         when(keywordEmbeddingRepository.findExistingKeywords("NEWS", List.of("rag")))
                 .thenThrow(new RuntimeException("ai unavailable"));
 
@@ -117,11 +119,11 @@ class DashboardServiceTest {
     @Test
     @DisplayName("wordcloud 유사 키워드는 현재 응답에 포함된 단어로만 제한한다")
     void getWordCloud_filtersSimilarKeywordsToReturnedWords() {
+        List<Object[]> rows = new ArrayList<>();
+        rows.add(new Object[]{"rag", 12L});
+        rows.add(new Object[]{"llm", 10L});
         when(keywordDailyRepository.findTopKeywordsByLatestWeekAndSourceType("NEWS", 5))
-                .thenReturn(List.of(
-                        new Object[]{"rag", 12L},
-                        new Object[]{"llm", 10L}
-                ));
+                .thenReturn(rows);
         when(keywordEmbeddingRepository.findExistingKeywords("NEWS", List.of("rag", "llm")))
                 .thenReturn(Set.of("rag", "llm"));
         when(keywordEmbeddingRepository.findSimilarKeywords(eq("NEWS"), eq("rag"), eq(2), eq(0.72)))
