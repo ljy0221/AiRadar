@@ -114,6 +114,7 @@ export const WordCloudChart = ({
   const lastDetectedRef = useRef<boolean[]>(new Array(pageSize).fill(false));
   const hasBeenDetectedRef = useRef<boolean[]>(new Array(pageSize).fill(false)); // 중복 교체 방지용 상태 머신
   const lastSwapTimeRef = useRef<number[]>(new Array(pageSize).fill(0)); // 스왑 쿨다운 (최소 8초)
+  const swapStartTimeRef = useRef<number[]>(new Array(pageSize).fill(0)); // 2초 공백(Term) 타이머용
   const activeIndicesRef = useRef<(number | null)[]>([]); // null 허용 타입으로 수정
   const dataRef = useRef<WordCloudData[]>([]);
 
@@ -141,8 +142,19 @@ export const WordCloudChart = ({
 
       if (nextActiveIndices.length > 0 && currentData.length > 0) {
         slotPositions.forEach((slot, i) => {
+          const now = Date.now();
           const dataIdx = nextActiveIndices[i];
-          if (dataIdx === null) return; // 슬롯이 비어있는(교체 대기) 상태면 스킵
+          
+          if (dataIdx === null) {
+            // 2.0초의 텀(Term)이 끝났는지 확인하여 다음 키워드 투입
+            if (now - swapStartTimeRef.current[i] > 2000) {
+              const nextIdx = nextIdxRef.current;
+              nextIdxRef.current = (nextIdx + 1) % currentData.length;
+              nextActiveIndices[i] = nextIdx;
+              needsUpdate = true;
+            }
+            return; // 슬롯이 비어있는 상태면 다음 감지 로직 스킵
+          }
 
           const dx = slot.x;
           const dy = slot.y;
@@ -169,22 +181,11 @@ export const WordCloudChart = ({
           if (lastDetectedRef.current[i] && !isDetected && hasBeenDetectedRef.current[i]) {
             const now = Date.now();
             if (now - lastSwapTimeRef.current[i] > 8000) {
-              const currentMaxNextIdx = nextIdxRef.current;
-              // 1. 먼저 해당 슬롯을 비움 (사라지는 효과)
+              // 1. 먼저 해당 슬롯을 비움 (2초간의 텀 시작)
               nextActiveIndices[i] = null;
+              swapStartTimeRef.current[i] = now;
               needsUpdate = true;
               
-              // 2. 일정 시간(2초)의 텀을 두고 다음 키워드를 등장시킴
-              setTimeout(() => {
-                setActiveIndices(prev => {
-                  if (prev.length === 0) return prev; // 탭이 변경되어 초기화되었을 경우 무시
-                  const next = [...prev];
-                  next[i] = currentMaxNextIdx;
-                  return next;
-                });
-              }, 2000);
-
-              nextIdxRef.current = (nextIdxRef.current + 1) % currentData.length;
               lastSwapTimeRef.current[i] = now;
             }
             hasBeenDetectedRef.current[i] = false; // 플래그 리셋
@@ -193,6 +194,7 @@ export const WordCloudChart = ({
         });
 
         if (needsUpdate) {
+          activeIndicesRef.current = nextActiveIndices; // 레프 즉시 업데이트하여 다음 프레임 정합성 유지
           setActiveIndices(nextActiveIndices);
         }
       }
