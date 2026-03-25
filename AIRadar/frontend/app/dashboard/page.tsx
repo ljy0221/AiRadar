@@ -8,7 +8,7 @@ import { TrendingUp, TrendingDown, Activity, ListOrdered, Loader2 } from 'lucide
 import { useDashboardSummary } from '@/hooks/queries/useDashboardData';
 import Loading from '@/app/loading';
 
-type DashboardTab = 'overview' | 'analytics' | 'dictionary' | 'github';
+type DashboardTab = 'overview' | 'dictionary' | 'github';
 
 function DashboardContent() {
   const router = useRouter();
@@ -24,7 +24,7 @@ function DashboardContent() {
   // URL 쿼리 파라미터에서 탭 상태를 읽어와 초기화 및 동기화
   useEffect(() => {
     const tabParam = searchParams.get('tab') as DashboardTab;
-    if (tabParam && ['overview', 'analytics', 'dictionary', 'github'].includes(tabParam)) {
+    if (tabParam && ['overview', 'dictionary', 'github'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
@@ -98,8 +98,7 @@ function DashboardContent() {
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           <div className="flex h-10 items-center space-x-8">
             {[
-              { id: 'overview', label: '트렌드 요약' },
-              { id: 'analytics', label: '심층 분석' },
+              { id: 'overview', label: '주요 키워드' },
               { id: 'dictionary', label: 'AI 백과' },
               { id: 'github', label: 'GitHub' }
             ].map((tab) => (
@@ -126,47 +125,18 @@ function DashboardContent() {
       </motion.div>
 
       {/* Main Content Area */}
-      <div className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-8 pt-6 pb-2">
-        <div className="flex flex-col gap-0">
+      <div className={`flex-1 w-full mx-auto pb-2 ${activeTab === 'overview' ? 'max-w-none pt-0' : 'max-w-7xl px-4 md:px-8 pt-6'}`}>
+        <div className="flex flex-col gap-0 h-full">
 
-          {/* Tab Content: 트렌드 요약 (Overview) */}
+          {/* Tab Content: 주요 키워드 (Overview) - 워드클라우드 단독 강조 레이아웃 */}
           {activeTab === 'overview' && (
-            <div className="flex flex-col gap-6">
-              {/* Top Metrics Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {metricsData.map((m, i) => (
-                  <MetricCard key={i} title={m.title} value={m.value} subtitle={m.subtitle} icon={m.icon} trend={m.trend} />
-                ))}
-              </div>
-
-              {/* Technical Analysis: Restore KeywordInsightPanel */}
-              <div className="grid grid-cols-1 gap-6 mt-6">
-                <WordCloudChart />
-              </div>
-
-              {/* Technical Analysis: Restore KeywordInsightPanel */}
-              <div className="grid grid-cols-1 gap-6">
-                <KeywordInsightPanel
-                  title="기술 분석"
-                  subtitle="각 AI 키워드의 라이프사이클 현황 및 트렌드 점수"
-                  data={data.keywords}
-                />
+            <div className="flex flex-col gap-0 w-full animate-in fade-in duration-700 h-full">
+              <div className="w-full h-[calc(100vh-140px)] flex">
+                <WordCloudChart isFullPage={true} />
               </div>
             </div>
           )}
 
-          {/* Tab Content: 심층 분석 (Analytics) */}
-          {activeTab === 'analytics' && (
-            <div className="flex flex-col gap-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <KeywordBarChart data={data.barData} />
-                <KeywordRadarChart data={data.radarData} />
-              </div>
-
-              {/* 모델 성능 비교 차트 추가 */}
-              <ModelComparison data={data.modelComparison} />
-            </div>
-          )}
 
           {/* Tab Content: AI 백과 (Dictionary) */}
           {activeTab === 'dictionary' && (
