@@ -7,7 +7,7 @@ import { Modal } from './Modal';
 interface CalendarModalProps {
   isOpen: boolean;
   onClose: () => void;
-  availableDates: string[]; // 'YYYY-MM-DD' 형식의 문자열 배열
+  availableDates: string[];
   selectedDate: string | null;
   onDateSelect: (date: string | null) => void;
 }
@@ -43,7 +43,6 @@ export const CalendarModal = ({
 
   const getFirstDayOfMonth = useCallback((year: number, month: number) => {
     const day = new Date(year, month, 1).getDay();
-    // 일요일(0) -> 6, 월요일(1) -> 0, ... 토요일(6) -> 5 (월요일 시작)
     return day === 0 ? 6 : day - 1;
   }, []);
 
@@ -62,7 +61,6 @@ export const CalendarModal = ({
   }, [availableDatesSet]);
 
   const handleDateClick = useCallback((dateString: string) => {
-    // 미래 날짜 선택 방지 
     const isFuture = new Date(dateString) > new Date();
     if (isFuture) return;
 
@@ -96,12 +94,12 @@ export const CalendarModal = ({
           onClick={() => handleDateClick(dateString)}
           disabled={isFuture}
           className={`relative w-full h-12 flex flex-col items-center justify-center rounded-md text-sm font-bold border transition-all duration-200
-            ${isSelected 
-              ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white shadow-sm z-10' 
+            ${isSelected
+              ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white shadow-sm z-10'
               : isAvailable && !isFuture
-                ? 'bg-[var(--color-accent)]/10 border-[var(--color-accent)]/20 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/25' 
-                : !isFuture 
-                  ? 'border-gray-100 dark:border-gray-800/50 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50' 
+                ? 'bg-[var(--color-accent)]/10 border-[var(--color-accent)]/20 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/25'
+                : !isFuture
+                  ? 'border-gray-100 dark:border-gray-800/50 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                   : 'border-gray-50 dark:border-gray-900/50 text-gray-200 dark:text-gray-800 cursor-not-allowed'
             }
           `}
@@ -112,7 +110,6 @@ export const CalendarModal = ({
     });
 
     const totalCells = blanks.length + monthDays.length;
-    // 달력은 무조건 6줄(42칸)로 고정하여 모달 크기가 달에 따라 변하지 않게 처리합니다.
     const paddingCells = Array.from({ length: 42 - totalCells }).map((_, i) => (
       <div key={`blank-end-${i}`} className="w-full h-12 border border-gray-100/50 dark:border-gray-800/30 rounded-md" />
     ));
@@ -142,13 +139,13 @@ export const CalendarModal = ({
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => setViewMode('select-year')}
                   className="text-lg font-bold dark:text-gray-200 hover:text-[var(--color-accent)] dark:hover:text-[var(--color-accent)] transition-colors"
                 >
                   {year}년
                 </button>
-                <button 
+                <button
                   onClick={() => setViewMode('select-month')}
                   className="text-lg font-bold dark:text-gray-200 hover:text-[var(--color-accent)] dark:hover:text-[var(--color-accent)] transition-colors"
                 >
@@ -176,11 +173,10 @@ export const CalendarModal = ({
               <button
                 key={`year-${y}`}
                 onClick={() => handleYearSelect(y)}
-                className={`p-3 rounded-lg text-sm font-medium transition-colors ${
-                  y === year 
-                    ? 'bg-[var(--color-accent)] text-white' 
+                className={`p-3 rounded-lg text-sm font-medium transition-colors ${y === year
+                    ? 'bg-[var(--color-accent)] text-white'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
-                }`}
+                  }`}
               >
                 {y}년
               </button>
@@ -194,11 +190,10 @@ export const CalendarModal = ({
               <button
                 key={`month-${m}`}
                 onClick={() => handleMonthSelect(m)}
-                className={`p-3 rounded-lg text-sm font-medium transition-colors ${
-                  m === month 
-                    ? 'bg-[var(--color-accent)] text-white' 
+                className={`p-3 rounded-lg text-sm font-medium transition-colors ${m === month
+                    ? 'bg-[var(--color-accent)] text-white'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
-                }`}
+                  }`}
               >
                 {m + 1}월
               </button>

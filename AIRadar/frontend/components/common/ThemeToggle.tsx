@@ -10,7 +10,6 @@ export const ThemeToggle = ({ className }: { className?: string }) => {
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
 
-  // hydration mismatch 방지
   useEffect(() => {
     setMounted(true);
   }, []);

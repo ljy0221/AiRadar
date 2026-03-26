@@ -21,7 +21,7 @@ export const WordCloudChart = ({
   const [activeTab, setActiveTab] = useState<SourceType>('NEWS');
   const [data, setData] = useState<WordCloudData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // 15개의 슬롯에 표시될 데이터의 인덱스들 (null일 경우 해당 슬롯은 잠시 비워둠)
   const [activeIndices, setActiveIndices] = useState<(number | null)[]>([]);
   const nextIdxRef = useRef(15);
@@ -76,7 +76,7 @@ export const WordCloudChart = ({
       // 12시(0도) 정각에 배치를 하면 '이전 바퀴'의 끝자락(355도~359도)과 겹치는 현상을 방지
       let currentAngle = (i * 137.5 - 85) * (Math.PI / 180);
       let currentRadius = 100 + (i * (isFullPage ? 25 : 20));
-      
+
       let x = Math.cos(currentAngle) * currentRadius * xMult;
       let y = Math.sin(currentAngle) * currentRadius * yMult;
 
@@ -100,7 +100,7 @@ export const WordCloudChart = ({
       }
 
       slots.push({
-        x, y, 
+        x, y,
         widthGuess, heightGuess,
         slotIdx: i,
         angle: (currentAngle * 180 / Math.PI + 360) % 360,
@@ -144,7 +144,7 @@ export const WordCloudChart = ({
         slotPositions.forEach((slot, i) => {
           const now = Date.now();
           const dataIdx = nextActiveIndices[i];
-          
+
           if (dataIdx === null) {
             // 2.0초의 텀(Term)이 끝났는지 확인하여 다음 키워드 투입
             if (now - swapStartTimeRef.current[i] > 2000) {
@@ -162,12 +162,12 @@ export const WordCloudChart = ({
           const charWidth = slot.sizeCategory === 'hero' ? 12 : slot.sizeCategory === 'large' ? 10 : 8;
           const textLength = currentData[dataIdx]?.text.length || 5;
           const halfWidthPx = (textLength * charWidth) / 2;
-          
+
           const entryX = dy > 0 ? dx + halfWidthPx : dx - halfWidthPx;
           const startAngleFull = (Math.atan2(dy, entryX) * 180 / Math.PI + 90 + 360) % 360;
           const radius = Math.sqrt(dx * dx + dy * dy) || 100;
           const wordAngularWidth = (halfWidthPx * 2 * 180) / (Math.PI * radius);
-          
+
           const diff = (angle - startAngleFull + 360) % 360;
           // 30도 범위 검출 사용
           const isDetected = diff < (30 + wordAngularWidth);
@@ -185,7 +185,7 @@ export const WordCloudChart = ({
               nextActiveIndices[i] = null;
               swapStartTimeRef.current[i] = now;
               needsUpdate = true;
-              
+
               lastSwapTimeRef.current[i] = now;
             }
             hasBeenDetectedRef.current[i] = false; // 플래그 리셋
@@ -231,7 +231,7 @@ export const WordCloudChart = ({
       <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-30 pointer-events-auto">
         <div className="flex flex-col bg-white/10 dark:bg-black/40 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 backdrop-blur-sm shadow-lg">
           <div className="text-[10px] font-mono text-gray-500 dark:text-white/60 flex items-center gap-3 uppercase tracking-[0.15em]">
-            <motion.span 
+            <motion.span
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ repeat: Infinity, duration: 2 }}
               className="text-[var(--color-accent)] font-bold"
@@ -372,15 +372,15 @@ export const WordCloudChart = ({
                     transition={{ duration: 0.15, ease: "easeOut" }}
                     whileHover={{
                       scale: baseScale + 0.3,
-                        color: "var(--color-accent)",
+                      color: "var(--color-accent)",
                       opacity: 1,
                       zIndex: 100
                     }}
                   >
                     <span
                       className={`whitespace-nowrap font-black tracking-tighter italic ${sizeCategory === 'hero' ? 'text-xl sm:text-3xl lg:text-4xl' :
-                          sizeCategory === 'large' ? 'text-lg sm:text-2xl lg:text-3xl' :
-                            sizeCategory === 'medium' ? 'text-base sm:text-xl lg:text-2xl' : 'text-sm sm:text-lg lg:text-xl'
+                        sizeCategory === 'large' ? 'text-lg sm:text-2xl lg:text-3xl' :
+                          sizeCategory === 'medium' ? 'text-base sm:text-xl lg:text-2xl' : 'text-sm sm:text-lg lg:text-xl'
                         }`}
                       style={{
                         fontFamily: 'var(--font-audiowide-next), sans-serif',

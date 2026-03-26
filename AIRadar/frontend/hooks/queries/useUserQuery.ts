@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userApi, UpdateUserInput } from '@/services/user/userApi';
 import { useAuth } from '@/components/features/auth/AuthContext';
 
-// ── Query Keys ───────────────────────────────────────────────────────────────
 export const userQueryKeys = {
   me: ['user', 'me'] as const,
   interests: ['user', 'interests'] as const,

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Loading from '@/app/loading';
 import { TimelineFilter } from './TimelineFilter';
 import { TimelineItem, TimelineItemData } from './TimelineItem';
 import { TrendingKeywords } from './TrendingKeywords';
-import { useNewsListQuery, useInfiniteNewsQuery, useAvailableNewsDates } from '@/hooks/queries/useNewsQuery';
+import { useNewsListQuery, useAvailableNewsDates } from '@/hooks/queries/useNewsQuery';
 import { useBookmarksQuery } from '@/hooks/queries/useUserQuery';
 import { usePersonalizedNewsQuery } from '@/hooks/queries/useRecommendationQuery';
 import { useAuth } from '../auth/AuthContext';
@@ -74,45 +74,27 @@ export const NewsTimelineTab = () => {
   // 화면에 표시할 날짜 결정 (선택된 날짜가 없으면 가장 최신 날짜)
   const displayDate = selectedDate || (availableDates.length > 0 ? availableDates[0] : null);
 
-  // 2) 특정 날짜 무한 스크롤 : displayDate 기준으로 활성화
+  // 2) 특정 날짜 뉴스 조회 : displayDate 기준으로 활성화 (무한 스크롤 제거)
   const {
-    data: infiniteData,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading: isInfiniteLoading,
-    isError: isInfiniteError
-  } = useInfiniteNewsQuery({ region, date: displayDate || undefined }); // API 필터 제거
+    data: newsData,
+    isLoading: isNewsLoading,
+    isError: isNewsError
+  } = useNewsListQuery({ region, date: displayDate || undefined });
 
   // 0) 개인화 추천 피드 (로그인 시 & 기본 상태일 때만)
   const { data: recommendations } = usePersonalizedNewsQuery(5, isLoggedIn);
 
   // 날짜 기반 데이터 병합 처리 (displayDate 기준 필터링)
   const mergedGroups = useMemo<DailyNewsGroup[]>(() => {
-    if (infiniteData && infiniteData.pages.length > 0) {
-      const flattened = infiniteData.pages.flat();
-      const map = new Map<string, NewsListItem[]>();
-      for (const group of flattened) {
-        if (!map.has(group.date)) map.set(group.date, []);
-        map.get(group.date)!.push(...group.items);
-      }
-
-      const entries = Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
-
-      // 1순위: displayDate와 일치하는 그룹
-      if (displayDate) {
-        const matched = entries.filter(([date]) => date === displayDate);
-        if (matched.length > 0) {
-          return matched.map(([date, items]) => ({ date, items }));
-        }
-      } else if (entries.length > 0) {
-        // 2순위: displayDate가 없는 경우(초기 진입 & available-dates 실패), 가장 최신 날짜 그룹 사용
-        return [{ date: entries[0][0], items: entries[0][1] }];
-      }
+    if (!newsData || newsData.length === 0) return [];
+    
+    // 이미 백엔드에서 날짜별로 그룹화되어 오므로, displayDate와 일치하는 것만 필터링하거나 
+    // displayDate가 없으면 첫 번째 그룹 사용
+    if (displayDate) {
+      return newsData.filter(group => group.date === displayDate);
     }
-
-    return [];
-  }, [displayDate, infiniteData]);
+    return [newsData[0]];
+  }, [displayDate, newsData]);
 
   // 헤더 표시용 날짜
   const headerDate = useMemo(() => {
@@ -163,28 +145,9 @@ export const NewsTimelineTab = () => {
     });
   }, [currentGroup, activeCategory]);
 
-  // 로딩 밑 에러 상태 체크
-  const isLoading = (isInfiniteLoading && mergedGroups.length === 0);
-  const isError = (isInfiniteError && mergedGroups.length === 0);
-
-  // 무한 스크롤 Intersection Observer 세팅
-  const observerRef = useRef<HTMLDivElement | null>(null);
-
-  const handleObserver = useCallback(
-    (entries: IntersectionObserverEntry[]) => {
-      const target = entries[0];
-      if (target.isIntersecting && hasNextPage && !isFetchingNextPage) {
-        fetchNextPage();
-      }
-    },
-    [fetchNextPage, hasNextPage, isFetchingNextPage]
-  );
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(handleObserver, { threshold: 0.1 });
-    if (observerRef.current) observer.observe(observerRef.current);
-    return () => observer.disconnect();
-  }, [handleObserver, displayDate]);
+  // 로딩 및 에러 상태 체크
+  const isLoading = (isNewsLoading && mergedGroups.length === 0);
+  const isError = (isNewsError && mergedGroups.length === 0);
 
   if (isLoading) {
     return <Loading />;
@@ -316,18 +279,10 @@ export const NewsTimelineTab = () => {
             )
           )}
 
-          {/* 특정 날짜 선택 시 무한스크롤용 옵저버 타겟 */}
+          {/* 마지막 뉴스 안내 */}
           {displayDate && currentGroup && (
-            <div ref={observerRef} className="w-full h-10 flex justify-center items-center mt-6">
-              {isFetchingNextPage && (
-                <div className="flex items-center gap-2 text-gray-400 text-sm font-medium">
-                  <div className="w-4 h-4 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
-                  뉴스를 더 불러오는 중...
-                </div>
-              )}
-              {!hasNextPage && !isFetchingNextPage && (
-                <p className="text-xs text-gray-400 font-bold">마지막 뉴스입니다.</p>
-              )}
+            <div className="w-full h-10 flex justify-center items-center mt-6">
+              <p className="text-xs text-gray-400 font-bold">마지막 뉴스입니다.</p>
             </div>
           )}
         </div>

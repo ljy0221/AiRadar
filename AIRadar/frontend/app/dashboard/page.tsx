@@ -3,8 +3,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
-import { MetricCard, KeywordTrendList, KeywordBarChart, KeywordRadarChart, KeywordDictionary, GithubTrendingCard, ModelComparison, WordCloudChart, KeywordInsightPanel, GithubTabContents } from '@/components/features/dashboard';
-import { TrendingUp, TrendingDown, Activity, ListOrdered, Loader2 } from 'lucide-react';
+import { WordCloudChart, KeywordDictionary, GithubTabContents } from '@/components/features/dashboard';
+import { Loader2 } from 'lucide-react';
 import { useDashboardSummary } from '@/hooks/queries/useDashboardData';
 import Loading from '@/app/loading';
 
@@ -60,17 +60,6 @@ function DashboardContent() {
       </div>
     );
   }
-
-  // API 응답 데이터 매핑 로직 (아이콘 등 UI 전용 데이터 추가)
-  const metricsData = data.metrics.map((m, i) => {
-    let icon;
-    if (i === 0) icon = <TrendingUp className="w-6 h-6" />;
-    else if (i === 1) icon = <TrendingDown className="w-6 h-6 text-yellow-500" />;
-    else if (i === 2) icon = <Activity className="w-6 h-6 text-red-500" />;
-    else icon = <ListOrdered className="w-6 h-6 text-gray-500 dark:text-gray-400" />;
-
-    return { ...m, icon };
-  });
 
   // 조건: 최상단에 있거나, 위로 스크롤 중이거나, 마우스가 위쪽에 있을 때 표시
   const isVisible = isAtTop || scrollDir === 'up' || mouseNearTop;

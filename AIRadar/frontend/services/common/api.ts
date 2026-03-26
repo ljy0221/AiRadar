@@ -62,7 +62,6 @@ api.interceptors.response.use(
         if (!refreshToken) throw new Error('No refresh token available');
 
         const refreshUrl = `${BASE_URL}/auth/refresh`;
-        console.log('🔄 Attempting Refresh:', refreshUrl);
 
         // 리프레시 토큰을 본문에 담아 요청 (백엔드 규격)
         const response: any = await axios.post(refreshUrl, { refreshToken }, { withCredentials: true });

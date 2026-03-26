@@ -12,7 +12,6 @@ interface ModalProps {
 }
 
 export const Modal = ({ isOpen, onClose, title, children, maxWidth = '2xl' }: ModalProps) => {
-  // ESC 키로 창 닫기
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -36,15 +35,15 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = '2xl' }: Mo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
-      <div 
+      <div
         className={`w-full ${maxWidthClasses[maxWidth]} bg-white dark:bg-[#1a1c2e] text-[var(--color-text-primary)] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden transform-gpu`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className={`flex justify-between items-center px-6 py-4 ${title ? 'border-b border-gray-100 dark:border-gray-800' : ''}`}>
           {title ? <h3 className="text-xl font-bold">{title}</h3> : <div></div>}
-          <button 
+          <button
             title="닫기"
-            onClick={onClose} 
+            onClick={onClose}
             className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <X className="w-5 h-5 text-gray-500" />
