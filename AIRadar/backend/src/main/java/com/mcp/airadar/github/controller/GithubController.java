@@ -38,8 +38,18 @@ public class GithubController {
     public ResponseEntity<List<GithubTrendingDto>> getTrending(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(defaultValue = "10") int limit
     ) {
-        return ResponseEntity.ok(githubService.getTrendingRepos(date, limit));
+        if (date != null) {
+            return ResponseEntity.ok(githubService.getTrendingRepos(date, limit));
+        }
+        if (startDate != null || endDate != null) {
+            return ResponseEntity.ok(githubService.getTrendingReposByRange(startDate, endDate, limit));
+        }
+        return ResponseEntity.ok(githubService.getTrendingRepos(null, limit));
     }
 }

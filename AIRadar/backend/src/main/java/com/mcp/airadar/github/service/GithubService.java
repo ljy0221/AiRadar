@@ -101,6 +101,29 @@ public class GithubService {
     }
 
     /**
+     * 날짜 범위 내 스냅샷 날짜별 트렌딩 레포 조회.
+     * startDate/endDate 중 하나라도 있으면 범위 조회, 둘 다 없으면 단일 날짜 조회로 위임.
+     */
+    public List<GithubTrendingDto> getTrendingReposByRange(LocalDate startDate, LocalDate endDate, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, MAX_LIMIT));
+        LocalDate from = startDate != null ? startDate : LocalDate.now().minusDays(6);
+        LocalDate to = endDate != null ? endDate : LocalDate.now();
+
+        return githubRepoDailyRepository.findTrendingByDateRange(from, to, safeLimit)
+                .stream()
+                .map(row -> GithubTrendingDto.builder()
+                        .repoId((String) row[0])
+                        .repoName((String) row[1])
+                        .description((String) row[2])
+                        .language((String) row[3])
+                        .stars(row[4] != null ? ((Number) row[4]).longValue() : null)
+                        .starDelta1d(row[5] != null ? ((Number) row[5]).intValue() : null)
+                        .snapshotDate(row[6] != null ? ((java.sql.Date) row[6]).toLocalDate() : null)
+                        .build())
+                .toList();
+    }
+
+    /**
      * Backward-compatible endpoint response for the existing /trending route.
      */
     public List<GithubTrendingDto> getTrendingRepos(LocalDate date, int limit) {
