@@ -1,5 +1,3 @@
-// types/newsletter.ts
-
 export interface NewsletterSubscribeRequest {
   email: string;
   jobCategory?: string;

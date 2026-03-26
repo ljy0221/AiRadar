@@ -5,7 +5,6 @@ import { useGithubReposQuery } from '@/hooks/queries/useGithubQuery';
 import Loading from '@/app/loading';
 
 export const GithubTabContents = () => {
-  // 상위 5개 레포지토리만 가져오기
   const { data, isLoading, isError } = useGithubReposQuery({ limit: 5 });
 
   if (isLoading) {

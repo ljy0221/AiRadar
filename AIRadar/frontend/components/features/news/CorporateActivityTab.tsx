@@ -59,7 +59,7 @@ function groupNewsByCompany(newsList: NewsListItem[]) {
   for (const company of Object.keys(COMPANY_KEYWORDS)) {
     const keywords = COMPANY_KEYWORDS[company];
     const matches = newsList.filter(
-      (n) => keywords.some(keyword => 
+      (n) => keywords.some(keyword =>
         n.title.toLowerCase().includes(keyword) || n.source.toLowerCase().includes(keyword)
       )
     );
@@ -69,12 +69,12 @@ function groupNewsByCompany(newsList: NewsListItem[]) {
   const result = Object.entries(grouped).map(([id, items], idx) => {
     const meta = COMPANY_META[id];
     const color = meta?.color ?? DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
-    
+
     // 1. 퀄리티 점수 (최근 4일 중 Top 3의 평균 Score)
     const sortedScores = items.map((n) => n.score).sort((a, b) => b - a);
     const top3Scores = sortedScores.slice(0, 3);
-    const avgTop3Score = top3Scores.length > 0 
-      ? top3Scores.reduce((acc, val) => acc + val, 0) / top3Scores.length 
+    const avgTop3Score = top3Scores.length > 0
+      ? top3Scores.reduce((acc, val) => acc + val, 0) / top3Scores.length
       : 0;
     const qualityScore = avgTop3Score * 100;
 
@@ -87,8 +87,8 @@ function groupNewsByCompany(newsList: NewsListItem[]) {
     // 키워드 추출
     const keys = new Set<string>();
     items.forEach(n => {
-       const kws = n.keywords && n.keywords.length > 0 ? n.keywords : [categoryLabel(n.category)];
-       kws.forEach(k => keys.add(k));
+      const kws = n.keywords && n.keywords.length > 0 ? n.keywords : [categoryLabel(n.category)];
+      kws.forEach(k => keys.add(k));
     });
 
     return {
@@ -98,7 +98,7 @@ function groupNewsByCompany(newsList: NewsListItem[]) {
       color,
       progress: finalProgress,
       newsCount: items.length,
-      keywords: Array.from(keys).slice(0, 4), // 최대 4개 표시
+      keywords: Array.from(keys).slice(0, 4),
       activities: items.slice(0, 3).map((n) => ({
         date: formatDate(n.publishedAt),
         category: categoryLabel(n.category),
@@ -151,7 +151,7 @@ export const CorporateActivityTab = () => {
     };
     const keywords = COMPANY_KEYWORDS[comp.id] || [];
     const originalMatches = allNewsItems.filter(n => keywords.some(keyword => n.title.toLowerCase().includes(keyword) || n.source.toLowerCase().includes(keyword)));
-    
+
     return {
       ...comp,
       allActivities: originalMatches.map(n => ({
@@ -161,7 +161,7 @@ export const CorporateActivityTab = () => {
         url: n.url,
         publisher: n.source,
       }))
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // 최신순
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // 최신순
     };
   });
 
@@ -172,7 +172,6 @@ export const CorporateActivityTab = () => {
       <div className="w-full max-w-5xl"> {/* 가로 폭을 넓혀 안정감 확보 */}
 
         {!selectedCompany ? (
-          // --- 1. 기업 목록 그리드 뷰 ---
           <>
             <div className="mb-6 flex justify-between items-end">
               <p className="text-gray-500 dark:text-gray-400 text-sm">기업을 선택하면 상세 타임라인을 볼 수 있어요</p>
@@ -181,10 +180,10 @@ export const CorporateActivityTab = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {corporateData.length > 0 ? (
                 corporateData.map((company) => (
-                  <CompanyActivityCard 
-                    key={company.id} 
-                    company={company} 
-                    onClick={() => setSelectedCompanyId(company.id)} 
+                  <CompanyActivityCard
+                    key={company.id}
+                    company={company}
+                    onClick={() => setSelectedCompanyId(company.id)}
                   />
                 ))
               ) : (
@@ -198,20 +197,20 @@ export const CorporateActivityTab = () => {
             {/* 상단 헤더 영역 */}
             <div className="flex flex-col mb-8">
               <div className="flex items-center gap-4 mb-6">
-                <button 
+                <button
                   onClick={() => setSelectedCompanyId(null)}
                   className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-[#1a1c2e] hover:bg-gray-200 dark:hover:bg-[#22253a] transition-colors rounded-xl text-sm font-bold text-gray-600 dark:text-gray-400"
                 >
                   <ArrowLeft className="w-4 h-4" /> 전체 기업
                 </button>
-                
-                <div 
+
+                <div
                   className="w-12 h-12 rounded-[14px] flex items-center justify-center text-white font-extrabold text-xl shadow-sm"
                   style={{ backgroundColor: selectedCompany.color }}
                 >
                   {selectedCompany.initial}
                 </div>
-                
+
                 <div className="flex flex-col">
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{selectedCompany.name}</h2>
                   <span className="text-sm font-medium text-gray-500 dark:text-gray-400">최근 뉴스 {selectedCompany.allActivities.length}건</span>
@@ -250,13 +249,13 @@ export const CorporateActivityTab = () => {
                       </span>
                       <div className="flex-1 h-[1px] bg-gray-100 dark:bg-gray-800/80" />
                     </div>
-                    
+
                     {/* 해당 날짜 아이템들 */}
                     <div className="flex flex-col gap-5 pl-1.5">
                       {activities.map((act, i) => (
                         <div key={i} className="flex justify-between items-start gap-4 group/item">
                           <div className="flex items-start gap-3">
-                            <div 
+                            <div
                               className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
                               style={{ backgroundColor: selectedCompany.color }}
                             />
@@ -270,9 +269,9 @@ export const CorporateActivityTab = () => {
                                   {act.title}
                                 </span>
                               )}
-                              
+
                               <div className="flex items-center gap-2 mt-0.5">
-                                <span 
+                                <span
                                   className="text-[11px] font-bold"
                                   style={{ color: selectedCompany.color }}
                                 >
@@ -284,7 +283,7 @@ export const CorporateActivityTab = () => {
                               </div>
                             </div>
                           </div>
-                          
+
                           {/* 우측 주목 뱃지 (스펙 참고: 랜덤하게 표시되거나 특정 조건) */}
                           <div className="flex items-center gap-1 text-[#f0564a] bg-[#f0564a]/10 px-2 py-1 rounded text-xs font-bold shrink-0 opacity-80 group-hover/item:opacity-100 transition-opacity">
                             <TrendingUp className="w-3.5 h-3.5" />
@@ -297,7 +296,7 @@ export const CorporateActivityTab = () => {
                 ));
               })()}
             </div>
-            
+
             {/* 리스트 하단 확장 원형 버튼 */}
             <div className="w-full flex justify-center mt-12 py-4">
               <button className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm">

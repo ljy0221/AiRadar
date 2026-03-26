@@ -32,7 +32,6 @@ export const ProfileDetail = () => {
 
   const isLoading = isUserLoading || isInterestsLoading;
 
-  // 서버에서 받은 InterestItem 배열에서 keyword 문자열만 추출
   const currentInterests = interestItems?.map((item) => item.keyword) || [];
 
   if (isLoading) {
@@ -81,7 +80,6 @@ export const ProfileDetail = () => {
     const trimmed = newKeyword.trim();
     if (!trimmed) return;
 
-    // 이중 등록 방지
     if (currentInterests.includes(trimmed)) {
       setNewKeyword('');
       return;

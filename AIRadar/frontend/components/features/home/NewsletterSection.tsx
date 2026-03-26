@@ -51,17 +51,13 @@ const ANGLE_STEP = SPREAD_ANGLE / (TOTAL - 1);
 const START_OFFSET = SPREAD_ANGLE / 2;
 const END_OFFSET = -SPREAD_ANGLE / 2;
 
-// ── 뷰포트 크기에 따라 카드/반지름 수치 계산 ──────────────────────────────────
 function calcDimensions(vw: number) {
-  // 카드 너비: 뷰포트의 38% (최소 320px, 최대 560px)
   const cardW = Math.min(560, Math.max(320, vw * 0.38));
   const cardH = cardW * 0.58;
-  // 반지름: 뷰포트의 68% (최소 460px, 최대 900px)
   const radius = Math.min(900, Math.max(460, vw * 0.68));
   return { cardW, cardH, radius };
 }
 
-// ─── 공통 카드 ───────────────────────────────────────────────────────────────
 const NewsletterCard = ({
   card,
   isFront,
@@ -71,8 +67,8 @@ const NewsletterCard = ({
 }) => (
   <div
     className={`w-full h-full bg-[#1e100d] rounded-3xl border-2 overflow-hidden flex flex-row transition-all duration-500 group ${isFront
-        ? 'border-[#C8432A]/70 shadow-[0_0_60px_rgba(200,67,42,0.35)]'
-        : 'border-white/10 shadow-xl'
+      ? 'border-[#C8432A]/70 shadow-[0_0_60px_rgba(200,67,42,0.35)]'
+      : 'border-white/10 shadow-xl'
       }`}
   >
     <div className="w-[38%] h-full bg-gradient-to-br from-[#3D251E] to-[#1e100d] p-6 relative flex flex-col gap-3 overflow-hidden">
@@ -264,11 +260,9 @@ const DesktopScrollSection = ({ onSubscribe }: { onSubscribe: () => void }) => {
   const targetRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // 초기엔 서버사이드(미리 렌더링된) 기본값으로 설정하여 Hydration 에러 방지
   const [dims, setDims] = useState({ cardW: 480, cardH: 280, radius: 760 });
 
   useEffect(() => {
-    // 컴포넌트 마운트 후(클라이언트 환경) 실제 윈도우 크기로 업데이트
     const update = () => setDims(calcDimensions(window.innerWidth));
     update();
     window.addEventListener('resize', update);
@@ -284,12 +278,9 @@ const DesktopScrollSection = ({ onSubscribe }: { onSubscribe: () => void }) => {
 
   const rawRotation = useTransform(scrollYProgress, [0, 1], [START_OFFSET, END_OFFSET]);
   const rotationDeg = useSpring(rawRotation, { stiffness: 55, damping: 22, mass: 0.8 });
-
-  // 중심점을 화면 하단에서 얼마나 올릴지 (카드 상단이 보이도록)
   const centerOffsetFromBottom = radius - Math.round(radius * 0.36);
 
   return (
-    // w-screen + -translate-x-1/2 + left-1/2: 부모 items-center를 벗어나 뷰포트 전체 폭 확보
     <section
       ref={targetRef}
       className="relative h-[350vh] bg-[#1a0e0b] w-screen left-1/2 -translate-x-1/2"

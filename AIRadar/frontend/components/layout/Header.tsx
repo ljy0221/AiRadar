@@ -54,7 +54,7 @@ export const Header = () => {
 
   const userInitial = user?.nickname?.charAt(0).toUpperCase() || user?.name?.charAt(0).toUpperCase() || '?';
   const isHomePage = pathname === '/';
-  const shouldBeTransparent = isHomePage && !isScrolled;
+  const shouldBeTransparent = false;
 
   return (
     <>
@@ -139,16 +139,8 @@ export const Header = () => {
       >
         <div className="cyber-header-bg" />
         <div className="cyber-header-grid" />
-        
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative">
-          {/* 장식용 코너 포인트 */}
-          {!shouldBeTransparent && (
-            <>
-              <div className="cyber-corner cyber-corner-tl" />
-              <div className="cyber-corner cyber-corner-tr" />
-            </>
-          )}
 
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative">
           <div className="relative flex h-14 items-center justify-between">
             <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
               <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 text-[var(--color-text-primary)] hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none transition-colors">
@@ -157,22 +149,25 @@ export const Header = () => {
                 <XMarkIcon aria-hidden="true" className="hidden size-6 group-data-open:block" />
               </DisclosureButton>
             </div>
-            
+
             <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
               <div className="flex shrink-0 items-center">
                 <Link
                   href="/"
                   className={classNames(
-                    "font-audiowide text-2xl tracking-tighter transition-all animate-cyber-glow relative hover:scale-105 active:scale-95 group",
+                    "font-audiowide text-2xl tracking-tighter transition-all relative hover:scale-105 active:scale-95 group",
+                    mounted && resolvedTheme === 'dark' && "animate-cyber-glow",
                     shouldBeTransparent ? "text-white" : "text-[var(--color-text-primary)]"
                   )}
                   style={{ fontFamily: 'var(--font-audiowide-next)' }}
                 >
                   <span className="relative z-10">AI RADAR</span>
-                  <div className="absolute -inset-2 bg-[var(--color-accent)]/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {mounted && resolvedTheme === 'dark' && (
+                    <div className="absolute -inset-2 bg-[var(--color-accent)]/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
                 </Link>
               </div>
-              
+
               <div className="hidden sm:ml-10 sm:block">
                 <div className="flex space-x-6 h-14 items-center">
                   {navigation.map((item) => {

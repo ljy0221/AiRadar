@@ -58,7 +58,7 @@ export const JobSearch = () => {
           <span className="animate-pulse font-light ml-1">|</span>
         </h1>
         <p className="text-base md:text-lg text-gray-400 dark:text-gray-500 leading-relaxed max-w-lg mx-auto">
-          <span className="font-bold text-gray-900 dark:text-gray-100">324개 직업</span>의 AI 대체 가능성과 미래 전망을<br />
+          <span className="font-bold text-gray-900 dark:text-gray-100">다양한 직업</span>의 AI 대체 가능성과 미래 전망을<br />
           데이터 기반으로 분석해드려요.
         </p>
       </div>

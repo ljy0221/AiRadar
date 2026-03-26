@@ -25,7 +25,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [onboardingCompleted, setOnboardingCompleted] = useState(true);
   const queryClient = useQueryClient();
 
-  // 초기 로드 시 토큰 확인 및 세션 복구 시도
   useEffect(() => {
     const handleLogoutEvent = () => {
       localStorage.removeItem('accessToken');
@@ -50,13 +49,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (stored !== null) {
           setOnboardingCompleted(stored === 'true');
         } else {
-          // 이메일은 있는데 온보딩 기록이 없으면 미완료(false)로 간주하여 안전하게 모달 노출
           setOnboardingCompleted(false);
         }
       }
       setIsInitialized(true);
     } else {
-      // 액세스 토큰이 없더라도 리프레시 토큰이 있으면 세션 복구 시도
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
         authApi.refresh(refreshToken)
@@ -64,7 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (res.accessToken) {
               localStorage.setItem('accessToken', res.accessToken);
               if (res.refreshToken) {
-                localStorage.setItem('refreshToken', res.refreshToken); // 토큰 로테이션 대응
+                localStorage.setItem('refreshToken', res.refreshToken);
               }
               setIsLoggedIn(true);
               if (res.onboardingCompleted !== undefined) {
@@ -92,11 +89,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginState = (accessToken: string, refreshToken: string, completed: boolean, email: string) => {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
-    localStorage.setItem('userEmail', email); // 이메일 저장 추가
+    localStorage.setItem('userEmail', email);
     setUserEmail(email);
-    // 사용자 식별자를 포함한 전용 키로 저장
     localStorage.setItem(`onboarding_completed_${email}`, String(completed));
-    // 구버전 및 임시 키 데이터 삭제
     localStorage.removeItem('onboardingCompleted');
 
     setIsLoggedIn(true);

@@ -38,7 +38,6 @@ export const FeatureSection = () => {
       <div className="flex flex-col gap-24 w-full">
         {/* 첫번째 특징 */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-16 reveal-on-scroll">
-          {/* 시각적 무게중심을 맞추기 위해 md:mt-4를 추가해 살짝 내림 */}
           <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start gap-4 md:mt-4">
             {/* 1단계: Eyebrow */}
             <div className="flex gap-2 text-base md:text-lg font-semibold mb-3">
@@ -74,7 +73,6 @@ export const FeatureSection = () => {
 
         {/* 두번째 특징 */}
         <div className="flex flex-col md:flex-row-reverse items-center justify-between gap-8 md:gap-16 reveal-on-scroll delay-200">
-          {/* 왼쪽 정렬로 통일하여 가독성 확보 */}
           <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start gap-4 md:mt-4">
             {/* 1단계: Eyebrow */}
             <div className="flex gap-2 text-base md:text-lg font-semibold mb-3">

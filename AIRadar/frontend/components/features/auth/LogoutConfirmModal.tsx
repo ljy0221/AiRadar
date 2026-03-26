@@ -14,7 +14,6 @@ export const LogoutConfirmModal = ({ isOpen, onClose, onConfirm }: LogoutConfirm
   return (
     <Transition show={isOpen} as="div">
       <Dialog onClose={onClose} className="relative z-[60]">
-        {/* Backdrop */}
         <TransitionChild
           as="div"
           enter="ease-out duration-300"
@@ -50,7 +49,7 @@ export const LogoutConfirmModal = ({ isOpen, onClose, onConfirm }: LogoutConfirm
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/10 mb-6">
                     <LogOut className="h-7 w-7 text-red-500" />
                   </div>
-                  
+
                   <h2 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)] mb-2">
                     로그아웃
                   </h2>
