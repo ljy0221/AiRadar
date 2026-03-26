@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { 
-  Check, X, Sparkles, Rocket, Target, Cpu, Brain, Layers, 
-  ArrowRight, PlusCircle, Loader2, ChevronRight, Star, ChevronDown, Radar 
+import {
+  Check, X, Sparkles, Rocket, Target, Cpu, Brain, Layers,
+  ArrowRight, PlusCircle, Loader2, ChevronRight, Star, ChevronDown, Radar
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -65,9 +65,9 @@ export const OnboardingModal = () => {
   if (!isInitialized || !isLoggedIn || onboardingCompleted) return null;
 
   const toggleKeyword = (keyword: string) => {
-    setSelectedKeywords(prev => 
-      prev.includes(keyword) 
-        ? prev.filter(k => k !== keyword) 
+    setSelectedKeywords(prev =>
+      prev.includes(keyword)
+        ? prev.filter(k => k !== keyword)
         : prev.length < 10 ? [...prev, keyword] : prev
     );
   };
@@ -79,9 +79,8 @@ export const OnboardingModal = () => {
 
   const handleSubmit = async () => {
     if (selectedKeywords.length === 0) return;
-    
+
     setStep('analyzing');
-    // 인위적인 'AI 분석 중' 딜레이 연출 (UX 목적)
     setTimeout(async () => {
       setIsSubmitting(true);
       try {
@@ -89,8 +88,7 @@ export const OnboardingModal = () => {
         queryClient.invalidateQueries({ queryKey: userQueryKeys.interests });
         setStep('result');
       } catch (error) {
-        console.error('Onboarding failed:', error);
-        setStep('result'); 
+        setStep('result');
       } finally {
         setIsSubmitting(false);
       }
@@ -105,19 +103,19 @@ export const OnboardingModal = () => {
 
   return (
     <Transition show={true} as="div">
-      <Dialog onClose={() => {}} className="relative z-[100]">
+      <Dialog onClose={() => { }} className="relative z-[100]">
         <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-lg transition-opacity overflow-hidden">
           {/* AI 감성의 다이나믹 오로라 배경 (모달 내부에 종속되도록 위치 조정 가능성 검토) */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
-            <motion.div 
-              animate={{ 
+            <motion.div
+              animate={{
                 scale: [1, 1.2, 1],
                 opacity: [0.1, 0.2, 0.1],
                 x: [0, 50, 0],
                 y: [0, -30, 0]
               }}
               transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-              className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-[var(--color-accent)]/20 rounded-full blur-[120px]" 
+              className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-[var(--color-accent)]/20 rounded-full blur-[120px]"
             />
           </div>
         </div>
@@ -137,7 +135,7 @@ export const OnboardingModal = () => {
                 >
                   {/* 도트 형태의 모달 내부 배경 무늬 */}
                   <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(var(--color-text-primary)_1px,transparent_1px)] [background-size:20px_20px]" />
-                  
+
                   {/* 상단 스텝 인디케이터 - 시스템 컬러 적용 */}
                   <div className="flex gap-2 justify-center mb-8">
                     <div className="w-8 h-1.5 rounded-full bg-[var(--color-accent)] shadow-[0_0_8px_var(--color-accent)]/30 transition-all duration-500" />
@@ -147,7 +145,7 @@ export const OnboardingModal = () => {
 
                   <div className="relative z-10 w-full flex flex-col items-center">
                     {/* 메인 아이콘 - 서비스 상징인 Radar로 변경 */}
-                    <motion.div 
+                    <motion.div
                       initial={{ scale: 0.8, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ duration: 0.8, type: 'spring' }}
@@ -262,11 +260,10 @@ export const OnboardingModal = () => {
                                   <button
                                     key={keyword}
                                     onClick={() => toggleKeyword(keyword)}
-                                    className={`px-4 py-2.5 md:px-6 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-[15px] font-bold transition-all border outline-none ${
-                                      isSelected
-                                        ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white shadow-2xl shadow-[var(--color-accent)]/30 scale-105 ring-1 ring-[var(--color-accent)] ring-offset-2 dark:ring-offset-[#0b0c10]'
-                                        : 'bg-gray-50/50 dark:bg-white/[0.05] border-gray-200 dark:border-white/5 text-gray-600 dark:text-gray-300 hover:border-[var(--color-accent)]/50 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-[var(--color-accent)]'
-                                    }`}
+                                    className={`px-4 py-2.5 md:px-6 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-[15px] font-bold transition-all border outline-none ${isSelected
+                                      ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white shadow-2xl shadow-[var(--color-accent)]/30 scale-105 ring-1 ring-[var(--color-accent)] ring-offset-2 dark:ring-offset-[#0b0c10]'
+                                      : 'bg-gray-50/50 dark:bg-white/[0.05] border-gray-200 dark:border-white/5 text-gray-600 dark:text-gray-300 hover:border-[var(--color-accent)]/50 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-[var(--color-accent)]'
+                                      }`}
                                   >
                                     {keyword}
                                   </button>
@@ -281,7 +278,7 @@ export const OnboardingModal = () => {
                     {/* Right: AI Prediction Preview (Glassmorphism Sidebar) */}
                     <div className="bg-[var(--color-bg-primary)]/60 dark:bg-white/[0.03] rounded-[32px] md:rounded-[40px] p-6 md:p-10 border border-gray-100 dark:border-white/10 flex flex-col shadow-inner relative overflow-hidden lg:h-full lg:sticky lg:top-0">
                       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-50" />
-                      
+
                       <div className="flex items-center justify-between mb-8 md:mb-10">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-[var(--color-accent)]/10 rounded-lg">
@@ -289,8 +286,8 @@ export const OnboardingModal = () => {
                           </div>
                           <span className="text-[13px] md:text-sm font-black text-[var(--color-text-primary)] tracking-tight">AI 엔진 실시간 프리뷰</span>
                         </div>
-                        <motion.div 
-                          animate={{ opacity: [1, 0.5, 1] }} 
+                        <motion.div
+                          animate={{ opacity: [1, 0.5, 1] }}
                           transition={{ duration: 2, repeat: Infinity }}
                           className="text-[9px] md:text-[10px] font-black px-2 md:px-2.5 py-1 rounded-full bg-green-500/10 text-green-500 uppercase tracking-widest border border-green-500/20"
                         >
@@ -342,8 +339,8 @@ export const OnboardingModal = () => {
                         <div className="flex justify-between items-center mt-4 px-2 text-[var(--color-text-primary)]/40">
                           <p className="text-[10px] md:text-[11px] font-black uppercase tracking-widest">{selectedKeywords.length} / 10</p>
                           <div className="w-24 md:w-32 h-1 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
-                            <motion.div 
-                              className="h-full bg-[var(--color-accent)]" 
+                            <motion.div
+                              className="h-full bg-[var(--color-accent)]"
                               initial={{ width: 0 }}
                               animate={{ width: `${(selectedKeywords.length / 10) * 100}%` }}
                             />

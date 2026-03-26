@@ -51,7 +51,6 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
     });
   }, [data, searchTerm, activeCategory]);
 
-  // 검색 트래킹 (Debounced)
   useEffect(() => {
     if (searchTerm.trim().length < 2) return;
     const timer = setTimeout(() => {
@@ -68,7 +67,6 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
     setActiveCategory(catId);
     setViewMode('detail');
 
-    // 해당 카테고리의 첫 번째 아이템 미리 선택
     const firstItem = data.find(d => !catId || d.category === catId);
     if (firstItem) setSelectedId(firstItem.id);
   };

@@ -23,10 +23,9 @@ export const IntroSplash = () => {
     const msgInterval = setInterval(() => {
       msgIdx = Math.min(msgIdx + 1, statusMessages.length - 1);
       setStatusMsg(statusMessages[msgIdx]);
-    }, 600); // 300ms -> 600ms
+    }, 600);
 
     const loadInterval = setInterval(() => {
-      // 증가량 하향 (3~11 -> 2~6)
       const increment = currentPct < 60 ? Math.random() * 4 + 2 : Math.random() * 2 + 0.5;
       currentPct += increment;
       if (currentPct >= 100) {
@@ -35,15 +34,13 @@ export const IntroSplash = () => {
         clearInterval(msgInterval);
         setStatusMsg('준비 완료');
 
-        // startExit (100ms -> 400ms)
         setTimeout(() => {
           setIsExiting(true);
-          // 500ms -> 800ms
           setTimeout(() => { setIsVisible(false); }, 800);
         }, 400);
       }
       setPct(currentPct);
-    }, 40); // 25ms -> 40ms
+    }, 40);
 
     return () => {
       clearInterval(msgInterval);

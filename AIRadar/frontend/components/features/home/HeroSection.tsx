@@ -22,10 +22,7 @@ export const HeroSection = () => {
     <section className="w-full relative min-h-screen flex flex-col items-center justify-between pb-8 pt-20 overflow-hidden bg-bg-primary">
       {/* 1. Deep Background Grid & Radar Elements */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none flex items-center justify-center">
-        {/* Dark radial gradient overlay */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,212,200,0.05)_0%,var(--color-bg-primary)_65%)]" />
-
-        {/* Diagonal Crosshair Lines */}
         <div className="absolute inset-0 flex items-center justify-center opacity-20">
 
 
@@ -59,7 +56,6 @@ export const HeroSection = () => {
         transition={{ duration: 0.6, ease: "easeOut", delay: 0 }}
         className="relative z-10 flex flex-col items-center justify-center px-4 max-w-6xl w-full flex-grow -mt-16"
       >
-        {/* Floating Badge */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -71,8 +67,6 @@ export const HeroSection = () => {
             LIVE AI INTELLIGENCE SYSTEM
           </span>
         </motion.div>
-
-        {/* Stacked Main Title */}
         <div className="relative group text-center flex flex-col items-center mb-10 w-full overflow-visible py-4">
           <motion.h1
             style={{ x: mousePos.x * 0.1, y: mousePos.y * 0.1, fontFamily: 'var(--font-audiowide-next)' }}
@@ -89,8 +83,6 @@ export const HeroSection = () => {
             </span>
           </motion.h1>
         </div>
-
-        {/* Sub-headline */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -102,10 +94,6 @@ export const HeroSection = () => {
             AI Radar는 가장 예리한 눈으로 미래의 신호를 읽습니다.
           </p>
         </motion.div>
-
-
-
-        {/* Premium Tech Info Badges */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

@@ -6,8 +6,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import type { GithubRepo } from '@/types/github';
 
 const CHART_COLORS = {
-  stars: '#facc15', // yellow-400
-  forks: '#9ca3af', // gray-400
+  stars: '#facc15',
+  forks: '#9ca3af',
 };
 
 export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: number }) => {
@@ -114,10 +114,10 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
             <LineChart data={currentData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(156, 163, 175, 0.2)" />
               <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} dy={10} />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 11, fill: '#9CA3AF' }} 
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 11, fill: '#9CA3AF' }}
                 tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value}
                 domain={['auto', 'auto']}
                 padding={{ top: 20, bottom: 20 }}

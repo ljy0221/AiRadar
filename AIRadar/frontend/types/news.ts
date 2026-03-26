@@ -1,7 +1,3 @@
-// types/news.ts
-// 뉴스(News) 관련 TypeScript 타입 정의
-// 백엔드 NewsDto.ListItem / NewsDto.Detail 기반
-
 export interface NewsListItem {
   articleId: string;
   title: string;
@@ -10,17 +6,17 @@ export interface NewsListItem {
   category: NewsCategory;
   sentiment: Sentiment;
   score: number;
-  publishedAt: string; // ISO 8601
-  summary?: string;   // mock API 응답에 포함, 없을 수도 있음
-  url?: string;       // mock API 응답에 포함, 없을 수도 있음
-  isBookmarked?: boolean; // 유저의 북마크 여부
-  keywords?: string[]; // 기사별 키워드 배열
+  publishedAt: string;
+  summary?: string;
+  url?: string;
+  isBookmarked?: boolean;
+  keywords?: string[];
 }
 
 export interface NewsDetail extends NewsListItem {
   content: string;
   url: string;
-  countryCode: string; // ISO 2자리 (예: 'US', 'KR')
+  countryCode: string;
   keywords: string[];
   summary: string;
   viewCount: number;
@@ -37,7 +33,7 @@ export type NewsCategory =
 export interface NewsListParams {
   region?: 'GLOBAL' | 'DOMESTIC';
   category?: NewsCategory;
-  date?: string; // yyyy-MM-dd
+  date?: string;
   page?: number;
   size?: number;
 }

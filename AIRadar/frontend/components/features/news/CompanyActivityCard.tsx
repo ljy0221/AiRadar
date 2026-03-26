@@ -16,20 +16,19 @@ interface Props {
 }
 
 export const CompanyActivityCard = ({ company, onClick }: Props) => {
-  // 스크린샷 뷰처럼 특정 모델명/주요 핵심어만 초록색 테두리로 하이라이팅
   const highlightSet = new Set([
-    'GPT-5', '슈퍼앱', '카나나', 'MAI', '비전AI', '비전 AI', 
+    'GPT-5', '슈퍼앱', '카나나', 'MAI', '비전AI', '비전 AI',
     '하이퍼클로바', 'Gemini', '바이브코딩', '대형 언어 모델', 'LLM', '자율주행'
   ]);
 
   return (
-    <div 
+    <div
       onClick={onClick}
       className="relative flex flex-col w-full border border-gray-100 dark:border-gray-800 rounded-2xl p-5 bg-white dark:bg-[#151722] shadow-sm transition-all duration-300 cursor-pointer hover:border-gray-300 dark:hover:border-gray-700 group"
     >
       {/* 1. 상단: 기업 아이콘 및 정보 */}
       <div className="flex items-center gap-3">
-        <div 
+        <div
           className="w-10 h-10 rounded-[14px] flex items-center justify-center text-white font-extrabold text-lg flex-shrink-0 shadow-sm"
           style={{ backgroundColor: company.color }}
         >
@@ -46,13 +45,12 @@ export const CompanyActivityCard = ({ company, onClick }: Props) => {
         {company.keywords.map((kw, idx) => {
           const isHighlighted = highlightSet.has(kw) || idx === 1;
           return (
-            <span 
-              key={`${kw}-${idx}`} 
-              className={`px-3 py-1 rounded-full text-[11px] font-bold border whitespace-nowrap ${
-                isHighlighted 
-                  ? 'border-emerald-500/80 text-emerald-500 bg-emerald-500/5' 
+            <span
+              key={`${kw}-${idx}`}
+              className={`px-3 py-1 rounded-full text-[11px] font-bold border whitespace-nowrap ${isHighlighted
+                  ? 'border-emerald-500/80 text-emerald-500 bg-emerald-500/5'
                   : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 bg-transparent'
-              }`}
+                }`}
             >
               {kw}
             </span>
@@ -63,17 +61,17 @@ export const CompanyActivityCard = ({ company, onClick }: Props) => {
       {/* 3. 하단: 진행률 표시 바 및 화살표 */}
       <div className="mt-auto flex items-center justify-between gap-4">
         <div className="flex-1 h-[2.5px] bg-gray-200/50 dark:bg-gray-800/80 rounded-full overflow-hidden">
-          <div 
+          <div
             className="h-full rounded-full transition-all duration-1000 ease-out"
             style={{ width: `${company.progress}%`, backgroundColor: company.color }}
           />
         </div>
-        <ArrowRight 
-          className="w-4 h-4 opacity-40 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1 shrink-0" 
-          style={{ color: company.color }} 
+        <ArrowRight
+          className="w-4 h-4 opacity-40 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1 shrink-0"
+          style={{ color: company.color }}
         />
       </div>
-      
+
     </div>
   );
 };
