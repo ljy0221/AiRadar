@@ -69,6 +69,7 @@ public class DashboardService {
                 .stream().map(JobRiskDto::from).toList();
     }
 
+    @Transactional(readOnly = false)
     public List<WordCloudDto> getWordCloud(String sourceType, int limit) {
         List<WordCloudDto> baseWords = keywordDailyRepository.findTopKeywordsByLatestWeekAndSourceType(sourceType, limit)
                 .stream()
