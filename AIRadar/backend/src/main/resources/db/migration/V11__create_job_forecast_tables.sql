@@ -56,141 +56,141 @@ CREATE TABLE job_forecast_task (
 INSERT INTO job_role (code, name) VALUES
 ('developer', '개발자'),
 ('marketer', '마케터'),
-('admin-assistant', '행정 보조'),
+('admin_assistant', '행정 보조'),
 ('interpreter', '통역사'),
-('customer-support', '고객 상담원'),
+('customer_support', '고객 상담원'),
 ('lawyer', '변호사'),
 ('accountant', '회계사'),
 ('counselor', '심리상담사'),
-('fashion-designer', '패션 디자이너'),
-('police-officer', '경찰관');
+('fashion_designer', '패션 디자이너'),
+('police_officer', '경찰관');
 
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'markup_automation', '요구사항 분석 및 설계',
-       '응용소프트웨어의 개발 범위와 목표를 설정하고, 소프트웨어의 세부적인 기능 및 사양에 관한 상세 설계를 수행한다.', 1
+SELECT id, 'markup_automation', '피그마 시안을 바탕으로 하는 단순 마크업 자동화',
+       'AI가 디자인 파일을 분석하고 초기 React/HTML/CSS 마크업을 빠르게 생성하는 업무입니다.', 1
 FROM job_role WHERE code = 'developer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'api_scaffolding', '프로그램 개발 및 통합',
-       '상세 설계에 따라 단위 프로그램을 개발하고, 개발된 여러 프로그램들을 모아 응용시스템으로 결합시킨다.', 2
+SELECT id, 'api_scaffolding', '반복적인 CRUD API 보일러플레이트 생성',
+       '기본적인 엔티티, DTO, 컨트롤러, 서비스, 테스트 코드 초안을 자동 생성하는 업무입니다.', 2
 FROM job_role WHERE code = 'developer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'code_review_assist', '테스트 및 품질 검증',
-       '해당 컴퓨터시스템에 개발된 프로그램을 설치하고 기능 및 성능을 종합적으로 평가·분석하며, 테스트를 통해 버그를 수정한다.', 3
+SELECT id, 'code_review_assist', '정적 분석 기반 코드 리뷰 초안 작성',
+       '코드 변경사항을 분석하여 잠재 버그, 스타일 이슈, 테스트 누락 지점을 먼저 찾아주는 업무입니다.', 3
 FROM job_role WHERE code = 'developer';
 
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'ad_copy_generation', '시장조사 및 소비자 분석',
-       '소비자 행동 데이터를 수집·분석하여 타깃 시장의 니즈를 파악하고 마케팅 방향을 설정한다.', 1
+SELECT id, 'ad_copy_generation', '광고 카피 초안 대량 생성',
+       '타깃 고객과 채널 특성에 맞는 광고 문구를 여러 버전으로 빠르게 만드는 업무입니다.', 1
 FROM job_role WHERE code = 'marketer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'campaign_report_summary', '마케팅 전략 및 캠페인 기획',
-       '브랜드 포지셔닝과 매체 전략을 수립하고, 광고·홍보 캠페인 전반을 기획·실행한다.', 2
+SELECT id, 'campaign_report_summary', '캠페인 리포트 자동 요약',
+       '광고 성과 수치를 바탕으로 핵심 인사이트와 다음 액션을 정리하는 업무입니다.', 2
 FROM job_role WHERE code = 'marketer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'trend_monitoring', '콘텐츠 및 채널 관리',
-       '온·오프라인 매체(SNS, 디지털, 인쇄 등)를 활용하여 광고 콘텐츠를 제작·배포하고 채널별 성과를 관리한다.', 3
+SELECT id, 'trend_monitoring', '경쟁사 및 트렌드 모니터링',
+       '시장 변화와 경쟁사 메시지를 수집하고 반복적으로 정리하는 업무입니다.', 3
 FROM job_role WHERE code = 'marketer';
 
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'document_drafting', '문서 작성 및 서류 관리',
-       '각종 공문서, 보고서, 회의록 등을 작성·접수·분류하고 문서 보관 체계를 유지한다.', 1
-FROM job_role WHERE code = 'admin-assistant';
+SELECT id, 'document_drafting', '반복 문서 작성 초안 생성',
+       '정형화된 공문, 보고서, 안내문 초안을 자동으로 만드는 업무입니다.', 1
+FROM job_role WHERE code = 'admin_assistant';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'schedule_coordination', '일정 조율 및 회의 지원',
-       '임직원의 일정을 관리하고, 회의 준비·진행·사후 처리를 지원한다.', 2
-FROM job_role WHERE code = 'admin-assistant';
+SELECT id, 'schedule_coordination', '일정 및 회의 조율 자동화',
+       '회의 요청, 일정 충돌 확인, 메일 초안 작성 등 반복 행정을 처리하는 업무입니다.', 2
+FROM job_role WHERE code = 'admin_assistant';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'record_classification', '물품 구매 및 비품 관리',
-       '사무용품 및 소모품을 청구·수발하고 재고를 관리한다.', 3
-FROM job_role WHERE code = 'admin-assistant';
+SELECT id, 'record_classification', '문서 분류 및 정리',
+       '내부 문서, 첨부파일, 회의록을 규칙에 맞게 분류하고 저장하는 업무입니다.', 3
+FROM job_role WHERE code = 'admin_assistant';
 
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'speech_translation', '동시·순차 통역',
-       '국제회의, 비즈니스 협상, 외교 행사 등에서 발화 내용을 실시간으로 또는 순차적으로 다른 언어로 전달한다.', 1
+SELECT id, 'speech_translation', '실시간 회의 발화 1차 번역',
+       '회의 음성을 실시간 텍스트로 변환하고 빠르게 초벌 번역하는 업무입니다.', 1
 FROM job_role WHERE code = 'interpreter';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'document_translation', '번역 전처리 및 용어 조사',
-       '통역 전 관련 분야의 전문용어, 배경지식, 자료를 사전에 조사·숙지하여 정확한 통역을 준비한다.', 2
+SELECT id, 'document_translation', '반복 문서 번역 초안 작성',
+       'FAQ, 안내서, 계약 개요 등 정형 문서의 초벌 번역을 만드는 업무입니다.', 2
 FROM job_role WHERE code = 'interpreter';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'terminology_alignment', '문화적 맥락 중재',
-       '언어 간 문화적 차이를 고려하여 의미가 왜곡되지 않도록 맥락에 맞게 내용을 조율·전달한다.', 3
+SELECT id, 'terminology_alignment', '용어집 정리 및 표현 통일',
+       '업무 도메인별 번역 용어를 정리하고 일관된 표현을 유지하는 업무입니다.', 3
 FROM job_role WHERE code = 'interpreter';
 
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'faq_response', '고객 문의 응대',
-       '전화·채팅·이메일 등 다양한 채널을 통해 고객의 질문, 불만, 요청 사항을 접수하고 안내한다.', 1
-FROM job_role WHERE code = 'customer-support';
+SELECT id, 'faq_response', 'FAQ 기반 1차 상담 응답',
+       '반복 문의에 대해 빠르게 표준 답변을 제시하는 업무입니다.', 1
+FROM job_role WHERE code = 'customer_support';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'ticket_classification', '문제 해결 및 민원 처리',
-       '고객의 불만 사항을 파악하고, 규정과 권한 범위 내에서 신속하게 해결책을 제시하거나 담당 부서로 연결한다.', 2
-FROM job_role WHERE code = 'customer-support';
+SELECT id, 'ticket_classification', '문의 유형 자동 분류',
+       '고객 문의를 환불, 배송, 기술 문제 등으로 분류하는 업무입니다.', 2
+FROM job_role WHERE code = 'customer_support';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'call_summary', '상담 이력 기록 및 관리',
-       '상담 내용, 처리 결과, 고객 정보를 시스템에 정확히 입력·관리하여 이력을 유지한다.', 3
-FROM job_role WHERE code = 'customer-support';
+SELECT id, 'call_summary', '상담 내역 요약 및 후속조치 정리',
+       '통화나 채팅 기록을 요약하고 다음 액션을 정리하는 업무입니다.', 3
+FROM job_role WHERE code = 'customer_support';
 
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'precedent_search', '법률 자문 및 상담',
-       '개인·기업 의뢰인의 법적 문제를 분석하고, 관련 법령·판례를 검토하여 법률 의견 및 해결 방안을 제시한다.', 1
+SELECT id, 'precedent_search', '판례 및 법령 1차 검색',
+       '쟁점 키워드에 맞는 판례와 법령 후보를 빠르게 찾는 업무입니다.', 1
 FROM job_role WHERE code = 'lawyer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'contract_review_checklist', '소송 대리 및 변론',
-       '민사·형사·행정 등 각종 소송에서 의뢰인을 대리하여 법원에 출석하고, 주장과 증거를 정리·제출하여 변론한다.', 2
+SELECT id, 'contract_review_checklist', '계약서 검토 체크리스트 생성',
+       '표준 계약서 조항을 스캔하고 누락 또는 위험 항목을 정리하는 업무입니다.', 2
 FROM job_role WHERE code = 'lawyer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'brief_drafting', '계약서 및 법률문서 작성·검토',
-       '각종 계약서, 협약서, 법적 의견서를 작성하고, 분쟁 예방을 위한 법적 위험을 검토·조언한다.', 3
+SELECT id, 'brief_drafting', '법률 서면 초안 보조',
+       '의견서, 메모, 사실관계 요약의 초안을 빠르게 만드는 업무입니다.', 3
 FROM job_role WHERE code = 'lawyer';
 
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'expense_categorization', '재무제표 감사',
-       '기업의 재무제표가 일반적으로 인정된 회계원칙(GAAP·IFRS)에 따라 적정하게 작성되었는지 독립적으로 감사하고 감사의견을 표명한다.', 1
+SELECT id, 'expense_categorization', '거래내역 자동 분류',
+       '지출과 수입 항목을 회계 기준에 맞게 분류하는 업무입니다.', 1
 FROM job_role WHERE code = 'accountant';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'closing_report_draft', '세무 신고 및 세무 조정',
-       '법인세·부가가치세 등 각종 세금을 계산·신고하고, 세무조정계산서를 작성하며 세무 관련 자문을 제공한다.', 2
+SELECT id, 'closing_report_draft', '월 마감 보고서 초안 작성',
+       '월별 재무 수치를 요약하고 주요 변동 원인을 정리하는 업무입니다.', 2
 FROM job_role WHERE code = 'accountant';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'compliance_check', '원가 및 관리 회계',
-       '원가 분석, 예산 편성, 손익 분기점 분석 등 내부 경영 의사결정을 위한 관리회계 업무를 수행한다.', 3
+SELECT id, 'compliance_check', '증빙 및 규정 준수 검토',
+       '증빙 누락, 이상 거래, 규정 위반 가능성을 점검하는 업무입니다.', 3
 FROM job_role WHERE code = 'accountant';
 
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'session_note_summary', '심리 평가 및 진단',
-       '표준화된 심리검사 도구(성격, 지능, 정서 등)를 활용하여 내담자의 심리적 상태를 평가하고 문제를 파악한다.', 1
+SELECT id, 'session_note_summary', '상담 기록 요약 정리',
+       '상담 대화를 구조화해 핵심 이슈와 후속 계획을 정리하는 업무입니다.', 1
 FROM job_role WHERE code = 'counselor';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'screening_questionnaire', '개인 상담 및 심리치료',
-       '인지행동치료, 정신분석, 인간중심치료 등 다양한 상담 기법을 적용하여 내담자의 심리적 문제를 해결하도록 지원한다.', 2
+SELECT id, 'screening_questionnaire', '초기 문진 문항 추천',
+       '내담자 상태를 빠르게 파악하기 위한 문진 문항을 추천하는 업무입니다.', 2
 FROM job_role WHERE code = 'counselor';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'resource_recommendation', '상담 계획 수립 및 목표 설정',
-       '내담자의 문제 특성과 욕구를 반영한 상담 목표와 회기별 개입 계획을 수립하고 진행 과정을 모니터링한다.', 3
+SELECT id, 'resource_recommendation', '상담 자료 및 과제 추천',
+       '상담 주제에 맞는 교육 자료, 활동 과제, 셀프 케어 자료를 추천하는 업무입니다.', 3
 FROM job_role WHERE code = 'counselor';
 
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'moodboard_generation', '트렌드 조사 및 컨셉 기획',
-       '국내외 패션 트렌드, 소비자 동향, 시즌 테마를 분석하여 컬렉션 컨셉과 디자인 방향을 설정한다.', 1
-FROM job_role WHERE code = 'fashion-designer';
+SELECT id, 'moodboard_generation', '트렌드 기반 무드보드 초안 생성',
+       '시즌 키워드와 참고 이미지를 바탕으로 초기 컨셉 보드를 만드는 업무입니다.', 1
+FROM job_role WHERE code = 'fashion_designer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'pattern_variation', '의상 디자인 및 도식화',
-       '스케치 및 CAD 도구를 활용하여 의상 디자인 도면(도식화)을 작성하고 소재·색상·패턴을 결정한다.', 2
-FROM job_role WHERE code = 'fashion-designer';
+SELECT id, 'pattern_variation', '패턴 및 컬러 변형안 생성',
+       '기존 디자인의 색상, 패턴, 소재 조합을 여러 버전으로 시도하는 업무입니다.', 2
+FROM job_role WHERE code = 'fashion_designer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'product_description', '패턴 제작 및 샘플 피팅',
-       '원형 패턴을 제작하고 샘플 의류를 제작한 뒤 피팅을 통해 핏·실루엣·디테일을 수정·보완한다.', 3
-FROM job_role WHERE code = 'fashion-designer';
+SELECT id, 'product_description', '상품 설명문 자동 초안 작성',
+       '디자인 특징과 착장 포인트를 반영한 설명문을 작성하는 업무입니다.', 3
+FROM job_role WHERE code = 'fashion_designer';
 
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'incident_report_draft', '범죄 예방 및 순찰',
-       '담당 지역을 순찰하며 범죄 발생을 예방하고, 위험 상황에 대응하며 주민 안전을 확보한다.', 1
-FROM job_role WHERE code = 'police-officer';
+SELECT id, 'incident_report_draft', '사건 보고서 초안 정리',
+       '현장 기록과 진술을 토대로 기본 보고서 구조를 정리하는 업무입니다.', 1
+FROM job_role WHERE code = 'police_officer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'cctv_log_review', '사건·사고 수사 및 조사',
-       '범죄 신고를 접수하고 현장에 출동하여 증거를 수집하고, 피의자·참고인을 조사하여 수사 보고서를 작성한다.', 2
-FROM job_role WHERE code = 'police-officer';
+SELECT id, 'cctv_log_review', 'CCTV 및 로그 1차 검토',
+       '대량 영상과 로그 중 이상 징후 구간을 우선 탐지하는 업무입니다.', 2
+FROM job_role WHERE code = 'police_officer';
 INSERT INTO job_role_core_task (job_role_id, task_key, task_title, task_description, display_order)
-SELECT id, 'patrol_briefing', '교통 관리 및 단속',
-       '교통 흐름을 통제하고, 교통법규 위반 행위를 단속하며, 교통사고 발생 시 현장을 조사한다.', 3
-FROM job_role WHERE code = 'police-officer';
+SELECT id, 'patrol_briefing', '순찰 브리핑 요약 생성',
+       '지역 사건 이력과 주의 대상을 요약해 순찰 전 브리핑 자료로 만드는 업무입니다.', 3
+FROM job_role WHERE code = 'police_officer';
