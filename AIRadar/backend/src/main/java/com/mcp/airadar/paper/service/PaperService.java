@@ -24,12 +24,26 @@ public class PaperService {
         this.paperRepository = paperRepository;
     }
 
-    public List<PaperDto.DailyGroup> getPaperList(String category, String researchArea, LocalDate date) {
-        LocalDate baseDate = date != null ? date : LocalDate.now();
-        LocalDateTime startInclusive = date != null
-                ? baseDate.atStartOfDay()
-                : baseDate.minusDays(9).atStartOfDay();
-        LocalDateTime endExclusive = baseDate.plusDays(1).atStartOfDay();
+    public List<PaperDto.DailyGroup> getPaperList(String category, String researchArea, LocalDate date, LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startInclusive;
+        LocalDateTime endExclusive;
+
+        if (date != null) {
+            // 단일 날짜 우선
+            startInclusive = date.atStartOfDay();
+            endExclusive = date.plusDays(1).atStartOfDay();
+        } else if (startDate != null || endDate != null) {
+            // 범위 조회
+            LocalDate from = startDate != null ? startDate : LocalDate.now().minusDays(9);
+            LocalDate to = endDate != null ? endDate : LocalDate.now();
+            startInclusive = from.atStartOfDay();
+            endExclusive = to.plusDays(1).atStartOfDay();
+        } else {
+            // 기본: 최근 9일
+            LocalDate baseDate = LocalDate.now();
+            startInclusive = baseDate.minusDays(9).atStartOfDay();
+            endExclusive = baseDate.plusDays(1).atStartOfDay();
+        }
 
         Comparator<PaperDto.ListItem> itemComparator = Comparator
                 .comparing(PaperDto.ListItem::publishedAt, Comparator.nullsLast(Comparator.reverseOrder()));

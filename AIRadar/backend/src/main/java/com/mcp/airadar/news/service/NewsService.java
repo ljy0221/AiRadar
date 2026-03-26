@@ -28,12 +28,26 @@ public class NewsService {
         this.newsRepository = newsRepository;
     }
 
-    public List<NewsDto.DailyGroup> getNewsList(String region, String category, LocalDate date) {
-        LocalDate baseDate = date != null ? date : LocalDate.now();
-        LocalDateTime startInclusive = date != null
-                ? baseDate.atStartOfDay()
-                : baseDate.minusDays(3).atStartOfDay();
-        LocalDateTime endExclusive = baseDate.plusDays(1).atStartOfDay();
+    public List<NewsDto.DailyGroup> getNewsList(String region, String category, LocalDate date, LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startInclusive;
+        LocalDateTime endExclusive;
+
+        if (date != null) {
+            // 단일 날짜 우선
+            startInclusive = date.atStartOfDay();
+            endExclusive = date.plusDays(1).atStartOfDay();
+        } else if (startDate != null || endDate != null) {
+            // 범위 조회
+            LocalDate from = startDate != null ? startDate : LocalDate.now().minusDays(3);
+            LocalDate to = endDate != null ? endDate : LocalDate.now();
+            startInclusive = from.atStartOfDay();
+            endExclusive = to.plusDays(1).atStartOfDay();
+        } else {
+            // 기본: 최근 3일
+            LocalDate baseDate = LocalDate.now();
+            startInclusive = baseDate.minusDays(3).atStartOfDay();
+            endExclusive = baseDate.plusDays(1).atStartOfDay();
+        }
 
         Comparator<NewsDto.ListItem> itemComparator = (a, b) -> {
             BigDecimal leftScore = a.score();

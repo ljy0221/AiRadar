@@ -32,4 +32,27 @@ public interface GithubRepoDailyRepository extends JpaRepository<GithubRepoDaily
             LIMIT :lim
             """, nativeQuery = true)
     List<Object[]> findTrendingByDate(@Param("date") LocalDate date, @Param("lim") int lim);
+
+    /**
+     * 날짜 범위 내 각 스냅샷 날짜별 star_delta_1d 상위 N개 레포 조회.
+     * RANK() 윈도우 함수로 날짜별 순위를 계산해 limit 적용.
+     */
+    @Query(value = """
+            SELECT d.repo_id, r.repo_name, r.description, r.language,
+                   d.stars, d.star_delta_1d, d.snapshot_date
+            FROM (
+                SELECT *, RANK() OVER (PARTITION BY snapshot_date ORDER BY star_delta_1d DESC NULLS LAST) AS rk
+                FROM github_repo_daily
+                WHERE snapshot_date BETWEEN :startDate AND :endDate
+                  AND star_delta_1d IS NOT NULL
+            ) d
+            JOIN github_repos r ON r.repo_id = d.repo_id
+            WHERE d.rk <= :lim
+              AND COALESCE(r.ai_relevance, FALSE) = TRUE
+            ORDER BY d.snapshot_date DESC, d.star_delta_1d DESC
+            """, nativeQuery = true)
+    List<Object[]> findTrendingByDateRange(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("lim") int lim);
 }
