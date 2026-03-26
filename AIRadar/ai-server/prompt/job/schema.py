@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List
 
 class CoreTaskRequest(BaseModel):
@@ -11,7 +11,15 @@ class JobForecastRequest(BaseModel):
     jobCode: str
     jobName: str
     forecastMonth: str
+    newsKeywords: List[str] = Field(default_factory=list)
+    paperKeywords: List[str] = Field(default_factory=list)
     coreTasks: List[CoreTaskRequest]
+
+
+class KeywordInsight(BaseModel):
+    newsKeywords: List[str]
+    paperKeywords: List[str]
+    summary: str
 
 class EvidencePaper(BaseModel):
     level: str  # "HIGH" | "MEDIUM" | "LOW"
@@ -42,4 +50,5 @@ class JobForecastTaskResponse(BaseModel):
 class JobForecastResponse(BaseModel):
     modelName: str
     promptVersion: str
+    keywordInsight: KeywordInsight
     tasks: List[JobForecastTaskResponse]

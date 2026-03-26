@@ -2,7 +2,10 @@ package com.mcp.airadar.jobforecast.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mcp.airadar.dashboard.repository.TechKeywordDailyRepository;
+import com.mcp.airadar.config.RedisCacheConfig;
 import com.mcp.airadar.jobforecast.dto.JobForecastGenerationResultDto;
 import com.mcp.airadar.jobforecast.dto.JobForecastResponse;
 import com.mcp.airadar.jobforecast.entity.JobForecast;
@@ -13,6 +16,8 @@ import com.mcp.airadar.jobforecast.entity.JobRoleType;
 import com.mcp.airadar.jobforecast.repository.JobForecastRepository;
 import com.mcp.airadar.jobforecast.repository.JobRoleRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,33 +33,42 @@ public class JobForecastService {
 
     private final JobRoleRepository jobRoleRepository;
     private final JobForecastRepository jobForecastRepository;
+    private final TechKeywordDailyRepository techKeywordDailyRepository;
     private final JobForecastAiClient jobForecastAiClient;
     private final ObjectMapper objectMapper;
 
     public JobForecastService(
             JobRoleRepository jobRoleRepository,
             JobForecastRepository jobForecastRepository,
+            TechKeywordDailyRepository techKeywordDailyRepository,
             JobForecastAiClient jobForecastAiClient,
             ObjectMapper objectMapper
     ) {
         this.jobRoleRepository = jobRoleRepository;
         this.jobForecastRepository = jobForecastRepository;
+        this.techKeywordDailyRepository = techKeywordDailyRepository;
         this.jobForecastAiClient = jobForecastAiClient;
         this.objectMapper = objectMapper;
     }
 
     @Transactional
+    @Cacheable(
+            cacheNames = RedisCacheConfig.JOB_FORECAST_CURRENT_CACHE,
+            key = "#jobCode + ':' + T(java.time.YearMonth).now().toString()"
+    )
     public JobForecastResponse getCurrentForecast(String jobCode) {
         LocalDate forecastMonth = YearMonth.now().atDay(1);
         return getOrGenerateForecast(jobCode, forecastMonth);
     }
 
     @Transactional
+    @CacheEvict(cacheNames = RedisCacheConfig.JOB_FORECAST_CURRENT_CACHE, allEntries = true)
     public JobForecastResponse regenerateForecast(String jobCode, YearMonth yearMonth) {
         return generateAndSaveForecast(getActiveJobRole(jobCode), yearMonth.atDay(1), false);
     }
 
     @Transactional
+    @CacheEvict(cacheNames = RedisCacheConfig.JOB_FORECAST_CURRENT_CACHE, allEntries = true)
     public JobForecastGenerationResultDto generateMonthlyForecasts(YearMonth yearMonth, boolean forceRegenerate) {
         LocalDate forecastMonth = yearMonth.atDay(1);
         List<String> generated = new ArrayList<>();
@@ -113,11 +127,16 @@ public class JobForecastService {
             throw new IllegalStateException("No core tasks configured for job role: " + role.getCode());
         }
 
+        List<String> newsKeywords = getMonthlyTopKeywords("NEWS", forecastMonth, 8);
+        List<String> paperKeywords = getMonthlyTopKeywords("PAPER", forecastMonth, 8);
+
         JobForecastAiClient.GenerateJobForecastRequest request =
                 new JobForecastAiClient.GenerateJobForecastRequest(
                         role.getCode(),
                         role.getName(),
                         forecastMonth,
+                        newsKeywords,
+                        paperKeywords,
                         role.getCoreTasks().stream()
                                 .map(task -> new JobForecastAiClient.GenerateJobForecastRequest.CoreTaskInput(
                                         task.getTaskKey(),
@@ -186,6 +205,7 @@ public class JobForecastService {
                 stale,
                 forecast.getModelName(),
                 forecast.getPromptVersion(),
+                readKeywordInsight(forecast.getRawResponseJson()),
                 forecast.getTasks().stream()
                         .map(task -> new JobForecastResponse.TaskForecast(
                                 task.getTaskKey(),
@@ -212,6 +232,51 @@ public class JobForecastService {
                         ))
                         .toList()
         );
+    }
+
+    private List<String> getMonthlyTopKeywords(String sourceType, LocalDate forecastMonth, int limit) {
+        LocalDate startDate = forecastMonth.minusMonths(1);
+        LocalDate endDate = forecastMonth.minusDays(1);
+        return techKeywordDailyRepository.findTopKeywordsByDateRangeAndSourceType(sourceType, startDate, endDate, limit)
+                .stream()
+                .map(row -> row[0] == null ? null : String.valueOf(row[0]))
+                .filter(keyword -> keyword != null && !keyword.isBlank())
+                .toList();
+    }
+
+    private JobForecastResponse.KeywordInsight readKeywordInsight(String rawResponseJson) {
+        if (rawResponseJson == null || rawResponseJson.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(rawResponseJson);
+            JsonNode keywordInsight = root.get("keywordInsight");
+            if (keywordInsight == null || keywordInsight.isNull()) {
+                return null;
+            }
+            List<String> newsKeywords = readTextArray(keywordInsight.get("newsKeywords"));
+            List<String> paperKeywords = readTextArray(keywordInsight.get("paperKeywords"));
+            String summary = keywordInsight.hasNonNull("summary") ? keywordInsight.get("summary").asText() : "";
+            return new JobForecastResponse.KeywordInsight(newsKeywords, paperKeywords, summary);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private List<String> readTextArray(JsonNode node) {
+        if (node == null || !node.isArray()) {
+            return List.of();
+        }
+        List<String> values = new ArrayList<>();
+        for (JsonNode item : node) {
+            if (item != null && !item.isNull()) {
+                String value = item.asText();
+                if (value != null && !value.isBlank()) {
+                    values.add(value);
+                }
+            }
+        }
+        return values;
     }
 
     private String writeJson(Object value) {

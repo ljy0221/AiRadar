@@ -13,8 +13,15 @@ public record JobForecastResponse(
         boolean stale,
         String modelName,
         String promptVersion,
+        KeywordInsight keywordInsight,
         List<TaskForecast> tasks
 ) {
+    public record KeywordInsight(
+            List<String> newsKeywords,
+            List<String> paperKeywords,
+            String summary
+    ) {}
+
     public record TaskForecast(
             String taskKey,
             String taskTitle,
