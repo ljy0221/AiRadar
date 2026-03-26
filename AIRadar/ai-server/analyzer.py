@@ -2,35 +2,32 @@ import json
 import logging
 import os
 
-# ── GMS / Claude 연동 (복구 시 주석 해제) ──────────────────────────────────────
-# import httpx
-# _GMS_URL = "https://gms.ssafy.io/gmsapi/api.anthropic.com/v1/messages"
-# _MODEL = "claude-haiku-4-5-20251001"
-#
-# def _gms_headers() -> dict:
-#     return {
-#         "Content-Type": "application/json",
-#         "x-api-key": os.environ["GMS_KEY"],
-#         "anthropic-version": "2023-06-01",
-#     }
-#
-# async def _call_claude(system: str, user_prompt: str) -> str:
-#     """GMS 프록시를 통해 Claude에 직접 HTTP 요청하고 텍스트 응답 반환"""
-#     payload = {
-#         "model": _MODEL,
-#         "max_tokens": 4096,
-#         "system": system,
-#         "messages": [{"role": "user", "content": user_prompt}],
-#     }
-#     async with httpx.AsyncClient(timeout=120) as client:
-#         resp = await client.post(_GMS_URL, headers=_gms_headers(), json=payload)
-#         resp.raise_for_status()
-#         data = resp.json()
-#         return data["content"][0]["text"]
-# ──────────────────────────────────────────────────────────────────────────────
+# ── GMS / Claude 연동 ──────────────────────────────────────────────────────────
+import httpx
+_GMS_URL = "https://gms.ssafy.io/gmsapi/api.anthropic.com/v1/messages"
+_MODEL = "claude-haiku-4-5-20251001"
 
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+def _gms_headers() -> dict:
+    return {
+        "Content-Type": "application/json",
+        "x-api-key": os.environ["GMS_KEY"],
+        "anthropic-version": "2023-06-01",
+    }
+
+async def _call_claude(system: str, user_prompt: str) -> str:
+    """GMS 프록시를 통해 Claude에 직접 HTTP 요청하고 텍스트 응답 반환"""
+    payload = {
+        "model": _MODEL,
+        "max_tokens": 4096,
+        "system": system,
+        "messages": [{"role": "user", "content": user_prompt}],
+    }
+    async with httpx.AsyncClient(timeout=120) as client:
+        resp = await client.post(_GMS_URL, headers=_gms_headers(), json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        return data["content"][0]["text"]
+# ──────────────────────────────────────────────────────────────────────────────
 
 import db
 from embedder import embed_texts
@@ -38,59 +35,62 @@ from models import NewsRequest, NewsResponse, PaperRequest, PaperResponse
 
 logger = logging.getLogger(__name__)
 
-# ── 로컬 Qwen 모델 설정 ────────────────────────────────────────────────────────
-_LOCAL_MODEL_NAME = os.getenv("LOCAL_MODEL_NAME", "Qwen/Qwen2.5-3B-Instruct")
-_tokenizer: AutoTokenizer | None = None
-_model: AutoModelForCausalLM | None = None
-
-
-def get_local_model():
-    global _tokenizer, _model
-    if _model is None:
-        quantization = os.getenv("LLM_QUANTIZATION", "4bit")
-        load_in_4bit = quantization == "4bit"
-        load_in_8bit = quantization == "8bit"
-        logger.info(f"로컬 LLM 로딩: {_LOCAL_MODEL_NAME} (quantization={quantization})")
-        _tokenizer = AutoTokenizer.from_pretrained(_LOCAL_MODEL_NAME)
-        _model = AutoModelForCausalLM.from_pretrained(
-            _LOCAL_MODEL_NAME,
-            torch_dtype=torch.float16,
-            device_map="auto",
-            load_in_4bit=load_in_4bit,
-            load_in_8bit=load_in_8bit,
-        )
-        logger.info("로컬 LLM 로딩 완료")
-    return _tokenizer, _model
-
-
-def _call_local(system: str, user_prompt: str) -> str:
-    """로컬 Qwen 모델로 추론하고 텍스트 응답 반환"""
-    tokenizer, model = get_local_model()
-
-    max_new_tokens = int(os.getenv("LLM_MAX_NEW_TOKENS", "1024"))
-    temperature = float(os.getenv("LLM_TEMPERATURE", "0.1"))
-
-    messages = [
-        {"role": "system", "content": system},
-        {"role": "user", "content": user_prompt},
-    ]
-    text = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
-    inputs = tokenizer([text], return_tensors="pt").to(model.device)
-
-    with torch.no_grad():
-        output_ids = model.generate(
-            **inputs,
-            max_new_tokens=max_new_tokens,
-            temperature=temperature,
-            do_sample=True,
-            pad_token_id=tokenizer.eos_token_id,
-        )
-
-    # 입력 토큰 제거 후 디코딩
-    generated = output_ids[0][inputs.input_ids.shape[1]:]
-    return tokenizer.decode(generated, skip_special_tokens=True)
+# ── 로컬 Qwen 모델 설정 (GMS 복구 전 사용, 필요 시 주석 해제) ────────────────────
+# import torch
+# from transformers import AutoModelForCausalLM, AutoTokenizer
+#
+# _LOCAL_MODEL_NAME = os.getenv("LOCAL_MODEL_NAME", "Qwen/Qwen2.5-3B-Instruct")
+# _tokenizer: AutoTokenizer | None = None
+# _model: AutoModelForCausalLM | None = None
+#
+#
+# def get_local_model():
+#     global _tokenizer, _model
+#     if _model is None:
+#         quantization = os.getenv("LLM_QUANTIZATION", "4bit")
+#         load_in_4bit = quantization == "4bit"
+#         load_in_8bit = quantization == "8bit"
+#         logger.info(f"로컬 LLM 로딩: {_LOCAL_MODEL_NAME} (quantization={quantization})")
+#         _tokenizer = AutoTokenizer.from_pretrained(_LOCAL_MODEL_NAME)
+#         _model = AutoModelForCausalLM.from_pretrained(
+#             _LOCAL_MODEL_NAME,
+#             torch_dtype=torch.float16,
+#             device_map="auto",
+#             load_in_4bit=load_in_4bit,
+#             load_in_8bit=load_in_8bit,
+#         )
+#         logger.info("로컬 LLM 로딩 완료")
+#     return _tokenizer, _model
+#
+#
+# def _call_local(system: str, user_prompt: str) -> str:
+#     """로컬 Qwen 모델로 추론하고 텍스트 응답 반환"""
+#     tokenizer, model = get_local_model()
+#
+#     max_new_tokens = int(os.getenv("LLM_MAX_NEW_TOKENS", "1024"))
+#     temperature = float(os.getenv("LLM_TEMPERATURE", "0.1"))
+#
+#     messages = [
+#         {"role": "system", "content": system},
+#         {"role": "user", "content": user_prompt},
+#     ]
+#     text = tokenizer.apply_chat_template(
+#         messages, tokenize=False, add_generation_prompt=True
+#     )
+#     inputs = tokenizer([text], return_tensors="pt").to(model.device)
+#
+#     with torch.no_grad():
+#         output_ids = model.generate(
+#             **inputs,
+#             max_new_tokens=max_new_tokens,
+#             temperature=temperature,
+#             do_sample=True,
+#             pad_token_id=tokenizer.eos_token_id,
+#         )
+#
+#     # 입력 토큰 제거 후 디코딩
+#     generated = output_ids[0][inputs.input_ids.shape[1]:]
+#     return tokenizer.decode(generated, skip_special_tokens=True)
 # ──────────────────────────────────────────────────────────────────────────────
 
 
@@ -215,10 +215,10 @@ Output only the JSON array, no other text."""
     import time
     logger.info(f"[뉴스] LLM 추론 시작 ({len(articles)}건)")
     t0 = time.time()
-    # ── GMS 호출 (복구 시 아래 주석 해제 후 _call_local 라인 제거) ──────────────
-    # raw = await _call_claude(NEWS_SYSTEM, user_prompt)
+    raw = await _call_claude(NEWS_SYSTEM, user_prompt)
+    # ── 로컬 Qwen 모델 사용 시 아래 주석 해제 후 위 라인 제거 ───────────────────
+    # raw = _call_local(NEWS_SYSTEM, user_prompt)
     # ──────────────────────────────────────────────────────────────────────────
-    raw = _call_local(NEWS_SYSTEM, user_prompt)
     logger.info(f"[뉴스] LLM 추론 완료 ({time.time()-t0:.1f}초), 임베딩 시작")
 
     structured: list[dict] = _parse_json_response(raw)
@@ -285,10 +285,10 @@ Output only the JSON array, no other text."""
     import time
     logger.info(f"[논문] LLM 추론 시작 ({len(papers)}건)")
     t0 = time.time()
-    # ── GMS 호출 (복구 시 아래 주석 해제 후 _call_local 라인 제거) ──────────────
-    # raw = await _call_claude(PAPER_SYSTEM, user_prompt)
+    raw = await _call_claude(PAPER_SYSTEM, user_prompt)
+    # ── 로컬 Qwen 모델 사용 시 아래 주석 해제 후 위 라인 제거 ───────────────────
+    # raw = _call_local(PAPER_SYSTEM, user_prompt)
     # ──────────────────────────────────────────────────────────────────────────
-    raw = _call_local(PAPER_SYSTEM, user_prompt)
     logger.info(f"[논문] LLM 추론 완료 ({time.time()-t0:.1f}초), 임베딩 시작")
 
     structured: list[dict] = _parse_json_response(raw)
