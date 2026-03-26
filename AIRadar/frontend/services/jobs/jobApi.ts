@@ -33,6 +33,11 @@ export interface JobForecastResponse {
   stale: boolean;
   modelName: string;
   promptVersion: string;
+  keywordInsight?: {
+    newsKeywords: string[];
+    paperKeywords: string[];
+    summary: string;
+  };
   tasks: JobForecastTask[];
 }
 
@@ -59,6 +64,11 @@ export const fetchJobForecast = async (jobCode: string): Promise<JobForecastResp
       stale: false,
       modelName: "Qwen/Qwen2.5-3B-Instruct",
       promptVersion: "job-forecast-v1",
+      keywordInsight: {
+        newsKeywords: ["생성형AI", "실시간통역", "멀티모달"],
+        paperKeywords: ["speech translation", "context modeling", "terminology consistency"],
+        summary: "최근 한 달 키워드 흐름을 보면 실시간 번역 정확도와 맥락 보정 기술이 빠르게 고도화되고 있습니다. 이에 따라 초벌 번역·기록 정리 같은 반복 업무는 자동화 비중이 커지고, 최종 품질 판단과 문화적 맥락 조율 역량의 가치가 더 커집니다."
+      },
       tasks: [
         {
           taskKey: "T001",

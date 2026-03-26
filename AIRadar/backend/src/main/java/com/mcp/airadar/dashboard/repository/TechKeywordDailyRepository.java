@@ -33,4 +33,21 @@ public interface TechKeywordDailyRepository extends JpaRepository<TechKeywordDai
             LIMIT :limit
             """, nativeQuery = true)
     List<Object[]> findTopKeywordsByLatestWeekAndSourceType(@Param("sourceType") String sourceType, @Param("limit") int limit);
+
+    @Query(value = """
+            SELECT keyword, COALESCE(SUM(mention_count), 0) AS total_mentions
+            FROM tech_keyword_daily
+            WHERE source_type = :sourceType
+              AND stat_date >= :startDate
+              AND stat_date <= :endDate
+            GROUP BY keyword
+            ORDER BY total_mentions DESC, keyword ASC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<Object[]> findTopKeywordsByDateRangeAndSourceType(
+            @Param("sourceType") String sourceType,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("limit") int limit
+    );
 }
