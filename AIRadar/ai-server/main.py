@@ -19,7 +19,7 @@ from models import (
 )
 
 from prompt.job.schema import JobForecastRequest, JobForecastResponse
-from prompt.job.service import generate_forecast_batch
+from prompt.job.service import generate_forecast_batch, generate_keyword_insight, get_effective_model_name
 
 # 동시 분석 요청 제한 (LLM + 임베딩 메모리 보호)
 _semaphore = asyncio.Semaphore(2)
@@ -107,10 +107,16 @@ async def generate_job_forecast(request: JobForecastRequest):
     try:
         # 서비스 계층 호출
         tasks_result = await generate_forecast_batch(request.jobName, request.coreTasks)
+        keyword_insight = await generate_keyword_insight(
+            request.jobName,
+            request.newsKeywords,
+            request.paperKeywords
+        )
         
         return JobForecastResponse(
-            modelName=os.getenv("LOCAL_MODEL_NAME", "Qwen/Qwen2.5-3B-Instruct"),
+            modelName=get_effective_model_name(),
             promptVersion="job-forecast-v1",
+            keywordInsight=keyword_insight,
             tasks=tasks_result
         )
     except Exception as e:

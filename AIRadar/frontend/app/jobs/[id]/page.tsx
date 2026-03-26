@@ -73,6 +73,33 @@ export default function JobDetailPage() {
         </div>
       )}
 
+      {jobData.keywordInsight && (
+        <div className="mb-6 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1c2e] p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">최근 1달 키워드 기반 공통 분석</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
+            {jobData.keywordInsight.summary}
+          </p>
+          <div className="flex flex-col gap-3 text-sm">
+            <div>
+              <span className="font-semibold text-gray-700 dark:text-gray-200 mr-2">뉴스 키워드</span>
+              {jobData.keywordInsight.newsKeywords?.map((keyword, idx) => (
+                <span key={`${keyword}-${idx}`} className="inline-block px-2 py-1 mr-2 mb-2 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
+                  {keyword}
+                </span>
+              ))}
+            </div>
+            <div>
+              <span className="font-semibold text-gray-700 dark:text-gray-200 mr-2">논문 키워드</span>
+              {jobData.keywordInsight.paperKeywords?.map((keyword, idx) => (
+                <span key={`${keyword}-${idx}`} className="inline-block px-2 py-1 mr-2 mb-2 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
+                  {keyword}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeTask && (
         <div className="lg:grid lg:grid-cols-12 gap-10 items-start">
           {/* 왼쪽 핵심 업무 카드 영역 */}

@@ -33,6 +33,8 @@ public class JobForecastAiClient {
             String jobCode,
             String jobName,
             LocalDate forecastMonth,
+            List<String> newsKeywords,
+            List<String> paperKeywords,
             List<CoreTaskInput> coreTasks
     ) {
         public record CoreTaskInput(
@@ -46,8 +48,15 @@ public class JobForecastAiClient {
     public record GenerateJobForecastResponse(
             String modelName,
             String promptVersion,
+            KeywordInsight keywordInsight,
             List<TaskResult> tasks
     ) {
+        public record KeywordInsight(
+                List<String> newsKeywords,
+                List<String> paperKeywords,
+                String summary
+        ) {}
+
         public record TaskResult(
                 String taskKey,
                 String taskTitle,
