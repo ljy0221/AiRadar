@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Component
@@ -32,7 +31,7 @@ public class JobForecastAiClient {
     public record GenerateJobForecastRequest(
             String jobCode,
             String jobName,
-            LocalDate forecastMonth,
+            String forecastMonth,
             List<String> newsKeywords,
             List<String> paperKeywords,
             List<CoreTaskInput> coreTasks
