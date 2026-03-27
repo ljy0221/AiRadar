@@ -136,6 +136,9 @@ public class GoldServingJob {
                 score, summary, category, region,
                 NOW()
             FROM news_items_staging
+            WHERE is_korean_or_english(
+                COALESCE(title, '') || ' ' || COALESCE(LEFT(content, 200), '')
+            )
             ON CONFLICT (article_id)
             DO UPDATE SET
                 sentiment   = EXCLUDED.sentiment,
