@@ -9,6 +9,7 @@ import { useBookmarksQuery } from '@/hooks/queries/useUserQuery';
 import { useAuth } from '../auth/AuthContext';
 import Loading from '@/app/loading';
 import { CalendarModal } from '@/components/common';
+import type { DailyPaperGroup } from '@/types/paper';
 
 // PaperItem → TimelineItemData 매핑 함수
 function toTimelineItemData(paper: any, bookmarkedIds: Set<string>): TimelineItemData {
@@ -40,7 +41,8 @@ interface PaperTimelineTabProps {
 
 export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 'daily' }) => {
   const { isLoggedIn } = useAuth();
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
@@ -50,7 +52,7 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
 
   // 1) 가용 날짜 조회
   const { data: availableData } = useAvailablePaperDates({
-    category: activeCategory !== 'ALL' ? activeCategory : undefined
+    // 서브 필터는 클라이언트에서 처리하므로 전체 날짜를 가져옵니다.
   });
 
   const availableDates = useMemo(() =>
@@ -59,33 +61,88 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
   );
 
   // 화면에 표시할 날짜 결정 (선택된 날짜가 없으면 가장 최신 날짜)
-  const displayDate = selectedDate || (availableDates.length > 0 ? availableDates[0] : null);
+  const displayDate = startDate || (availableDates.length > 0 ? availableDates[0] : null);
 
-  // 특정 날짜 조회
+  // 특정 날짜/범위 조회
+  const isRangeSelected = !!(startDate && endDate && startDate !== endDate);
+
   const {
     data: filteredGroups,
     isLoading: isFilteredLoading,
     isError: isFilteredError
-  } = usePaperDailyQuery(displayDate ? { date: displayDate } : undefined);
+  } = usePaperDailyQuery({
+    date: isRangeSelected ? undefined : (startDate || displayDate || undefined),
+    startDate: isRangeSelected ? startDate : undefined,
+    endDate: isRangeSelected ? endDate : undefined,
+    // 클라이언트 사이드 필터링을 위해 카테고리 파라미터는 제외합니다.
+  });
 
   // 0) 개인화 추천 논문 조회 (로그인 시에만)
   const { data: recommendations, isLoading: isRecLoading } = usePersonalizedPapersQuery(10, isLoggedIn);
 
-  const currentGroup = filteredGroups?.[0] || null;
+  const mergedGroups = useMemo<DailyPaperGroup[]>(() => {
+    if (!filteredGroups || filteredGroups.length === 0) return [];
+
+    // 범위 선택 시에는 시작일(과거)부터 최신순(오름차순)으로 정렬하여 타임라인 흐름 강조
+    if (isRangeSelected) {
+      return [...filteredGroups].sort((a, b) => a.date.localeCompare(b.date));
+    }
+
+    return filteredGroups;
+  }, [filteredGroups, isRangeSelected]);
+
+  // 헤더 표시용 텍스트
+  const headerText = useMemo(() => {
+    if (startDate && endDate && startDate !== endDate) {
+      return `${startDate.replace(/-/g, '.')} - ${endDate.replace(/-/g, '.')}`;
+    }
+    if (mergedGroups.length > 0) return mergedGroups[0].date.replace(/-/g, '.');
+    return (displayDate || new Date().toISOString().split('T')[0]).replace(/-/g, '.');
+  }, [mergedGroups, displayDate, startDate, endDate]);
+
+  // 모든 그룹에서 가용한 카테고리(키워드) 추출
+  const availableKeywords = useMemo(() => {
+    if (mergedGroups.length === 0) return [];
+    const keys = new Set<string>();
+    mergedGroups.forEach(group => {
+      group.items.forEach((item: any) => {
+        if (item.category) keys.add(item.category);
+      });
+    });
+    return Array.from(keys);
+  }, [mergedGroups]);
+
+  const dateDisplayText = useMemo(() => {
+    if (!startDate) return '날짜 선택';
+    if (!endDate || startDate === endDate) return startDate.replace(/-/g, '.');
+    return `${startDate.replace(/-/g, '.')} - ${endDate.replace(/-/g, '.')}`;
+  }, [startDate, endDate]);
+
+  const handleRangeSelect = (start: string | null, end: string | null) => {
+    setStartDate(start);
+    setEndDate(end);
+    setActiveCategory('ALL');
+  };
 
   // 화살표 네비게이션 핸들러
   const handlePrevDay = (currentStr: string) => {
     setActiveCategory('ALL');
-    const d = new Date(currentStr);
-    d.setDate(d.getDate() - 1);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    const [y, m, d] = currentStr.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() - 1);
+    const newDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+    setStartDate(newDate);
+    setEndDate(newDate);
   };
 
   const handleNextDay = (currentStr: string) => {
     setActiveCategory('ALL');
-    const d = new Date(currentStr);
-    d.setDate(d.getDate() + 1);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    const [y, m, d] = currentStr.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() + 1);
+    const newDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+    setStartDate(newDate);
+    setEndDate(newDate);
   };
 
   const isLoading = isFilteredLoading || (activeTab === 'recommend' && isRecLoading);
@@ -99,7 +156,7 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
       <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="px-1">
           {/* 추천 섹션 (로그인 중이며 추천 탭이거나 데일리 탭의 최상단일 때) */}
-          {isLoggedIn && recommendations && recommendations.length > 0 && (activeTab === 'recommend' || (!selectedDate && activeTab === 'daily')) && (
+          {isLoggedIn && recommendations && recommendations.length > 0 && (activeTab === 'recommend' || (!startDate && !endDate && activeTab === 'daily')) && (
             <div className="mb-12">
               <div className="flex items-center gap-2 mb-6">
                 <div className="p-2 bg-[var(--color-accent)]/10 rounded-lg">
@@ -141,7 +198,7 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
                   </a>
                 ))}
               </div>
-              
+
               {activeTab === 'recommend' && <div className="mt-12 border-b border-gray-100 dark:border-gray-800" />}
             </div>
           )}
@@ -155,17 +212,17 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setIsCalendarOpen(true)}
-                      className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border rounded-xl text-xs sm:text-sm font-bold transition-colors ${selectedDate
+                      className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border rounded-xl text-xs sm:text-sm font-bold transition-colors ${startDate
                         ? 'border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--color-accent)]/10 dark:bg-[var(--color-accent)]/20 shadow-sm'
                         : 'border-gray-200 dark:border-gray-800/80 text-gray-700 dark:text-gray-300 bg-white dark:bg-[#171924] hover:bg-gray-50 dark:hover:bg-[#1c1f2e]'
-                      }`}
+                        }`}
                     >
-                      <CalendarDays className={`w-4 h-4 ${selectedDate ? 'text-[var(--color-accent)]' : 'text-gray-500 dark:text-gray-400'}`} />
-                      {selectedDate ? selectedDate.replace(/-/g, '.') : '날짜 선택'}
+                      <CalendarDays className={`w-4 h-4 ${startDate ? 'text-[var(--color-accent)]' : 'text-gray-500 dark:text-gray-400'}`} />
+                      {dateDisplayText}
                     </button>
-                    {selectedDate && (
+                    {(startDate || endDate) && (
                       <button
-                        onClick={() => setSelectedDate(null)}
+                        onClick={() => handleRangeSelect(null, null)}
                         className="p-1.5 sm:p-2 rounded-xl border border-gray-200 dark:border-gray-800/80 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#1c1f2e] transition-colors"
                         title="필터 초기화"
                       >
@@ -176,8 +233,8 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
                 </div>
 
                 {/* 카테고리 필터 칩 */}
-                <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
-                  {['ALL', ...Array.from(new Set(currentGroup?.items.map((item: any) => item.category) || []))].map((keyword) => {
+                <div className="flex flex-wrap items-center gap-2 pb-1">
+                  {['ALL', ...availableKeywords].map((keyword) => {
                     const isActive = activeCategory === keyword;
                     return (
                       <button
@@ -186,7 +243,7 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
                         className={`shrink-0 px-3 py-1.5 sm:px-4 sm:py-1.5 rounded-full text-xs font-bold transition-all duration-200 border ${isActive
                           ? 'border-emerald-500/80 text-emerald-500 bg-emerald-500/5'
                           : 'border-gray-300 dark:border-gray-800/80 text-gray-600 dark:text-gray-400 bg-transparent hover:border-gray-400 dark:hover:border-gray-600'
-                        }`}
+                          }`}
                       >
                         {keyword === 'ALL' ? '전체' : (keyword as string)}
                       </button>
@@ -197,38 +254,65 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
 
               {/* 2. 타임라인 리스트 (뉴스 섹션과 동일하게 세로선 및 헤더 적용) */}
               <div className="flex flex-col gap-10">
-                {currentGroup ? (
+                {mergedGroups.length > 0 ? (
                   <div className="relative">
                     {/* 날짜 헤더 영역 */}
                     <div className="inline-flex items-center gap-3 mb-8 relative z-10 bg-gray-50/50 dark:bg-gray-800/30 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
                       <div className="w-3 h-3 rounded-full bg-[var(--color-accent)] opacity-90 shrink-0" />
 
-                      <button
-                        onClick={() => handlePrevDay(currentGroup.date)}
-                        className="p-1 px-2 hover:bg-gray-200 dark:hover:bg-gray-700/50 rounded-lg transition-colors group"
-                      >
-                        <ChevronLeft className="w-4 h-4 text-gray-400 group-hover:text-[var(--color-accent)]" />
-                      </button>
+                      {(!startDate || (startDate === endDate)) && (
+                        <button
+                          onClick={() => handlePrevDay(mergedGroups[0].date)}
+                          className="p-1 px-2 hover:bg-gray-200 dark:hover:bg-gray-700/50 rounded-lg transition-colors group"
+                        >
+                          <ChevronLeft className="w-4 h-4 text-gray-400 group-hover:text-[var(--color-accent)]" />
+                        </button>
+                      )}
 
                       <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-200 min-w-[100px] text-center tracking-tight">
-                        {currentGroup.date.replace(/-/g, '.')}
+                        {headerText}
                       </h3>
 
-                      <button
-                        onClick={() => handleNextDay(currentGroup.date)}
-                        className={`p-1 px-2 rounded-lg transition-colors group ${availableDates[0] === currentGroup.date || (!availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date()) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-700/50 cursor-pointer'}`}
-                        disabled={availableDates[0] === currentGroup.date || (!availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date())}
-                      >
-                        <ChevronRight className={`w-4 h-4 text-gray-400 ${availableDates[0] === currentGroup.date || (!availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date()) ? '' : 'group-hover:text-[var(--color-accent)]'}`} />
-                      </button>
+                      {(!startDate || (startDate === endDate)) && (
+                        <button
+                          onClick={() => handleNextDay(mergedGroups[0].date)}
+                          className={`p-1 px-2 rounded-lg transition-colors group ${availableDates[0] === mergedGroups[0].date || (!availableDates.includes(mergedGroups[0].date) && new Date(mergedGroups[0].date) >= new Date()) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-700/50 cursor-pointer'}`}
+                          disabled={availableDates[0] === mergedGroups[0].date || (!availableDates.includes(mergedGroups[0].date) && new Date(mergedGroups[0].date) >= new Date())}
+                        >
+                          <ChevronRight className={`w-4 h-4 text-gray-400 ${availableDates[0] === mergedGroups[0].date || (!availableDates.includes(mergedGroups[0].date) && new Date(mergedGroups[0].date) >= new Date()) ? '' : 'group-hover:text-[var(--color-accent)]'}`} />
+                        </button>
+                      )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {currentGroup.items
-                        .filter((item: any) => activeCategory === 'ALL' || item.category === activeCategory)
-                        .map((item: any, iIdx: number) => (
-                          <TimelineItem key={item.paperId || iIdx} data={toTimelineItemData(item, bookmarkedIds)} />
-                        ))}
+                    <div className="flex flex-col gap-12">
+                      {mergedGroups.map((group) => {
+                        const filteredGroupItems = group.items.filter((item: any) =>
+                          activeCategory === 'ALL' || item.category === activeCategory
+                        );
+
+                        if (filteredGroupItems.length === 0) return null;
+
+                        return (
+                          <div key={group.date} className="flex flex-col gap-6">
+                            {/* 개별 날짜 구분 헤더 */}
+                            {isRangeSelected && (
+                              <div className="flex items-center gap-4">
+                                <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800" />
+                                <span className="text-xs font-bold text-gray-400 dark:text-gray-500 tracking-widest bg-gray-50/50 dark:bg-gray-900/50 px-3 py-1 rounded-full border border-gray-100 dark:border-white/5">
+                                  {group.date.replace(/-/g, '.')}
+                                </span>
+                                <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800" />
+                              </div>
+                            )}
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {filteredGroupItems.map((item: any, iIdx: number) => (
+                                <TimelineItem key={item.paperId || iIdx} data={toTimelineItemData(item, bookmarkedIds)} />
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ) : (
@@ -256,11 +340,9 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
           isOpen={isCalendarOpen}
           onClose={() => setIsCalendarOpen(false)}
           availableDates={availableDates}
-          selectedDate={selectedDate || availableDates[0]}
-          onDateSelect={(date) => {
-            setSelectedDate(date);
-            setIsCalendarOpen(false);
-          }}
+          startDate={startDate}
+          endDate={endDate}
+          onRangeSelect={handleRangeSelect}
         />
       </div>
     </div>

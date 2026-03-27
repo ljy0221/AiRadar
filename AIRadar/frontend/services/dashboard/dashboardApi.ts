@@ -59,9 +59,15 @@ export interface DashboardResponse {
   metrics: MetricData[]; // 아직 일부 레거시 호환을 위해 남겨둘 수 있으나, 빈 배열로 처리
 }
 
+export interface SimilarKeyword {
+  keyword: string;
+  similarity: number;
+}
+
 export interface WordCloudData {
   text: string;
   value: number;
+  similarKeywords?: SimilarKeyword[];
 }
 
 import { mockKeywordDictionary } from './KeywordDict';
@@ -81,7 +87,8 @@ export const fetchWordCloudData = async (source: 'NEWS' | 'PAPER' | 'GITHUB', li
     if (rawData && rawData.length > 0) {
       return rawData.map((item: any) => ({
         text: item.keyword,
-        value: item.count
+        value: item.count,
+        similarKeywords: item.similarKeywords
       }));
     }
     return [];
