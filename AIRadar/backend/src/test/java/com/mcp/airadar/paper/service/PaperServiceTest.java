@@ -55,7 +55,7 @@ class PaperServiceTest {
         when(paperRepository.findRecentPaperFeed("NLP", "cs.CL", targetDate.atStartOfDay(), targetDate.plusDays(1).atStartOfDay()))
                 .thenReturn(List.of(samplePaper));
 
-        List<PaperDto.DailyGroup> result = paperService.getPaperList("NLP", "cs.CL", targetDate);
+        List<PaperDto.DailyGroup> result = paperService.getPaperList("NLP", "cs.CL", targetDate, null, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).date()).isEqualTo(targetDate);
@@ -80,7 +80,7 @@ class PaperServiceTest {
         when(paperRepository.findRecentPaperFeed(null, null, today.minusDays(9).atStartOfDay(), today.plusDays(1).atStartOfDay()))
                 .thenReturn(List.of(olderPaper, samplePaper));
 
-        List<PaperDto.DailyGroup> result = paperService.getPaperList(null, null, null);
+        List<PaperDto.DailyGroup> result = paperService.getPaperList(null, null, null, null, null);
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).date()).isEqualTo(samplePaper.getPublishedAt().toLocalDate());

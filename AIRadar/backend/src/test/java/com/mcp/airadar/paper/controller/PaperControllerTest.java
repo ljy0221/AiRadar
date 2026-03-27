@@ -76,7 +76,7 @@ class PaperControllerTest {
     @Test
     @DisplayName("GET /api/v1/papers returns wrapped success response")
     void getPaperList_returns200() throws Exception {
-        when(paperService.getPaperList(isNull(), isNull(), isNull())).thenReturn(List.of(sampleDailyGroup()));
+        when(paperService.getPaperList(isNull(), isNull(), isNull(), isNull(), isNull())).thenReturn(List.of(sampleDailyGroup()));
 
         mockMvc.perform(get("/api/v1/papers"))
                 .andExpect(status().isOk())
@@ -91,7 +91,7 @@ class PaperControllerTest {
     @Test
     @DisplayName("GET /api/v1/papers with filters returns wrapped grouped response")
     void getPaperList_withFilters_returns200() throws Exception {
-        when(paperService.getPaperList(eq("NLP"), eq("cs.CL"), eq(LocalDate.of(2026, 3, 19))))
+        when(paperService.getPaperList(eq("NLP"), eq("cs.CL"), eq(LocalDate.of(2026, 3, 19)), isNull(), isNull()))
                 .thenReturn(List.of(sampleDailyGroup()));
 
         mockMvc.perform(get("/api/v1/papers")

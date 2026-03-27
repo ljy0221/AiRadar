@@ -57,7 +57,7 @@ class NewsServiceTest {
         when(newsRepository.findRecentNewsFeed("GLOBAL", "LLM", targetDate.atStartOfDay(), targetDate.plusDays(1).atStartOfDay()))
                 .thenReturn(List.of(sampleItem));
 
-        List<NewsDto.DailyGroup> result = newsService.getNewsList("GLOBAL", "LLM", targetDate);
+        List<NewsDto.DailyGroup> result = newsService.getNewsList("GLOBAL", "LLM", targetDate, null, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).date()).isEqualTo(targetDate);
@@ -85,7 +85,7 @@ class NewsServiceTest {
         when(newsRepository.findRecentNewsFeed(null, null, targetDate.atStartOfDay(), targetDate.plusDays(1).atStartOfDay()))
                 .thenReturn(List.of(lowerScoreItem, sampleItem));
 
-        List<NewsDto.DailyGroup> result = newsService.getNewsList(null, null, targetDate);
+        List<NewsDto.DailyGroup> result = newsService.getNewsList(null, null, targetDate, null, null);
 
         assertThat(result.get(0).items().get(0).articleId()).isEqualTo("article-001");
         assertThat(result.get(0).items().get(1).articleId()).isEqualTo("article-002");
