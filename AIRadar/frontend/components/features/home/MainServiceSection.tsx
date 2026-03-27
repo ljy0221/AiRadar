@@ -104,8 +104,8 @@ export const MainServiceSection = () => {
           delay="delay-100"
         />
         <ServiceCard 
-          title="채용 시장 역량 분석"
-          description="IT 채용 공고를 정밀 분석하여, 현업에서 지금 가장 요구하는 핵심 스킬과 실무 역량 변화를 파악합니다."
+          title="AI 시대 커리어 전략 분석"
+          description="직업별 핵심 업무의 AI 대체 가능성과 예상 시나리오를 분석하고, AI가 대체할 수 없는 차별화된 핵심 스킬 인사이트를 제공합니다."
           imagePath={jobsImg.src}
           bgColor="bg-[#fde2d3] dark:bg-[#3d2f28]"
           delay="delay-200"
