@@ -328,9 +328,15 @@ ARTICLE_BOOKMARKED → 5.0  (나중에 다시 보려는 강한 관심)
 _semaphore = asyncio.Semaphore(2)  # 최대 동시 요청 2개
 # → LLM 추론 메모리 보호 (로컬 모델 OOM 방지)
 
-NEWS_CHUNK_SIZE = int(os.getenv("NEWS_CHUNK_SIZE", "2"))    # 기본 2건씩
-PAPER_CHUNK_SIZE = int(os.getenv("PAPER_CHUNK_SIZE", "3"))  # 기본 3건씩
+NEWS_CHUNK_SIZE = int(os.getenv("NEWS_CHUNK_SIZE", "2"))    # 기본 2건씩 (뉴스는 content 길이 ↑)
+PAPER_CHUNK_SIZE = int(os.getenv("PAPER_CHUNK_SIZE", "3"))  # 기본 3건씩 (abstract가 더 짧아 배치 크기 ↑)
 ```
+
+| 설정 | 기본값 | 환경변수 | 설명 |
+| --- | --- | --- | --- |
+| Semaphore | `2` | — | 최대 동시 처리 요청 수 |
+| 뉴스 chunk size | `2` | `NEWS_CHUNK_SIZE` | LLM 1회 호출당 뉴스 건수 |
+| 논문 chunk size | `3` | `PAPER_CHUNK_SIZE` | LLM 1회 호출당 논문 건수 (abstract 짧아 3건 가능) |
 
 **뉴스 배치 엔드포인트 처리 흐름**:
 ```
@@ -550,7 +556,23 @@ LIMIT :limit
 
 ---
 
-### 6.3 파이프라인 처리 시간 (실측 기준)
+### 6.3 Airflow DAG 전체 목록 (9개)
+
+| DAG ID | 스케줄 | 역할 |
+| --- | --- | --- |
+| `crawl_news_to_kafka` | `*/30 * * * *` | AITimes·GDELT 뉴스 크롤링 → Kafka |
+| `crawl_paper_to_kafka` | `*/30 * * * *` | arXiv 논문 크롤링 → Kafka |
+| `crawl_github_to_kafka` | `0 */3 * * *` | GitHub Archive 크롤링 → Kafka |
+| `bronze_kafka_ingestion` | `@hourly` | Kafka → Bronze Delta Lake |
+| `silver_refinement` | `None` (수동) | Bronze → Silver (AI 분석) |
+| `gold_serving` | `None` (수동) | Silver → Gold PostgreSQL |
+| `recommendation_batch` | `0 2 * * *` | ALS 협업 필터링 |
+| `trend_aggregator_daily` | `0 2 * * *` | 키워드 트렌드 집계 |
+| `wordcloud_weekly` | `0 3 * * 1` | 주간 워드클라우드 생성 |
+
+---
+
+### 6.4 파이프라인 처리 시간 (실측 기준)
 
 | 단계 | 처리 건수 | 소요 시간 |
 | --- | --- | --- |
@@ -561,7 +583,7 @@ LIMIT :limit
 
 ---
 
-### 6.4 Kafka 처리량 설정
+### 6.5 Kafka 처리량 설정
 
 | 설정 | 값 | 설명 |
 | --- | --- | --- |
@@ -572,7 +594,7 @@ LIMIT :limit
 
 ---
 
-### 6.5 JWT 토큰 만료 설정
+### 6.6 JWT 토큰 만료 설정
 
 ```
 Access Token:  900,000 ms  (15분)

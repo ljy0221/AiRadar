@@ -276,10 +276,15 @@ user_recommendations (PostgreSQL)
 
 | DAG | 스케줄 | 설명 |
 |-----|--------|------|
-| `bronze_kafka_ingestion` | 매시간 | Kafka → Bronze |
-| `silver_refinement` | 수동/센서 | Bronze → Silver (AI 분석) |
-| `gold_serving` | 수동 | Silver → Gold |
-| `recommendation_batch` | 매일 새벽 2시 | ALS 협업 필터링 |
+| `crawl_news_to_kafka` | 매 30분 (`*/30 * * * *`) | AITimes·GDELT 뉴스 크롤링 → Kafka |
+| `crawl_paper_to_kafka` | 매 30분 (`*/30 * * * *`) | arXiv 논문 크롤링 → Kafka |
+| `crawl_github_to_kafka` | 매 3시간 (`0 */3 * * *`) | GitHub Archive 크롤링 → Kafka |
+| `bronze_kafka_ingestion` | 매시간 (`@hourly`) | Kafka → Bronze Delta Lake |
+| `silver_refinement` | 수동 (`None`) | Bronze → Silver (AI 분석, ExternalTaskSensor) |
+| `gold_serving` | 수동 (`None`) | Silver → Gold PostgreSQL |
+| `recommendation_batch` | 매일 새벽 2시 (`0 2 * * *`) | ALS 협업 필터링 |
+| `trend_aggregator_daily` | 매일 새벽 2시 (`0 2 * * *`) | 키워드 트렌드 집계 |
+| `wordcloud_weekly` | 매주 월요일 새벽 3시 (`0 3 * * 1`) | 주간 워드클라우드 생성 |
 
 - **우선순위**: 필수
 
