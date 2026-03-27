@@ -134,7 +134,7 @@ public class JobForecastService {
                 new JobForecastAiClient.GenerateJobForecastRequest(
                         role.getCode(),
                         role.getName(),
-                        forecastMonth,
+                        forecastMonth.toString(),
                         newsKeywords,
                         paperKeywords,
                         role.getCoreTasks().stream()
