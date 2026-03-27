@@ -79,6 +79,21 @@ package "Gold Layer (서빙)" #FFD700 {
         created_at : TIMESTAMP
         updated_at : TIMESTAMP
     }
+
+    TABLE(github_repo_daily) {
+        PK(id) : BIGSERIAL
+        ..
+        repo_id : VARCHAR(255)
+        snapshot_date : DATE
+        stars : BIGINT
+        forks : BIGINT
+        open_issues : INT
+        weekly_commits : INT
+        star_delta_1d : INT
+        ' 전날 대비 star 증가량
+        created_at : TIMESTAMP
+        -- UNIQUE(repo_id, snapshot_date) --
+    }
 }
 
 ' ─────────────────────────────────────────
@@ -91,6 +106,16 @@ package "벡터 검색 (pgvector)" #E8F4FD {
         ..
         content_type : VARCHAR(20)
         ' NEWS | PAPER | GITHUB
+        embedding : vector(768)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(keyword_embeddings) {
+        PK(keyword) : VARCHAR(200)
+        PK(source_type) : VARCHAR(20)
+        ' NEWS | PAPER | GITHUB — 복합 PK
+        ..
         embedding : vector(768)
         created_at : TIMESTAMP
         updated_at : TIMESTAMP
@@ -112,6 +137,20 @@ package "사용자 / 인증" #E8F8E8 {
         provider : VARCHAR(20)
         social_id : VARCHAR(255)
         email_verified : BOOLEAN
+        onboarding_completed : BOOLEAN
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(newsletter_subscriptions) {
+        PK(id) : UUID
+        ..
+        email : VARCHAR(255) UNIQUE
+        job_category : VARCHAR(100)
+        unsubscribe_token : UUID
+        is_subscribed : BOOLEAN
+        subscribed_at : TIMESTAMP
+        unsubscribed_at : TIMESTAMP
         created_at : TIMESTAMP
         updated_at : TIMESTAMP
     }
@@ -151,11 +190,18 @@ package "추천 / Feedback Loop" #F0E8FF {
         ..
         FK(user_id) : UUID
         FK(article_id) : VARCHAR(255)
+        content_type : VARCHAR(10)
+        ' NEWS | PAPER
         score : DECIMAL(8,6)
         reason : VARCHAR(50)
         generated_at : TIMESTAMP
         expires_at : TIMESTAMP
         ' TTL 1일 자동 만료
+    }
+
+    TABLE(user_recommendations_staging) {
+        ' LIKE user_recommendations
+        ' ALS Upsert 경유 Staging
     }
 }
 
@@ -244,6 +290,64 @@ package "집계 / 분석" #FFF3E0 {
 ' ─────────────────────────────────────────
 ' 스테이징 테이블
 ' ─────────────────────────────────────────
+package "직무 예측 (AI 생성)" #FDE8F0 {
+
+    TABLE(job_role) {
+        PK(id) : BIGSERIAL
+        ..
+        code : VARCHAR(100) UNIQUE
+        name : VARCHAR(100)
+        active : BOOLEAN
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(job_role_core_task) {
+        PK(id) : BIGSERIAL
+        ..
+        FK(job_role_id) : BIGINT
+        task_key : VARCHAR(100)
+        task_title : VARCHAR(200)
+        task_description : TEXT
+        display_order : INTEGER
+        created_at : TIMESTAMP
+        -- UNIQUE(job_role_id, task_key) --
+    }
+
+    TABLE(job_forecast) {
+        PK(id) : BIGSERIAL
+        ..
+        FK(job_role_id) : BIGINT
+        forecast_month : DATE
+        generated_at : TIMESTAMP
+        expires_at : TIMESTAMP
+        model_name : VARCHAR(100)
+        prompt_version : VARCHAR(100)
+        raw_response_json : JSONB
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+        -- UNIQUE(job_role_id, forecast_month) --
+    }
+
+    TABLE(job_forecast_task) {
+        PK(id) : BIGSERIAL
+        ..
+        FK(forecast_id) : BIGINT
+        task_key : VARCHAR(100)
+        task_title : VARCHAR(200)
+        impact_summary : TEXT
+        workflow_steps_json : JSONB
+        automation_effect : TEXT
+        human_strengths : TEXT[]
+        recommended_skills : TEXT[]
+        promising_tools : TEXT[]
+        paper_evidence_level : VARCHAR(20)
+        news_evidence_count : INTEGER
+        display_order : INTEGER
+        created_at : TIMESTAMP
+    }
+}
+
 package "Staging (Spark Upsert 경유)" #F5F5F5 {
 
     TABLE(news_items_staging) {
@@ -299,6 +403,16 @@ package "Staging (Spark Upsert 경유)" #F5F5F5 {
         error_log : TEXT
         batch_date : DATE
     }
+
+    TABLE(github_repo_daily_staging) {
+        repo_id : VARCHAR(255)
+        snapshot_date : DATE
+        stars : BIGINT
+        forks : BIGINT
+        open_issues : INT
+        weekly_commits : INT
+        star_delta_1d : INT
+    }
 }
 
 ' ─────────────────────────────────────────
@@ -316,9 +430,17 @@ users           ||--o{ user_recommendations       : "user_id"
 news_items      ||--o{ user_recommendations       : "article_id 참조"
 news_items      ||--o{ search_logs                : "article_id 참조"
 
-news_items_staging    ..>  news_items    : "TRUNCATE → Upsert"
-papers_staging        ..>  papers        : "TRUNCATE → Upsert"
-github_repos_staging  ..>  github_repos  : "TRUNCATE → Upsert"
+news_items_staging        ..>  news_items        : "TRUNCATE → Upsert"
+papers_staging            ..>  papers            : "TRUNCATE → Upsert"
+github_repos_staging      ..>  github_repos      : "TRUNCATE → Upsert"
+github_repo_daily_staging ..>  github_repo_daily : "TRUNCATE → Upsert"
+user_recommendations_staging ..> user_recommendations : "ALS 배치 Upsert"
+
+github_repos  ||--o{ github_repo_daily : "repo_id 이력"
+
+job_role      ||--o{ job_role_core_task : "job_role_id"
+job_role      ||--o{ job_forecast       : "job_role_id"
+job_forecast  ||--o{ job_forecast_task  : "forecast_id"
 
 note bottom of content_embeddings
   AI 서버(ai-server)가

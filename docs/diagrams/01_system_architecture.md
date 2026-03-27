@@ -38,11 +38,11 @@ graph TB
     end
 
     subgraph AI["AI 분석 서버"]
-        AISVR["AI Server FastAPI :8000<br/>─────────────<br/>Claude Haiku<br/>+ sentence-transformers"]
+        AISVR["AI Server FastAPI :8000<br/>─────────────<br/>Claude Haiku (GMS 주)<br/>Qwen 2.5-3B 폴백<br/>+ sentence-transformers"]
     end
 
     subgraph ORCH["오케스트레이션"]
-        AF["Apache Airflow :8081<br/>─────────────<br/>bronze_kafka_ingestion<br/>silver_refinement<br/>gold_serving<br/>recommendation_batch"]
+        AF["Apache Airflow :8081<br/>─────────────<br/>crawl_*_to_kafka (×3)<br/>bronze_ingestion<br/>silver_refinement / gold_serving<br/>recommendation_batch<br/>trend_aggregator_daily<br/>wordcloud_weekly"]
         SP["Apache Spark 3.5.0<br/>:7077 / :8080"]
     end
 

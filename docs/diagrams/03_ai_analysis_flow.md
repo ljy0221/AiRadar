@@ -4,17 +4,17 @@
 sequenceDiagram
     participant SP as Spark<br/>SilverRefinementJob
     participant AI as AI Server<br/>FastAPI :8000
-    participant LLM as Claude Haiku<br/>(GMS 프록시)
+    participant LLM as Claude Haiku (주)<br/>Qwen 2.5-3B (폴백)
     participant EMB as sentence-transformers<br/>paraphrase-multilingual-mpnet
     participant PG as PostgreSQL<br/>content_embeddings
     participant DL as Delta Lake<br/>Silver Layer
 
     Note over SP: Bronze 데이터 읽기<br/>(batch_date 파티션)
 
-    loop 10건씩 배치 처리
+    loop 뉴스 2건 / 논문 3건씩 배치 처리
         SP->>AI: POST /analyze/news/batch<br/>[{article_id, title, content,<br/>source, published_at}]
 
-        AI->>LLM: Claude Haiku API 호출<br/>(GMS 프록시 경유)
+        AI->>LLM: LLM API 호출<br/>(GMS→Claude Haiku / 만료 시 로컬 Qwen)
         LLM-->>AI: 분석 결과<br/>{sentiment, keywords, score,<br/>summary, category, region}
 
         AI->>EMB: 텍스트 임베딩 생성<br/>(title + content)

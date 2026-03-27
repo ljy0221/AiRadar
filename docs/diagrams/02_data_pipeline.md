@@ -18,7 +18,7 @@ flowchart TD
         C1 -->|Produce| K1 & K2 & K3
     end
 
-    subgraph BRONZE["③ Bronze 적재 (매시간, Airflow DAG: bronze_kafka_ingestion)"]
+    subgraph BRONZE["③ Bronze 적재 (매시간, Airflow DAG: bronze_ingestion)"]
         SP1["Spark KafkaBronzeConsumerJob<br/>─────────────────<br/>Structured Streaming<br/>AvailableNow Trigger"]
         B1["Delta Lake<br/>/bronze/news/batch_date={date}/"]
         B2["Delta Lake<br/>/bronze/paper/batch_date={date}/"]
@@ -28,8 +28,8 @@ flowchart TD
     end
 
     subgraph SILVER["④ Silver 정제 (Airflow DAG: silver_refinement)"]
-        SP2["Spark SilverRefinementJob<br/>─────────────────<br/>배치 10건씩<br/>AI 서버 HTTP 호출"]
-        AI["AI Server<br/>Claude Haiku 분석<br/>+ embedding 생성"]
+        SP2["Spark SilverRefinementJob<br/>─────────────────<br/>뉴스 2건 / 논문 3건씩<br/>AI 서버 HTTP 호출"]
+        AI["AI Server<br/>Claude Haiku (주) / Qwen 폴백<br/>+ embedding 생성"]
         S1["Delta Lake<br/>/silver/news/"]
         S2["Delta Lake<br/>/silver/paper/"]
         S3["Delta Lake<br/>/silver/github/"]
@@ -55,7 +55,13 @@ flowchart TD
         STG -->|"② 단일 트랜잭션 Upsert"| G1 & G2 & G3
     end
 
-    subgraph SERVE["⑥ 서빙"]
+    subgraph BATCH["⑥ 배치 집계 (매일 새벽 2시)"]
+        SP4["Spark TrendAggregationJob<br/>─────────────────<br/>Airflow DAG: trend_aggregator_daily<br/>tech_keyword_daily / tech_lifecycle 갱신"]
+        SP5["Spark WordCloudAggregationJob<br/>─────────────────<br/>Airflow DAG: wordcloud_weekly (월요일)<br/>주간 키워드 빈도 집계"]
+        G1 & G2 & G3 --> SP4 & SP5
+    end
+
+    subgraph SERVE["⑦ 서빙"]
         API["Spring Boot<br/>REST API :8888"]
         FE["Next.js<br/>:3000"]
         G1 & G2 & G3 & EMB --> API --> FE
