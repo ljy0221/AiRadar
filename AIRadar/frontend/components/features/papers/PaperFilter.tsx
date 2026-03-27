@@ -1,26 +1,34 @@
 // components/features/papers/PaperFilter.tsx
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { CalendarDays, X } from 'lucide-react';
 import { CalendarModal } from '@/components/common';
 
 interface PaperFilterProps {
   availableDates: string[];
-  selectedDate: string | null;
-  onDateSelect: (date: string | null) => void;
+  startDate: string | null;
+  endDate: string | null;
+  onRangeSelect: (start: string | null, end: string | null) => void;
 }
 
 export const PaperFilter = ({ 
   availableDates,
-  selectedDate,
-  onDateSelect
+  startDate,
+  endDate,
+  onRangeSelect
 }: PaperFilterProps) => {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleCloseCalendar = useCallback(() => {
     setIsCalendarOpen(false);
   }, []);
+
+  const dateDisplayText = useMemo(() => {
+    if (!startDate) return '날짜 선택';
+    if (!endDate || startDate === endDate) return startDate.replace(/-/g, '.');
+    return `${startDate.replace(/-/g, '.')} - ${endDate.replace(/-/g, '.')}`;
+  }, [startDate, endDate]);
 
   return (
     <div className="flex flex-col gap-4 mb-8">
@@ -29,18 +37,18 @@ export const PaperFilter = ({
         <button 
           onClick={() => setIsCalendarOpen(true)}
           className={`flex items-center gap-2 px-5 py-2.5 border-2 rounded-lg font-semibold transition-colors ${
-            selectedDate 
+            startDate 
               ? 'border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--color-accent)]/10 dark:bg-[var(--color-accent)]/20' 
               : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-800/50 dark:hover:bg-gray-800'
           }`}
         >
-          {selectedDate ? selectedDate.replace(/-/g, '.') : '날짜 선택'}
-          <CalendarDays className={`w-5 h-5 ml-1 ${selectedDate ? 'text-[var(--color-accent)]' : 'text-gray-500 dark:text-gray-400'}`} />
+          {dateDisplayText}
+          <CalendarDays className={`w-5 h-5 ml-1 ${startDate ? 'text-[var(--color-accent)]' : 'text-gray-500 dark:text-gray-400'}`} />
         </button>
         
-        {selectedDate && (
+        {(startDate || endDate) && (
           <button 
-            onClick={() => onDateSelect(null)}
+            onClick={() => onRangeSelect(null, null)}
             className="p-2.5 rounded-lg border-2 border-gray-200 dark:border-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             title="필터 초기화"
           >
@@ -53,8 +61,9 @@ export const PaperFilter = ({
         isOpen={isCalendarOpen} 
         onClose={handleCloseCalendar}
         availableDates={availableDates}
-        selectedDate={selectedDate}
-        onDateSelect={onDateSelect}
+        startDate={startDate}
+        endDate={endDate}
+        onRangeSelect={onRangeSelect}
       />
     </div>
   );

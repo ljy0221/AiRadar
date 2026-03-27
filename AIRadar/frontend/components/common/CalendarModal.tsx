@@ -8,8 +8,9 @@ interface CalendarModalProps {
   isOpen: boolean;
   onClose: () => void;
   availableDates: string[];
-  selectedDate: string | null;
-  onDateSelect: (date: string | null) => void;
+  startDate: string | null;
+  endDate: string | null;
+  onRangeSelect: (start: string | null, end: string | null) => void;
 }
 
 type ViewMode = 'calendar' | 'select-year' | 'select-month';
@@ -18,11 +19,25 @@ export const CalendarModal = ({
   isOpen,
   onClose,
   availableDates,
-  selectedDate,
-  onDateSelect,
+  startDate,
+  endDate,
+  onRangeSelect,
 }: CalendarModalProps) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [internalStartDate, setInternalStartDate] = useState<string | null>(startDate);
+  const [internalEndDate, setInternalEndDate] = useState<string | null>(endDate);
+  const [currentDate, setCurrentDate] = useState(() => (startDate ? new Date(startDate) : new Date()));
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+
+  // 모달이 열릴 때 부모의 상태와 동기화
+  React.useEffect(() => {
+    if (isOpen) {
+      setInternalStartDate(startDate);
+      setInternalEndDate(endDate);
+      if (startDate) {
+        setCurrentDate(new Date(startDate));
+      }
+    }
+  }, [isOpen, startDate, endDate]);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -64,14 +79,31 @@ export const CalendarModal = ({
     const isFuture = new Date(dateString) > new Date();
     if (isFuture) return;
 
-    onDateSelect(dateString);
-    onClose();
-  }, [onDateSelect, onClose]);
+    if (!internalStartDate || (internalStartDate && internalEndDate)) {
+      // 첫 번째 클릭: 시작일 설정, 종료일 초기화
+      setInternalStartDate(dateString);
+      setInternalEndDate(null);
+    } else {
+      // 두 번째 클릭: 범위 확정
+      let finalStart = internalStartDate;
+      let finalEnd = dateString;
+
+      if (finalEnd < finalStart) {
+        // 앞뒤가 바뀌었을 경우 스왑
+        [finalStart, finalEnd] = [finalEnd, finalStart];
+      }
+
+      onRangeSelect(finalStart, finalEnd);
+      onClose(); // 범위 선택 완료 시 닫기
+    }
+  }, [internalStartDate, internalEndDate, onRangeSelect, onClose]);
 
   const handleReset = useCallback(() => {
-    onDateSelect(null);
+    setInternalStartDate(null);
+    setInternalEndDate(null);
+    onRangeSelect(null, null);
     onClose();
-  }, [onDateSelect, onClose]);
+  }, [onRangeSelect, onClose]);
 
   const daysInMonth = useMemo(() => getDaysInMonth(year, month), [year, month, getDaysInMonth]);
   const firstDay = useMemo(() => getFirstDayOfMonth(year, month), [year, month, getFirstDayOfMonth]);
@@ -85,7 +117,12 @@ export const CalendarModal = ({
       const day = i + 1;
       const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const isAvailable = isDateAvailable(dateString);
-      const isSelected = selectedDate === dateString;
+
+      const isStart = internalStartDate === dateString;
+      const isEnd = internalEndDate === dateString;
+      const isInRange = internalStartDate && internalEndDate && dateString > internalStartDate && dateString < internalEndDate;
+      const isSelected = isStart || isEnd;
+
       const isFuture = new Date(dateString) > new Date();
 
       return (
@@ -96,11 +133,13 @@ export const CalendarModal = ({
           className={`relative w-full h-12 flex flex-col items-center justify-center rounded-md text-sm font-bold border transition-all duration-200
             ${isSelected
               ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white shadow-sm z-10'
-              : isAvailable && !isFuture
-                ? 'bg-[var(--color-accent)]/10 border-[var(--color-accent)]/20 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/25'
-                : !isFuture
-                  ? 'border-gray-100 dark:border-gray-800/50 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                  : 'border-gray-50 dark:border-gray-900/50 text-gray-200 dark:text-gray-800 cursor-not-allowed'
+              : isInRange
+                ? 'bg-[var(--color-accent)]/20 border-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                : isAvailable && !isFuture
+                  ? 'bg-[var(--color-accent)]/10 border-[var(--color-accent)]/20 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/25'
+                  : !isFuture
+                    ? 'border-gray-100 dark:border-gray-800/50 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                    : 'border-gray-50 dark:border-gray-900/50 text-gray-200 dark:text-gray-800 cursor-not-allowed'
             }
           `}
         >
@@ -115,14 +154,14 @@ export const CalendarModal = ({
     ));
 
     return [...blanks, ...monthDays, ...paddingCells];
-  }, [year, month, daysInMonth, firstDay, availableDatesSet, selectedDate, handleDateClick]);
+  }, [year, month, daysInMonth, firstDay, availableDatesSet, internalStartDate, internalEndDate, handleDateClick]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="pt-2 px-6 pb-6">
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="text-xl font-bold dark:text-gray-100">날짜 선택</h3>
-          {selectedDate && (
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xl font-bold dark:text-gray-100">날짜 범위 선택</h3>
+          {(startDate || endDate) && (
             <button
               onClick={handleReset}
               className="text-sm font-semibold text-gray-400 hover:text-[var(--color-accent)] transition-colors"
@@ -131,6 +170,13 @@ export const CalendarModal = ({
             </button>
           )}
         </div>
+
+        <p className="text-xs font-bold text-[var(--color-accent)] mb-8 flex items-center gap-1.5">
+          <span className="w-1 h-1 rounded-full bg-[var(--color-accent)] animate-pulse" />
+          {!internalStartDate || (internalStartDate && internalEndDate)
+            ? '시작일을 선택해주세요'
+            : '종료일을 선택해주세요'}
+        </p>
 
         {viewMode === 'calendar' && (
           <>
@@ -174,8 +220,8 @@ export const CalendarModal = ({
                 key={`year-${y}`}
                 onClick={() => handleYearSelect(y)}
                 className={`p-3 rounded-lg text-sm font-medium transition-colors ${y === year
-                    ? 'bg-[var(--color-accent)] text-white'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                  ? 'bg-[var(--color-accent)] text-white'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
                   }`}
               >
                 {y}년
@@ -191,8 +237,8 @@ export const CalendarModal = ({
                 key={`month-${m}`}
                 onClick={() => handleMonthSelect(m)}
                 className={`p-3 rounded-lg text-sm font-medium transition-colors ${m === month
-                    ? 'bg-[var(--color-accent)] text-white'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                  ? 'bg-[var(--color-accent)] text-white'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
                   }`}
               >
                 {m + 1}월

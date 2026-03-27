@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { CalendarDays, X } from 'lucide-react';
 import { CalendarModal } from '@/components/common';
 
@@ -6,8 +6,9 @@ interface TimelineFilterProps {
   currentCategory: 'all' | 'domestic' | 'international';
   setCategory: (cat: 'all' | 'domestic' | 'international') => void;
   availableDates: string[];
-  selectedDate: string | null;
-  onDateSelect: (date: string | null) => void;
+  startDate: string | null;
+  endDate: string | null;
+  onRangeSelect: (start: string | null, end: string | null) => void;
   availableKeywords?: string[];
   activeCategory?: string;
   setActiveCategory?: (cat: string) => void;
@@ -17,8 +18,9 @@ export const TimelineFilter = ({
   currentCategory,
   setCategory,
   availableDates,
-  selectedDate,
-  onDateSelect,
+  startDate,
+  endDate,
+  onRangeSelect,
   availableKeywords = [],
   activeCategory = 'ALL',
   setActiveCategory
@@ -28,6 +30,12 @@ export const TimelineFilter = ({
   const handleCloseCalendar = useCallback(() => {
     setIsCalendarOpen(false);
   }, []);
+
+  const dateDisplayText = useMemo(() => {
+    if (!startDate) return '날짜 선택';
+    if (!endDate || startDate === endDate) return startDate.replace(/-/g, '.');
+    return `${startDate.replace(/-/g, '.')} - ${endDate.replace(/-/g, '.')}`;
+  }, [startDate, endDate]);
 
   return (
     <div className="flex flex-col mb-8">
@@ -59,18 +67,18 @@ export const TimelineFilter = ({
           <div className="w-fit flex items-center gap-2">
             <button
               onClick={() => setIsCalendarOpen(true)}
-              className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border rounded-xl text-xs sm:text-sm font-semibold transition-colors ${selectedDate
+              className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border rounded-xl text-xs sm:text-sm font-semibold transition-colors ${startDate
                 ? 'border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--color-accent)]/10 dark:bg-[var(--color-accent)]/20 shadow-sm'
                 : 'border-gray-200 dark:border-gray-800/80 text-gray-700 dark:text-gray-300 bg-white dark:bg-[#171924] hover:bg-gray-50 dark:hover:bg-[#1c1f2e]'
                 }`}
             >
-              <CalendarDays className={`w-4 h-4 ${selectedDate ? 'text-[var(--color-accent)]' : 'text-gray-500 dark:text-gray-400'}`} />
-              {selectedDate ? selectedDate.replace(/-/g, '.') : '날짜 선택'}
+              <CalendarDays className={`w-4 h-4 ${startDate ? 'text-[var(--color-accent)]' : 'text-gray-500 dark:text-gray-400'}`} />
+              {dateDisplayText}
             </button>
 
-            {selectedDate && (
+            {(startDate || endDate) && (
               <button
-                onClick={() => onDateSelect(null)}
+                onClick={() => onRangeSelect(null, null)}
                 className="p-1.5 sm:p-2 rounded-xl border border-gray-200 dark:border-gray-800/80 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#1c1f2e] transition-colors"
                 title="필터 초기화"
               >
@@ -82,7 +90,7 @@ export const TimelineFilter = ({
 
         {/* 하단 행: 동적 키워드 / 카테고리 알약 필터 */}
         {setActiveCategory && (
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+          <div className="flex flex-wrap items-center gap-2 pb-1">
             {['ALL', ...availableKeywords].map(keyword => {
               const isActive = activeCategory === keyword;
               return (
@@ -106,8 +114,9 @@ export const TimelineFilter = ({
         isOpen={isCalendarOpen}
         onClose={handleCloseCalendar}
         availableDates={availableDates}
-        selectedDate={selectedDate}
-        onDateSelect={onDateSelect}
+        startDate={startDate}
+        endDate={endDate}
+        onRangeSelect={onRangeSelect}
       />
     </div>
   );

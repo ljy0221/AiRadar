@@ -30,4 +30,6 @@ export interface PaperListParams {
   category?: string;
   researchArea?: string;
   date?: string; // yyyy-MM-dd
+  startDate?: string;
+  endDate?: string;
 }

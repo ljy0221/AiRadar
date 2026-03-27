@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchWordCloudData, WordCloudData } from '@/services/dashboard/dashboardApi';
-import { Loader2 } from 'lucide-react';
+import { fetchWordCloudData, WordCloudData, SimilarKeyword } from '@/services/dashboard/dashboardApi';
+import { Loader2, X, Link2 } from 'lucide-react';
 
 interface WordCloudChartProps {
   title?: string;
@@ -21,6 +21,7 @@ export const WordCloudChart = ({
   const [activeTab, setActiveTab] = useState<SourceType>('NEWS');
   const [data, setData] = useState<WordCloudData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedWord, setSelectedWord] = useState<WordCloudData | null>(null);
 
   // 15개의 슬롯에 표시될 데이터의 인덱스들 (null일 경우 해당 슬롯은 잠시 비워둠)
   const [activeIndices, setActiveIndices] = useState<(number | null)[]>([]);
@@ -68,19 +69,17 @@ export const WordCloudChart = ({
   const slotPositions = useMemo(() => {
     const slots: any[] = [];
     const xMult = 1.3;
-    const yMult = 0.8;
+    const yMult = 0.6;
     const minVerticalGap = 4;
 
     for (let i = 0; i < pageSize; i++) {
-      // 1순위 키워드(i=0)가 레이더 12시(0도)보다 약간 앞선 5도 지점에서 시작하게 함
-      // 12시(0도) 정각에 배치를 하면 '이전 바퀴'의 끝자락(355도~359도)과 겹치는 현상을 방지
       let currentAngle = (i * 137.5 - 85) * (Math.PI / 180);
-      let currentRadius = 100 + (i * (isFullPage ? 25 : 20));
+      let currentRadius = 80 + (i * (isFullPage ? 20 : 16));
 
       let x = Math.cos(currentAngle) * currentRadius * xMult;
       let y = Math.sin(currentAngle) * currentRadius * yMult;
 
-      const widthGuess = 120; // 평균적인 너비로 고정 (교체 대비)
+      const widthGuess = 120;
       const heightGuess = 40;
 
       for (let attempt = 0; attempt < 10; attempt++) {
@@ -110,15 +109,13 @@ export const WordCloudChart = ({
     return slots;
   }, [isFullPage]);
 
-  // 실시간 큐 교체 로직을 위한 감지 및 데이터 레프
   const lastDetectedRef = useRef<boolean[]>(new Array(pageSize).fill(false));
-  const hasBeenDetectedRef = useRef<boolean[]>(new Array(pageSize).fill(false)); // 중복 교체 방지용 상태 머신
-  const lastSwapTimeRef = useRef<number[]>(new Array(pageSize).fill(0)); // 스왑 쿨다운 (최소 8초)
-  const swapStartTimeRef = useRef<number[]>(new Array(pageSize).fill(0)); // 2초 공백(Term) 타이머용
-  const activeIndicesRef = useRef<(number | null)[]>([]); // null 허용 타입으로 수정
+  const hasBeenDetectedRef = useRef<boolean[]>(new Array(pageSize).fill(false));
+  const lastSwapTimeRef = useRef<number[]>(new Array(pageSize).fill(0));
+  const swapStartTimeRef = useRef<number[]>(new Array(pageSize).fill(0));
+  const activeIndicesRef = useRef<(number | null)[]>([]);
   const dataRef = useRef<WordCloudData[]>([]);
 
-  // 상태 변경 시 레프 동기화
   useEffect(() => {
     activeIndicesRef.current = activeIndices;
   }, [activeIndices]);
@@ -135,7 +132,6 @@ export const WordCloudChart = ({
       const angle = (time / 12000 * 360) % 360;
       setBeamAngle(angle);
 
-      // 개별 슬롯의 Exit 감지 및 교체
       let needsUpdate = false;
       const nextActiveIndices = [...activeIndicesRef.current];
       const currentData = dataRef.current;
@@ -146,19 +142,17 @@ export const WordCloudChart = ({
           const dataIdx = nextActiveIndices[i];
 
           if (dataIdx === null) {
-            // 2.0초의 텀(Term)이 끝났는지 확인하여 다음 키워드 투입
             if (now - swapStartTimeRef.current[i] > 2000) {
               const nextIdx = nextIdxRef.current;
               nextIdxRef.current = (nextIdx + 1) % currentData.length;
               nextActiveIndices[i] = nextIdx;
               needsUpdate = true;
             }
-            return; // 슬롯이 비어있는 상태면 다음 감지 로직 스킵
+            return;
           }
 
           const dx = slot.x;
           const dy = slot.y;
-          // 슬롯 등급에 따른 평균적인 너비 추정 (정밀 감지용)
           const charWidth = slot.sizeCategory === 'hero' ? 12 : slot.sizeCategory === 'large' ? 10 : 8;
           const textLength = currentData[dataIdx]?.text.length || 5;
           const halfWidthPx = (textLength * charWidth) / 2;
@@ -169,32 +163,28 @@ export const WordCloudChart = ({
           const wordAngularWidth = (halfWidthPx * 2 * 180) / (Math.PI * radius);
 
           const diff = (angle - startAngleFull + 360) % 360;
-          // 30도 범위 검출 사용
           const isDetected = diff < (30 + wordAngularWidth);
 
-          // 1. 상태 머신: 빔이 진입하면 감지 플래그 온
           if (isDetected && !hasBeenDetectedRef.current[i]) {
             hasBeenDetectedRef.current[i] = true;
           }
 
-          // 2. 상태 머신: 빔이 완전히 나갔을 때만 교체 (중복 스왑 차단)
           if (lastDetectedRef.current[i] && !isDetected && hasBeenDetectedRef.current[i]) {
             const now = Date.now();
             if (now - lastSwapTimeRef.current[i] > 8000) {
-              // 1. 먼저 해당 슬롯을 비움 (2초간의 텀 시작)
               nextActiveIndices[i] = null;
               swapStartTimeRef.current[i] = now;
               needsUpdate = true;
 
               lastSwapTimeRef.current[i] = now;
             }
-            hasBeenDetectedRef.current[i] = false; // 플래그 리셋
+            hasBeenDetectedRef.current[i] = false;
           }
           lastDetectedRef.current[i] = isDetected;
         });
 
         if (needsUpdate) {
-          activeIndicesRef.current = nextActiveIndices; // 레프 즉시 업데이트하여 다음 프레임 정합성 유지
+          activeIndicesRef.current = nextActiveIndices;
           setActiveIndices(nextActiveIndices);
         }
       }
@@ -204,9 +194,8 @@ export const WordCloudChart = ({
 
     requestRef = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(requestRef);
-  }, [isLoading, data.length === 0, slotPositions]); // activeIndices를 의존성에서 제거하여 루프 안정화
+  }, [isLoading, data.length === 0, slotPositions]);
 
-  // 최종 렌더링용 키워드 데이터 조립
   const positionedKeywords = useMemo(() => {
     if (activeIndices.length === 0 || data.length === 0) return [];
     return activeIndices
@@ -218,7 +207,7 @@ export const WordCloudChart = ({
         return {
           ...word,
           ...slot,
-          rank: slotIdx // 위치 기반 랭크 유지
+          rank: slotIdx
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -239,7 +228,7 @@ export const WordCloudChart = ({
               SCANNING_QUEUE
             </motion.span>
             <div className="flex items-center gap-1.5 border-l border-white/10 pl-3">
-              <span className="opacity-40">ACTIVE_SLOTS</span>
+              <span className="opacity-40">활성 슬롯</span>
               <span className="text-white font-bold">{pageSize}</span>
             </div>
           </div>
@@ -283,9 +272,9 @@ export const WordCloudChart = ({
       {/* Main Tactical Screen Area */}
       <div className="flex-1 bg-white dark:bg-[#05060b] flex items-center justify-center relative select-none overflow-hidden group transition-colors duration-500">
         <div className="absolute bottom-2 sm:bottom-4 left-4 text-[7px] sm:text-[9px] font-mono text-gray-400 dark:text-white/20 flex flex-col items-start gap-0.5 sm:gap-1 uppercase tracking-tighter z-20 pointer-events-none">
-          <span>THREAT_LEVEL: MINIMAL</span>
-          <span className="hidden sm:inline">SCAN_MODE: LIVE_SCAN</span>
-          <span className="truncate max-w-[120px] sm:max-w-none">VER: AI_RADAR_CORE_V1.10.4B</span>
+          <span>위협 수준: 낮음</span>
+          <span className="hidden sm:inline">스캔 모드: 라이브 스캔</span>
+          <span className="truncate max-w-[120px] sm:max-w-none">버전: AI_RADAR_CORE_V1.10.4B</span>
         </div>
 
         {/* Zoom Viewport Container (Fixed Scale: 1.0) */}
@@ -353,7 +342,7 @@ export const WordCloudChart = ({
 
                 return (
                   <motion.div
-                    key={`${activeTab}-${word.keyword}-${word.rank}`} // 키를 고유하게 보장하여 AnimatePresence 활성화
+                    key={`${activeTab}-${word.keyword}-${word.rank}`}
                     initial={{ x: dx, y: dy, opacity: 0, scale: 0.8, filter: "blur(4px)" }}
                     animate={{
                       x: dx,
@@ -368,7 +357,8 @@ export const WordCloudChart = ({
                       zIndex: isDetected ? 20 : 1
                     }}
                     exit={{ opacity: 0, scale: 1.2, filter: "blur(8px)", transition: { duration: 0.3 } }}
-                    className="absolute cursor-pointer flex items-center justify-center text-black dark:text-white"
+                    onClick={() => setSelectedWord(word)}
+                    className="absolute cursor-pointer flex items-center justify-center text-black dark:text-white pointer-events-auto"
                     transition={{ duration: 0.15, ease: "easeOut" }}
                     whileHover={{
                       scale: baseScale + 0.3,
@@ -400,17 +390,114 @@ export const WordCloudChart = ({
             <Loader2 className="w-12 h-12 animate-spin mb-6 text-[var(--color-accent)] opacity-60 dark:opacity-80" />
             <span className="text-xl font-black tracking-[0.4em] italic uppercase animate-pulse text-[var(--color-accent)]"
               style={{ fontFamily: 'var(--font-audiowide-next), sans-serif' }}>
-              Synchronizing Feed...
+              피드 동기화 중...
             </span>
           </div>
         )}
 
         {!isLoading && data.length === 0 && (
           <div className="flex flex-col items-center text-gray-400 dark:text-gray-500/60 font-black italic z-10">
-            <span className="text-lg">NO TARGETS ACQUIRED</span>
+            <span className="text-lg">탐색된 타겟 없음</span>
           </div>
         )}
       </div>
+
+      {/* Similar Keywords Modal */}
+      <AnimatePresence>
+        {selectedWord && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedWord(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md bg-white dark:bg-[#0a0b14] border border-gray-200 dark:border-[var(--color-accent)]/30 shadow-2xl overflow-hidden rounded-xl"
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gray-50/50 dark:bg-white/[0.02]">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black tracking-[0.2em] text-[var(--color-accent)] uppercase mb-1">키워드 정밀 분석</span>
+                  <h4 className="text-xl font-black italic tracking-tighter uppercase" style={{ fontFamily: 'var(--font-audiowide-next), sans-serif' }}>
+                    {selectedWord.text}
+                  </h4>
+                </div>
+                <button
+                  onClick={() => setSelectedWord(null)}
+                  className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-lg transition-colors text-gray-400 dark:text-white/60"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-1 h-3 bg-[var(--color-accent)]" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">유사 키워드 분석 (코사인 유사도)</span>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  {selectedWord.similarKeywords && selectedWord.similarKeywords.length > 0 ? (
+                    selectedWord.similarKeywords.sort((a, b) => b.similarity - a.similarity).map((sk, idx) => (
+                      <motion.div
+                        key={sk.keyword}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        className="group flex items-center justify-between p-3 bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 rounded-lg hover:border-[var(--color-accent)]/50 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Link2 className="w-4 h-4 text-[var(--color-accent)] opacity-40 group-hover:opacity-100 transition-opacity" />
+                          <span className="font-bold text-gray-700 dark:text-gray-200">{sk.keyword}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {/* Similarity Bar */}
+                          <div className="w-20 h-1 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden hidden sm:block">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${sk.similarity * 100}%` }}
+                              className="h-full bg-[var(--color-accent)]"
+                            />
+                          </div>
+                          <span className="font-mono text-[10px] text-[var(--color-accent)] font-bold">
+                            {(sk.similarity * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="py-8 text-center text-gray-400 dark:text-white/20 italic text-sm">
+                      현재 유사 키워드가 탐지되지 않았습니다
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-8 flex justify-end">
+                  <button
+                    onClick={() => setSelectedWord(null)}
+                    className="px-6 py-2 bg-[var(--color-accent)] text-white text-[10px] font-black uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-[0_0_15px_rgba(var(--color-accent-rgb),0.3)]"
+                    style={{ fontFamily: 'var(--font-audiowide-next), sans-serif' }}
+                  >
+                    분석 완료
+                  </button>
+                </div>
+              </div>
+
+              {/* Decorative Corner Elements */}
+              <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[var(--color-accent)]" />
+              <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[var(--color-accent)]" />
+              <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[var(--color-accent)]" />
+              <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[var(--color-accent)]" />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Tactical Bottom Status Bar */}
       <div className="px-4 sm:px-8 py-2 sm:py-3 bg-gray-50 dark:bg-[#0a0b14] border-t border-gray-100 dark:border-white/5 flex flex-col xs:flex-row justify-between items-center gap-2 xs:gap-0 text-[7px] sm:text-[9px] font-black text-gray-400 dark:text-white/40 uppercase tracking-[0.2em] sm:tracking-[0.4em] transition-colors duration-500">
@@ -421,7 +508,7 @@ export const WordCloudChart = ({
               transition={{ repeat: Infinity, duration: 1 }}
               className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-emerald-500"
             />
-            <span>STREAMS_STABLE</span>
+            <span>스트림 연결 상태: 안정</span>
           </div>
           <span className="hidden md:inline border-x border-gray-200 dark:border-white/10 px-6">AZ: {beamAngle.toFixed(1)}° RA: 0.00</span>
           <span className="hidden lg:inline">COORDS: 37°34'N 126°58'E</span>
@@ -429,7 +516,7 @@ export const WordCloudChart = ({
         </div>
         <div className="flex items-center gap-6 sm:gap-10 w-full xs:w-auto justify-between xs:justify-end">
           <div className="flex items-center gap-2">
-            <span className="text-[var(--color-accent)] font-black italic truncate max-w-[80px] sm:max-w-none">{activeTab} FEED ACTIVE</span>
+            <span className="text-[var(--color-accent)] font-black italic truncate max-w-[80px] sm:max-w-none">{activeTab} 피드 활성화됨</span>
             <div className="w-12 sm:w-16 h-0.5 sm:h-1 bg-gray-200 dark:bg-white/5 overflow-hidden">
               <motion.div
                 animate={{ x: [-64, 64] }}
@@ -438,7 +525,7 @@ export const WordCloudChart = ({
               />
             </div>
           </div>
-          <span className="hidden xs:inline text-[var(--color-accent)]">DATA_DENSITY: {data.length}</span>
+          <span className="hidden xs:inline text-[var(--color-accent)]">데이터 밀도: {data.length}</span>
         </div>
       </div>
     </div>
