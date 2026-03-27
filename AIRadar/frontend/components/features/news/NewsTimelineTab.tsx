@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import Loading from '@/app/loading';
 import { TimelineFilter } from './TimelineFilter';
 import { TimelineItem, TimelineItemData } from './TimelineItem';
@@ -50,7 +50,8 @@ export const NewsTimelineTab = () => {
   const { isLoggedIn } = useAuth();
   const { trackArticleClick } = useTracking();
   const [regionFilter, setRegionFilter] = useState<'all' | 'domestic' | 'international'>('all');
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
 
   // 0) 북마크 목록 조회 (로그인 시에만)
@@ -63,7 +64,7 @@ export const NewsTimelineTab = () => {
   // 1) 가용 날짜 조회 (필터 연동)
   const { data: availableData } = useAvailableNewsDates({
     region,
-    category: activeCategory !== 'ALL' ? activeCategory : undefined
+    // 서브 필터(키워드)는 클라이언트에서 처리하므로 전체 날짜를 가져옵니다.
   });
 
   const availableDates = useMemo(() =>
@@ -72,78 +73,88 @@ export const NewsTimelineTab = () => {
   );
 
   // 화면에 표시할 날짜 결정 (선택된 날짜가 없으면 가장 최신 날짜)
-  const displayDate = selectedDate || (availableDates.length > 0 ? availableDates[0] : null);
+  const displayDate = startDate || (availableDates.length > 0 ? availableDates[0] : null);
 
-  // 2) 특정 날짜 뉴스 조회 : displayDate 기준으로 활성화 (무한 스크롤 제거)
+  // 2) 특정 날짜/범위 뉴스 조회
+  const isRangeSelected = !!(startDate && endDate && startDate !== endDate);
+
   const {
     data: newsData,
     isLoading: isNewsLoading,
     isError: isNewsError
-  } = useNewsListQuery({ region, date: displayDate || undefined });
+  } = useNewsListQuery({
+    region,
+    // 카테고리/키워드 필터는 하단에서 클라이언트 사이드로 처리합니다 (서버 파라미터 규격 불일치 방지)
+    date: isRangeSelected ? undefined : (startDate || displayDate || undefined),
+    startDate: isRangeSelected ? startDate : undefined,
+    endDate: isRangeSelected ? endDate : undefined
+  });
 
   // 0) 개인화 추천 피드 (로그인 시 & 기본 상태일 때만)
   const { data: recommendations } = usePersonalizedNewsQuery(5, isLoggedIn);
 
-  // 날짜 기반 데이터 병합 처리 (displayDate 기준 필터링)
+  // 날짜 기반 데이터 병합 처리
   const mergedGroups = useMemo<DailyNewsGroup[]>(() => {
     if (!newsData || newsData.length === 0) return [];
-    
-    // 이미 백엔드에서 날짜별로 그룹화되어 오므로, displayDate와 일치하는 것만 필터링하거나 
-    // displayDate가 없으면 첫 번째 그룹 사용
-    if (displayDate) {
-      return newsData.filter(group => group.date === displayDate);
+
+    // 범위 선택 시에는 시작일(과거)부터 최신순(오름차순)으로 정렬하여 타임라인 흐름 강조
+    if (isRangeSelected) {
+      return [...newsData].sort((a, b) => a.date.localeCompare(b.date));
     }
-    return [newsData[0]];
-  }, [displayDate, newsData]);
 
-  // 헤더 표시용 날짜
-  const headerDate = useMemo(() => {
-    if (mergedGroups.length > 0) return mergedGroups[0].date;
-    return displayDate || new Date().toISOString().split('T')[0];
-  }, [mergedGroups, displayDate]);
+    return newsData;
+  }, [newsData, isRangeSelected]);
 
-  // 화살표 네비게이션 핸들러
+  // 헤더 표시용 텍스트
+  const headerText = useMemo(() => {
+    if (startDate && endDate && startDate !== endDate) {
+      return `${startDate.replace(/-/g, '.')} - ${endDate.replace(/-/g, '.')}`;
+    }
+    if (mergedGroups.length > 0) return mergedGroups[0].date.replace(/-/g, '.');
+    return (displayDate || new Date().toISOString().split('T')[0]).replace(/-/g, '.');
+  }, [mergedGroups, displayDate, startDate, endDate]);
+
+  // 범위 선택 핸들러
+  const handleRangeSelect = useCallback((start: string | null, end: string | null) => {
+    setStartDate(start);
+    setEndDate(end);
+    setActiveCategory('ALL');
+  }, []);
+
+  // 화살표 네비게이션 핸들러 (단일 날짜 모드일 때만 작동 제안)
   const handlePrevDay = (currentStr: string) => {
     setActiveCategory('ALL');
-    const d = new Date(currentStr);
-    d.setDate(d.getDate() - 1);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    const [y, m, d] = currentStr.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() - 1);
+    const newDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+    setStartDate(newDate);
+    setEndDate(newDate);
   };
   const handleNextDay = (currentStr: string) => {
     setActiveCategory('ALL');
-    const d = new Date(currentStr);
-    d.setDate(d.getDate() + 1);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    const [y, m, d] = currentStr.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() + 1);
+    const newDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+    setStartDate(newDate);
+    setEndDate(newDate);
   };
 
-  // 렌더링할 단일 날짜 그룹 (없으면 null)
-  const currentGroup = mergedGroups.length > 0 ? mergedGroups[0] : null;
-
-  // 동적으로 수집된 키워드/카테고리 리스트
+  // 동적으로 수집된 키워드/카테고리 리스트 (모든 그룹에서 수집)
   const availableKeywords = useMemo(() => {
-    if (!currentGroup) return [];
+    if (mergedGroups.length === 0) return [];
     const keys = new Set<string>();
-    currentGroup.items.forEach(item => {
-      const itemKeys = item.keywords && item.keywords.length > 0
-        ? item.keywords
-        : [categoryLabel(item.category)];
-      itemKeys.forEach(k => keys.add(k));
+    mergedGroups.forEach(group => {
+      group.items.forEach(item => {
+        const itemKeys = item.keywords && item.keywords.length > 0
+          ? item.keywords
+          : [categoryLabel(item.category)];
+        itemKeys.forEach(k => keys.add(k));
+      });
     });
     return Array.from(keys);
-  }, [currentGroup]);
-
-  // 필터링 적용된 최종 리스트
-  const filteredItems = useMemo(() => {
-    if (!currentGroup) return [];
-    if (activeCategory === 'ALL') return currentGroup.items;
-
-    return currentGroup.items.filter(item => {
-      const itemKeys = item.keywords && item.keywords.length > 0
-        ? item.keywords
-        : [categoryLabel(item.category)];
-      return itemKeys.includes(activeCategory);
-    });
-  }, [currentGroup, activeCategory]);
+  }, [mergedGroups]);
 
   // 로딩 및 에러 상태 체크
   const isLoading = (isNewsLoading && mergedGroups.length === 0);
@@ -165,7 +176,7 @@ export const NewsTimelineTab = () => {
     <div className="w-full flex justify-center py-6">
       <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* 추천 뉴스 섹션 (로그인 시 & default 화면일 때만) */}
-        {isLoggedIn && !selectedDate && recommendations && recommendations.length > 0 && (
+        {isLoggedIn && !startDate && !endDate && recommendations && recommendations.length > 0 && (
           <div className="mb-12">
             <div className="flex items-center gap-2 mb-6">
               <div className="p-2 bg-[var(--color-accent)]/10 rounded-lg">
@@ -217,49 +228,81 @@ export const NewsTimelineTab = () => {
           currentCategory={regionFilter}
           setCategory={setRegionFilter}
           availableDates={availableDates}
-          selectedDate={selectedDate}
-          onDateSelect={setSelectedDate}
+          startDate={startDate}
+          endDate={endDate}
+          onRangeSelect={handleRangeSelect}
           availableKeywords={availableKeywords}
           activeCategory={activeCategory}
           setActiveCategory={setActiveCategory}
         />
 
         <div className="mt-4 flex flex-col gap-10">
-          {currentGroup ? (
+          {mergedGroups.length > 0 ? (
             <div className="relative">
               {/* 날짜 헤더 영역과 좌우 화살표 */}
               <div className="inline-flex items-center gap-3 mb-8 relative z-10 bg-gray-50/50 dark:bg-gray-800/30 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="w-3 h-3 rounded-full bg-[var(--color-accent)] opacity-90 shrink-0" />
 
-                <button
-                  onClick={() => handlePrevDay(currentGroup.date)}
-                  className="p-1 px-2 hover:bg-gray-200 dark:hover:bg-gray-700/50 rounded-lg transition-colors group"
-                  title="이전 날짜 (과거)"
-                >
-                  <ChevronLeft className="w-4 h-4 text-gray-400 group-hover:text-[var(--color-accent)]" />
-                </button>
+                {(!startDate || (startDate === endDate)) && (
+                  <button
+                    onClick={() => handlePrevDay(mergedGroups[0].date)}
+                    className="p-1 px-2 hover:bg-gray-200 dark:hover:bg-gray-700/50 rounded-lg transition-colors group"
+                    title="이전 날짜 (과거)"
+                  >
+                    <ChevronLeft className="w-4 h-4 text-gray-400 group-hover:text-[var(--color-accent)]" />
+                  </button>
+                )}
 
                 <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-200 min-w-[100px] text-center tracking-tight">
-                  {currentGroup.date.replace(/-/g, '.')}
+                  {headerText}
                 </h3>
 
-                <button
-                  onClick={() => handleNextDay(currentGroup.date)}
-                  className={`p-1 px-2 rounded-lg transition-colors group ${availableDates[0] === currentGroup.date || (!availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date()) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-700/50 cursor-pointer'}`}
-                  disabled={availableDates[0] === currentGroup.date || (!availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date())}
-                  title="다음 날짜 (최신)"
-                >
-                  <ChevronRight className={`w-4 h-4 text-gray-400 ${availableDates[0] === currentGroup.date || (!availableDates.includes(currentGroup.date) && new Date(currentGroup.date) >= new Date()) ? '' : 'group-hover:text-[var(--color-accent)]'}`} />
-                </button>
+                {(!startDate || (startDate === endDate)) && (
+                  <button
+                    onClick={() => handleNextDay(mergedGroups[0].date)}
+                    className={`p-1 px-2 rounded-lg transition-colors group ${availableDates[0] === mergedGroups[0].date || (!availableDates.includes(mergedGroups[0].date) && new Date(mergedGroups[0].date) >= new Date()) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-700/50 cursor-pointer'}`}
+                    disabled={availableDates[0] === mergedGroups[0].date || (!availableDates.includes(mergedGroups[0].date) && new Date(mergedGroups[0].date) >= new Date())}
+                    title="다음 날짜 (최신)"
+                  >
+                    <ChevronRight className={`w-4 h-4 text-gray-400 ${availableDates[0] === mergedGroups[0].date || (!availableDates.includes(mergedGroups[0].date) && new Date(mergedGroups[0].date) >= new Date()) ? '' : 'group-hover:text-[var(--color-accent)]'}`} />
+                  </button>
+                )}
               </div>
 
-              {/* 해당 날짜의 뉴스 아이템 리스트 래퍼 */}
-              <div className="relative">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredItems.map((item, iIdx) => (
-                    <TimelineItem key={item.articleId || iIdx} data={toTimelineItemData(item, bookmarkedIds)} />
-                  ))}
-                </div>
+              {/* 뉴스 아이템 리스트 (날짜별로 그룹화하여 표시) */}
+              <div className="flex flex-col gap-12">
+                {mergedGroups.map((group) => {
+                  const filteredGroupItems = group.items.filter(item => {
+                    if (activeCategory === 'ALL') return true;
+                    const itemKeys = item.keywords && item.keywords.length > 0
+                      ? item.keywords
+                      : [categoryLabel(item.category)];
+                    return itemKeys.includes(activeCategory);
+                  });
+
+                  if (filteredGroupItems.length === 0) return null;
+
+                  return (
+                    <div key={group.date} className="flex flex-col gap-6">
+                      {/* 개별 날짜 구분 헤더 (범위 선택 시에만 표시하거나 항상 표시할 수 있음) */}
+                      {isRangeSelected && (
+                        <div className="flex items-center gap-4">
+                          <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800" />
+                          <span className="text-xs font-bold text-gray-400 dark:text-gray-500 tracking-widest bg-gray-50/50 dark:bg-gray-900/50 px-3 py-1 rounded-full border border-gray-100 dark:border-white/5">
+                            {group.date.replace(/-/g, '.')}
+                          </span>
+                          <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800" />
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredGroupItems.map((item, iIdx) => (
+                          <TimelineItem key={item.articleId || iIdx} data={toTimelineItemData(item, bookmarkedIds)} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -274,13 +317,13 @@ export const NewsTimelineTab = () => {
                     <ChevronRight className="w-4 h-4 text-gray-400" />
                   </button>
                 </div>
-                <p className="text-sm">해당 날짜에 조회된 뉴스가 없습니다.</p>
+                <p className="text-sm">조회된 뉴스가 없습니다.</p>
               </div>
             )
           )}
 
           {/* 마지막 뉴스 안내 */}
-          {displayDate && currentGroup && (
+          {displayDate && mergedGroups.length > 0 && (
             <div className="w-full h-10 flex justify-center items-center mt-6">
               <p className="text-xs text-gray-400 font-bold">마지막 뉴스입니다.</p>
             </div>

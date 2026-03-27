@@ -277,7 +277,7 @@ curl -X POST "http://localhost:8002/crawl/dummy?date=$(date +%Y-%m-%d)&news_coun
 | --- | --- | --- |
 | 이재영 | 팀장 / Backend / Data Pipeline | [@ljy0221](https://github.com/ljy0221/ljy0221) |
 | 김철수 | Backend / Data Pipeline | [@github_id](https://github.com) |
-| 이영희 | Frontend | [@github_id](https://github.com) |
+| 김동현 | Frontend | [@hosup2](https://github.com/hosup2) |
 | 박민준 | AI / Crawling | [@github_id](https://github.com) |
 | 최수진 | Infra / DevOps | [@github_id](https://github.com) |
 | 정다운 | Frontend | [@github_id](https://github.com) |

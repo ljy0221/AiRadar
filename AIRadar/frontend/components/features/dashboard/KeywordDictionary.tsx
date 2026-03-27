@@ -95,16 +95,25 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
           </div>
         </div>
 
-        <div className="relative w-full md:w-[280px]">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-3.5 md:h-3.5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="키워드 검색 (한/영)"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 md:py-2 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm md:text-[13px] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 transition-all font-medium"
-          />
-        </div>
+        <AnimatePresence>
+          {viewMode === 'detail' && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="relative w-full md:w-[280px] pointer-events-auto"
+            >
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-3.5 md:h-3.5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="키워드 검색 (한/영)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 md:py-2 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm md:text-[13px] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 transition-all font-medium"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="flex-1 min-h-0 relative">
@@ -125,7 +134,6 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
                   <motion.button
                     key={cat.id}
                     onClick={() => handleCategorySelect(cat.id === '전체' ? null : cat.id)}
-                    whileHover={{ scale: 1.02, translateY: -4 }}
                     whileTap={{ scale: 0.98 }}
                     className="flex flex-col p-6 md:p-7 rounded-[24px] md:rounded-[28px] border border-gray-100 dark:border-white/[0.08] transition-all h-full min-h-[140px] md:min-h-[160px] text-left group relative bg-white dark:bg-[#161d27] hover:shadow-xl hover:border-[var(--color-accent)]/30"
                   >
@@ -157,6 +165,7 @@ export const KeywordDictionary = ({ data }: KeywordDictionaryProps) => {
                     <ChevronRight className="w-3.5 h-3.5 rotate-180" /> 카테고리 목록
                   </button>
                 </div>
+
                 {filteredData.map((item) => {
                   const isActive = selectedId === item.id;
                   return (

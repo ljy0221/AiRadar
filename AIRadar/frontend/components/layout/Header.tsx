@@ -152,15 +152,16 @@ export const Header = () => {
 
             <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
               <div className="flex shrink-0 items-center">
-                <Link
-                  href="/"
-                  className={classNames(
-                    "font-audiowide text-2xl tracking-tighter transition-all relative hover:scale-105 active:scale-95 group",
-                    mounted && resolvedTheme === 'dark' && "animate-cyber-glow",
-                    shouldBeTransparent ? "text-white" : "text-[var(--color-text-primary)]"
-                  )}
-                  style={{ fontFamily: 'var(--font-audiowide-next)' }}
-                >
+                  <Link
+                    href="/"
+                    draggable={false}
+                    className={classNames(
+                      "font-audiowide text-2xl tracking-tighter transition-all relative hover:scale-105 active:scale-95 group select-none",
+                      mounted && resolvedTheme === 'dark' && "animate-cyber-glow",
+                      shouldBeTransparent ? "text-white" : "text-[var(--color-text-primary)]"
+                    )}
+                    style={{ fontFamily: 'var(--font-audiowide-next)' }}
+                  >
                   <span className="relative z-10">AI RADAR</span>
                   {mounted && resolvedTheme === 'dark' && (
                     <div className="absolute -inset-2 bg-[var(--color-accent)]/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -173,21 +174,21 @@ export const Header = () => {
                   {navigation.map((item) => {
                     const isCurrent = pathname.startsWith(item.href);
                     return (
-                      <div key={item.name} className="relative h-full flex items-center">
-                        <Link
-                          href={item.href}
-                          className={classNames(
-                            isCurrent
-                              ? 'text-[var(--color-accent)] font-bold cyber-nav-active'
-                              : shouldBeTransparent
-                                ? 'text-white/70 hover:text-white'
-                                : 'text-[var(--color-text-primary)]/80 hover:text-[var(--color-accent)]',
-                            'px-2 py-1 text-sm font-semibold transition-all duration-200 uppercase tracking-widest animate-glitch',
-                          )}
-                        >
-                          {item.name}
-                        </Link>
-                      </div>
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        draggable={false}
+                        className={classNames(
+                          isCurrent
+                            ? 'text-[var(--color-accent)] font-bold cyber-nav-active'
+                            : shouldBeTransparent
+                              ? 'text-white/70 hover:text-white'
+                              : 'text-[var(--color-text-primary)]/80 hover:text-[var(--color-accent)]',
+                          'h-14 px-2 text-sm font-semibold transition-all duration-200 uppercase tracking-widest flex items-center animate-glitch select-none',
+                        )}
+                      >
+                        {item.name}
+                      </Link>
                     );
                   })}
                 </div>
@@ -276,6 +277,87 @@ export const Header = () => {
             </div>
           </div>
         </div>
+
+        {/* 모바일 메뉴 패널 */}
+        <DisclosurePanel className="sm:hidden border-t border-[var(--color-accent)]/20 bg-[var(--color-bg-primary)]/95 backdrop-blur-xl">
+          <div className="space-y-1 px-4 py-3">
+            {navigation.map((item) => {
+              const isCurrent = pathname.startsWith(item.href);
+              return (
+                <DisclosureButton
+                  key={item.name}
+                  as={Link}
+                  href={item.href}
+                  className={classNames(
+                    isCurrent
+                      ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-bold'
+                      : 'text-[var(--color-text-primary)]/70 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-[var(--color-accent)]',
+                    'block rounded-xl px-4 py-3 text-base font-semibold transition-all'
+                  )}
+                >
+                  {item.name}
+                </DisclosureButton>
+              );
+            })}
+          </div>
+
+          <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-6">
+            {isLoggedIn && user ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 px-2 mb-2">
+                  <div className="size-10 rounded-xl bg-[var(--color-accent)] text-white flex items-center justify-center font-bold text-lg shadow-lg shadow-[var(--color-accent)]/20">
+                    {userInitial}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold truncate">{user.nickname || user.name}</p>
+                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  <DisclosureButton
+                    as={Link}
+                    href="/profile"
+                    className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold bg-gray-50 dark:bg-gray-800/50 hover:bg-[var(--color-accent)]/5 hover:text-[var(--color-accent)] transition-all"
+                  >
+                    <Settings className="size-4" /> 프로필 설정
+                  </DisclosureButton>
+                  <DisclosureButton
+                    as="button"
+                    onClick={() => setIsLogoutModalOpen(true)}
+                    className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold text-red-500 bg-red-50/50 dark:bg-red-500/5 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+                  >
+                    <LogOut className="size-4" /> 로그아웃
+                  </DisclosureButton>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                <DisclosureButton
+                  as="button"
+                  onClick={() => openAuthModal('login')}
+                  className="flex items-center justify-center gap-2 w-full bg-[var(--color-accent)] text-white py-3.5 rounded-xl font-bold hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-[var(--color-accent)]/20"
+                >
+                  <LogIn className="size-5" /> 로그인
+                </DisclosureButton>
+                <DisclosureButton
+                  as="button"
+                  onClick={() => openAuthModal('signup')}
+                  className="flex items-center justify-center gap-2 w-full bg-gray-100 dark:bg-gray-800 py-3.5 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all text-[var(--color-text-primary)]"
+                >
+                  <UserPlus className="size-5" /> 무료 계정 생성
+                </DisclosureButton>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-4 flex items-center justify-between bg-gray-50/50 dark:bg-black/20">
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Theme Mode</span>
+            </div>
+            <div className="text-[10px] font-bold text-gray-400 dark:text-gray-600">v1.2.0</div>
+          </div>
+        </DisclosurePanel>
       </Disclosure>
 
       <AuthModal

@@ -34,6 +34,8 @@ export interface NewsListParams {
   region?: 'GLOBAL' | 'DOMESTIC';
   category?: NewsCategory;
   date?: string;
+  startDate?: string;
+  endDate?: string;
   page?: number;
   size?: number;
 }

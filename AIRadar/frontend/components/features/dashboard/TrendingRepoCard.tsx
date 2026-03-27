@@ -27,6 +27,33 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
 
   const currentData = chartTab === 'daily' ? repo.daily : repo.monthly;
 
+  // Calculate nice ticks for consistent scaling
+  const calculateYAxisTicks = (data: any[]) => {
+    if (!data || data.length === 0) return { domain: [0, 100], ticks: [0, 25, 50, 75, 100] };
+    const stars = data.map(d => d.stars || 0);
+    const minVal = Math.min(...stars);
+    const maxVal = Math.max(...stars);
+    const rawRange = maxVal - minVal;
+    const targetStep = (rawRange || 1) / 3;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(targetStep || 1)));
+    const res = (targetStep || 1) / (magnitude || 1);
+    let step = magnitude;
+    if (res < 1.5) step = 1 * magnitude;
+    else if (res < 3.5) step = 2 * magnitude;
+    else if (res < 7.5) step = 5 * magnitude;
+    else step = 10 * magnitude;
+    const start = Math.floor(minVal / step) * step;
+    let ticks = [start, start + step, start + 2 * step, start + 3 * step, start + 4 * step];
+    if (ticks[4] < maxVal) {
+      step = step * 2;
+      const start2 = Math.floor(minVal / step) * step;
+      ticks = [start2, start2 + step, start2 + 2 * step, start2 + 3 * step, start2 + 4 * step];
+    }
+    return { domain: [ticks[0], ticks[4]], ticks };
+  };
+
+  const { domain, ticks } = calculateYAxisTicks(currentData);
+
   return (
     <div className="bg-white dark:bg-[#1a1c2e] p-6 lg:p-8 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col lg:flex-row gap-8 lg:gap-12">
       <div className="lg:w-1/3 flex flex-col pt-2">
@@ -119,7 +146,8 @@ export const TrendingRepoCard = ({ repo, rank }: { repo: GithubRepo, rank: numbe
                 tickLine={false}
                 tick={{ fontSize: 11, fill: '#9CA3AF' }}
                 tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value}
-                domain={['auto', 'auto']}
+                domain={domain}
+                ticks={ticks}
                 padding={{ top: 20, bottom: 20 }}
               />
               <Tooltip

@@ -5,7 +5,7 @@ import type { NewsListParams } from '@/types/news';
 // 기본 뉴스 목록 쿼리 훅 (최근 4일치 등 기본 조회용)
 export const useNewsListQuery = (params?: NewsListParams) => {
   return useQuery({
-    queryKey: ['news', 'list', params?.region, params?.category, params?.date],
+    queryKey: ['news', 'list', params],
     queryFn: () => fetchNewsList(params),
     staleTime: 1000 * 60 * 5, // 5분 캐싱
   });
@@ -14,7 +14,7 @@ export const useNewsListQuery = (params?: NewsListParams) => {
 // 특정 날짜 기반 뉴스 무한 스크롤 훅
 export const useInfiniteNewsQuery = (params: NewsListParams = {}) => {
   return useInfiniteQuery({
-    queryKey: ['news', 'infinite', params.region, params.category, params.date],
+    queryKey: ['news', 'infinite', params],
     queryFn: ({ pageParam }) => fetchNewsList({ ...params, date: pageParam || params.date }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => {
