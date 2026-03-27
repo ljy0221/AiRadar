@@ -88,7 +88,7 @@ class NewsControllerTest {
     @Test
     @DisplayName("given default params when get news list then returns wrapped success response")
     void givenDefaultParamsWhenGetNewsListThenReturnsWrappedSuccessResponse() throws Exception {
-        when(newsService.getNewsList(isNull(), isNull(), isNull())).thenReturn(List.of(sampleDailyGroup()));
+        when(newsService.getNewsList(isNull(), isNull(), isNull(), isNull(), isNull())).thenReturn(List.of(sampleDailyGroup()));
 
         mockMvc.perform(get("/api/v1/news"))
                 .andExpect(status().isOk())
@@ -102,7 +102,7 @@ class NewsControllerTest {
     @Test
     @DisplayName("given region and date when get news list then keeps wrapped payload")
     void givenRegionAndDateWhenGetNewsListThenKeepsWrappedPayload() throws Exception {
-        when(newsService.getNewsList(eq("GLOBAL"), isNull(), eq(LocalDate.of(2026, 3, 19))))
+        when(newsService.getNewsList(eq("GLOBAL"), isNull(), eq(LocalDate.of(2026, 3, 19)), isNull(), isNull()))
                 .thenReturn(List.of(sampleDailyGroup()));
 
         mockMvc.perform(get("/api/v1/news")
