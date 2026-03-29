@@ -85,7 +85,7 @@ export const NewsTimelineTab = () => {
 
   // 2) 특정 날짜/범위 뉴스 조회
   const isRangeSelected = !!(startDate && endDate && startDate !== endDate);
-  const infiniteAnchorRef = useRef<HTMLElement | null>(null);
+  const infiniteAnchorRef = useRef<HTMLParagraphElement | null>(null);
 
   const {
     data: infiniteNewsData,
