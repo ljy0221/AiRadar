@@ -1,4 +1,4 @@
-import { FileText, Newspaper, ArrowRight } from 'lucide-react';
+import { FileText, Newspaper } from 'lucide-react';
 
 interface Source {
   type: 'paper' | 'news';
@@ -7,16 +7,14 @@ interface Source {
 }
 
 interface CoreTaskCardProps {
-  number: number;
   title: string;
   description: string;
   sources: Source[];
-  onOpenScenario: () => void;
 }
 
-export const CoreTaskCard = ({ number, title, description, sources, onOpenScenario }: CoreTaskCardProps) => {
+export const CoreTaskCard = ({ title, description, sources }: CoreTaskCardProps) => {
   return (
-    <div className="w-full bg-white dark:bg-[#1a1c2e] border border-gray-100 dark:border-gray-800 rounded-2xl p-6 md:p-10 flex flex-col gap-6 shadow-sm">
+    <div className="w-full shrink-0 bg-white dark:bg-[#1a1c2e] border border-gray-100 dark:border-gray-800 rounded-2xl p-6 md:p-10 flex flex-col gap-6 shadow-sm">
       <div className="flex flex-col gap-2">
         <h3 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">이 직업의 핵심업무</h3>
         <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed">
@@ -36,15 +34,6 @@ export const CoreTaskCard = ({ number, title, description, sources, onOpenScenar
             </span>
           </div>
         ))}
-      </div>
-
-      <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-end">
-        <button
-          onClick={onOpenScenario}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[var(--color-accent)] text-white rounded-lg text-sm font-bold hover:opacity-90 transition-all shadow-md active:scale-95"
-        >
-          시나리오 보기 <ArrowRight className="w-4 h-4" />
-        </button>
       </div>
     </div>
   );
