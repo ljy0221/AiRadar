@@ -1,17 +1,31 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Loading from '@/app/loading';
 import { TimelineFilter } from './TimelineFilter';
 import { TimelineItem, TimelineItemData } from './TimelineItem';
 import { TrendingKeywords } from './TrendingKeywords';
-import { useNewsListQuery, useAvailableNewsDates } from '@/hooks/queries/useNewsQuery';
+import { useAvailableNewsDates, useInfiniteNewsQuery } from '@/hooks/queries/useNewsQuery';
 import { useBookmarksQuery } from '@/hooks/queries/useUserQuery';
 import { usePersonalizedNewsQuery } from '@/hooks/queries/useRecommendationQuery';
 import { useAuth } from '../auth/AuthContext';
 import { useTracking } from '@/hooks/useTracking';
-import { Sparkles, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sparkles, ExternalLink, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import type { NewsListItem, DailyNewsGroup, NewsCategory } from '@/types/news';
+
+const NEWS_CATEGORY_LABEL_TO_CODE: Record<string, NewsCategory> = {
+  '대형 언어 모델': 'LLM',
+  '비전 AI': 'Vision',
+  '반도체': 'Semiconductor',
+  '기타 뉴스': 'ETC',
+};
+
+const NEWS_CATEGORY_CODE_TO_LABEL: Record<NewsCategory, string> = {
+  LLM: '대형 언어 모델',
+  Vision: '비전 AI',
+  Semiconductor: '반도체',
+  ETC: '기타 뉴스',
+};
 
 // NewsListItem → TimelineItemData 매핑 함수
 function toTimelineItemData(news: NewsListItem, bookmarkedIds: Set<string>): TimelineItemData {
@@ -32,13 +46,7 @@ function toTimelineItemData(news: NewsListItem, bookmarkedIds: Set<string>): Tim
 }
 
 function categoryLabel(cat: NewsListItem['category']): string {
-  const map: Record<string, string> = {
-    LLM: '대형 언어 모델',
-    Vision: '비전 AI',
-    Semiconductor: '반도체',
-    ETC: '기타 뉴스',
-  };
-  return map[cat] ?? cat;
+  return NEWS_CATEGORY_CODE_TO_LABEL[cat as NewsCategory] ?? cat;
 }
 
 function formatDate(iso: string): string {
@@ -77,33 +85,63 @@ export const NewsTimelineTab = () => {
 
   // 2) 특정 날짜/범위 뉴스 조회
   const isRangeSelected = !!(startDate && endDate && startDate !== endDate);
+  const infiniteAnchorRef = useRef<HTMLElement | null>(null);
 
   const {
-    data: newsData,
-    isLoading: isNewsLoading,
-    isError: isNewsError
-  } = useNewsListQuery({
+    data: infiniteNewsData,
+    isLoading: isInfiniteLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    isError: isInfiniteError
+  } = useInfiniteNewsQuery({
     region,
-    // 카테고리/키워드 필터는 하단에서 클라이언트 사이드로 처리합니다 (서버 파라미터 규격 불일치 방지)
-    date: isRangeSelected ? undefined : (startDate || displayDate || undefined),
+    category: activeCategory !== 'ALL' ? NEWS_CATEGORY_LABEL_TO_CODE[activeCategory] : undefined,
+    date: !isRangeSelected ? (startDate || displayDate || undefined) : undefined,
     startDate: isRangeSelected ? startDate : undefined,
-    endDate: isRangeSelected ? endDate : undefined
-  });
+    endDate: isRangeSelected ? endDate : undefined,
+    size: 30
+  }, !!(isRangeSelected ? (startDate || endDate) : (startDate || displayDate)));
 
   // 0) 개인화 추천 피드 (로그인 시 & 기본 상태일 때만)
   const { data: recommendations } = usePersonalizedNewsQuery(5, isLoggedIn);
 
   // 날짜 기반 데이터 병합 처리
   const mergedGroups = useMemo<DailyNewsGroup[]>(() => {
-    if (!newsData || newsData.length === 0) return [];
+    const sourceGroups = infiniteNewsData?.pages.flatMap((p) => p.groups || []) || [];
+
+    if (!sourceGroups || sourceGroups.length === 0) return [];
+
+    const groupedMap = new Map<string, DailyNewsGroup['items']>();
+    sourceGroups.forEach((group) => {
+      const prev = groupedMap.get(group.date) || [];
+      groupedMap.set(group.date, [...prev, ...group.items]);
+    });
+
+    const normalized = Array.from(groupedMap.entries()).map(([date, items]) => ({ date, items }));
 
     // 범위 선택 시에는 시작일(과거)부터 최신순(오름차순)으로 정렬하여 타임라인 흐름 강조
     if (isRangeSelected) {
-      return [...newsData].sort((a, b) => a.date.localeCompare(b.date));
+      return [...normalized].sort((a, b) => a.date.localeCompare(b.date));
     }
 
-    return newsData;
-  }, [newsData, isRangeSelected]);
+    return normalized;
+  }, [infiniteNewsData, isRangeSelected]);
+
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+    const target = infiniteAnchorRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) {
+        fetchNextPage();
+      }
+    }, { rootMargin: '300px' });
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // 헤더 표시용 텍스트
   const headerText = useMemo(() => {
@@ -143,22 +181,12 @@ export const NewsTimelineTab = () => {
 
   // 동적으로 수집된 키워드/카테고리 리스트 (모든 그룹에서 수집)
   const availableKeywords = useMemo(() => {
-    if (mergedGroups.length === 0) return [];
-    const keys = new Set<string>();
-    mergedGroups.forEach(group => {
-      group.items.forEach(item => {
-        const itemKeys = item.keywords && item.keywords.length > 0
-          ? item.keywords
-          : [categoryLabel(item.category)];
-        itemKeys.forEach(k => keys.add(k));
-      });
-    });
-    return Array.from(keys);
-  }, [mergedGroups]);
+    return ['대형 언어 모델', '비전 AI', '반도체', '기타 뉴스'];
+  }, []);
 
   // 로딩 및 에러 상태 체크
-  const isLoading = (isNewsLoading && mergedGroups.length === 0);
-  const isError = (isNewsError && mergedGroups.length === 0);
+  const isLoading = (isInfiniteLoading && mergedGroups.length === 0);
+  const isError = (isInfiniteError && mergedGroups.length === 0);
 
   if (isLoading) {
     return <Loading />;
@@ -271,16 +299,8 @@ export const NewsTimelineTab = () => {
 
               {/* 뉴스 아이템 리스트 (날짜별로 그룹화하여 표시) */}
               <div className="flex flex-col gap-12">
-                {mergedGroups.map((group) => {
-                  const filteredGroupItems = group.items.filter(item => {
-                    if (activeCategory === 'ALL') return true;
-                    const itemKeys = item.keywords && item.keywords.length > 0
-                      ? item.keywords
-                      : [categoryLabel(item.category)];
-                    return itemKeys.includes(activeCategory);
-                  });
-
-                  if (filteredGroupItems.length === 0) return null;
+                      {mergedGroups.map((group) => {
+                  const filteredGroupItems = group.items;
 
                   return (
                     <div key={group.date} className="flex flex-col gap-6">
@@ -325,7 +345,18 @@ export const NewsTimelineTab = () => {
           {/* 마지막 뉴스 안내 */}
           {displayDate && mergedGroups.length > 0 && (
             <div className="w-full h-10 flex justify-center items-center mt-6">
-              <p className="text-xs text-gray-400 font-bold">마지막 뉴스입니다.</p>
+              {isFetchingNextPage && (
+                <div className="flex items-center gap-2 text-xs text-gray-400 font-bold">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  이전 뉴스 로딩 중...
+                </div>
+              )}
+              {!isFetchingNextPage && hasNextPage && (
+                <p ref={infiniteAnchorRef} className="text-xs text-gray-400 font-bold">스크롤하면 이전 뉴스를 불러옵니다.</p>
+              )}
+              {(!hasNextPage && !isFetchingNextPage) && (
+                <p className="text-xs text-gray-400 font-bold">마지막 뉴스입니다.</p>
+              )}
             </div>
           )}
         </div>

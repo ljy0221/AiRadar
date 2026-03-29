@@ -30,6 +30,32 @@ public interface PaperRepository extends JpaRepository<Paper, String> {
             @Param("endExclusive") LocalDateTime endExclusive);
 
     @Query(value = """
+        SELECT *
+        FROM papers
+        WHERE is_active = TRUE
+          AND published_at IS NOT NULL
+          AND published_at >= :startInclusive
+          AND published_at < :endExclusive
+          AND (:category IS NULL OR category = :category)
+          AND (:researchArea IS NULL OR research_area = :researchArea)
+          AND (
+                :cursorPublishedAt IS NULL
+                OR published_at < :cursorPublishedAt
+                OR (published_at = :cursorPublishedAt AND paper_id < :cursorId)
+          )
+        ORDER BY published_at DESC, paper_id DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<Paper> findRecentPaperFeedPage(
+            @Param("category") String category,
+            @Param("researchArea") String researchArea,
+            @Param("startInclusive") LocalDateTime startInclusive,
+            @Param("endExclusive") LocalDateTime endExclusive,
+            @Param("cursorPublishedAt") LocalDateTime cursorPublishedAt,
+            @Param("cursorId") String cursorId,
+            @Param("limit") int limit);
+
+    @Query(value = """
         SELECT DISTINCT CAST(DATE(published_at) AS TEXT) AS published_date
         FROM papers
         WHERE is_active = TRUE
