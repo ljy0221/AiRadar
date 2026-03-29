@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/v1/papers")
@@ -20,14 +20,26 @@ public class PaperController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PaperDto.DailyGroup>> getPaperList(
+    public ResponseEntity<PaperDto.PagedFeed> getPaperList(
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String researchArea,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime cursorPublishedAt,
+            @RequestParam(required = false) String cursorId,
+            @RequestParam(required = false) Integer size
     ) {
-        return ResponseEntity.ok(paperService.getPaperList(category, researchArea, date, startDate, endDate));
+        return ResponseEntity.ok(paperService.getPaperListPaged(
+                category,
+                researchArea,
+                date,
+                startDate,
+                endDate,
+                cursorPublishedAt,
+                cursorId,
+                size
+        ));
     }
 
     @GetMapping("/available-dates")

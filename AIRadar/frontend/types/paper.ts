@@ -32,4 +32,18 @@ export interface PaperListParams {
   date?: string; // yyyy-MM-dd
   startDate?: string;
   endDate?: string;
+  cursorPublishedAt?: string;
+  cursorId?: string;
+  size?: number;
+}
+
+export interface FeedCursor {
+  publishedAt: string;
+  id: string;
+}
+
+export interface PagedPaperFeed {
+  groups: DailyPaperGroup[];
+  nextCursor: FeedCursor | null;
+  hasNext: boolean;
 }

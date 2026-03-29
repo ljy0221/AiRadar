@@ -7,6 +7,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -20,14 +21,26 @@ public class NewsController {
     }
 
     @GetMapping
-    public ResponseEntity<List<NewsDto.DailyGroup>> getNewsList(
+    public ResponseEntity<NewsDto.PagedFeed> getNewsList(
             @RequestParam(required = false) String region,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime cursorPublishedAt,
+            @RequestParam(required = false) String cursorId,
+            @RequestParam(required = false) Integer size
     ) {
-        return ResponseEntity.ok(newsService.getNewsList(region, category, date, startDate, endDate));
+        return ResponseEntity.ok(newsService.getNewsListPaged(
+                region,
+                category,
+                date,
+                startDate,
+                endDate,
+                cursorPublishedAt,
+                cursorId,
+                size
+        ));
     }
 
     @GetMapping("/available-dates")

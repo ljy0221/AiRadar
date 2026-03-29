@@ -1,30 +1,36 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { fetchNewsList, fetchAvailableDates } from '@/services/news/newsApi';
+import { fetchNewsFeed, fetchNewsList, fetchAvailableDates } from '@/services/news/newsApi';
 import type { NewsListParams } from '@/types/news';
 
 // 기본 뉴스 목록 쿼리 훅 (최근 4일치 등 기본 조회용)
-export const useNewsListQuery = (params?: NewsListParams) => {
+export const useNewsListQuery = (params?: NewsListParams, enabled: boolean = true) => {
   return useQuery({
     queryKey: ['news', 'list', params],
     queryFn: () => fetchNewsList(params),
     staleTime: 1000 * 60 * 5, // 5분 캐싱
+    enabled,
   });
 };
 
 // 특정 날짜 기반 뉴스 무한 스크롤 훅
-export const useInfiniteNewsQuery = (params: NewsListParams = {}) => {
+export const useInfiniteNewsQuery = (params: NewsListParams = {}, enabled: boolean = true) => {
   return useInfiniteQuery({
     queryKey: ['news', 'infinite', params],
-    queryFn: ({ pageParam }) => fetchNewsList({ ...params, date: pageParam || params.date }),
-    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) =>
+      fetchNewsFeed({
+        ...params,
+        cursorPublishedAt: (pageParam as { cursorPublishedAt?: string; cursorId?: string } | undefined)?.cursorPublishedAt,
+        cursorId: (pageParam as { cursorPublishedAt?: string; cursorId?: string } | undefined)?.cursorId,
+      }),
+    initialPageParam: undefined as { cursorPublishedAt?: string; cursorId?: string } | undefined,
     getNextPageParam: (lastPage) => {
-      if (!lastPage || lastPage.length === 0) return undefined;
-      const lastDate = lastPage[lastPage.length - 1].date;
-      const d = new Date(lastDate);
-      d.setDate(d.getDate() - 1);
-      return d.toISOString().split('T')[0];
+      if (!lastPage?.hasNext || !lastPage?.nextCursor) return undefined;
+      return {
+        cursorPublishedAt: lastPage.nextCursor.publishedAt,
+        cursorId: lastPage.nextCursor.id,
+      };
     },
-    enabled: true,
+    enabled,
   });
 };
 

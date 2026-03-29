@@ -10,10 +10,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -21,6 +23,8 @@ public class NewsService {
 
     private static final List<String> SUPPORTED_COMPANIES = List.of("openai", "microsoft", "google", "naver", "kakao");
     private static final int MAX_COMPANY_NEWS_LIMIT = 10;
+    private static final int DEFAULT_PAGE_SIZE = 100;
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final NewsRepository newsRepository;
 
@@ -29,6 +33,55 @@ public class NewsService {
     }
 
     public List<NewsDto.DailyGroup> getNewsList(String region, String category, LocalDate date, LocalDate startDate, LocalDate endDate) {
+        DateRange dateRange = resolveRange(date, startDate, endDate);
+        return toDailyGroups(newsRepository.findRecentNewsFeed(region, category, dateRange.startInclusive(), dateRange.endExclusive()));
+    }
+
+    public NewsDto.PagedFeed getNewsListPaged(
+            String region,
+            String category,
+            LocalDate date,
+            LocalDate startDate,
+            LocalDate endDate,
+            LocalDateTime cursorPublishedAt,
+            String cursorId,
+            Integer size
+    ) {
+        DateRange dateRange = resolveRange(date, startDate, endDate);
+        int pageSize = normalizePageSize(size);
+        int fetchSize = pageSize + 1;
+
+        List<NewsItem> rows = newsRepository.findRecentNewsFeedPage(
+                region,
+                category,
+                dateRange.startInclusive(),
+                dateRange.endExclusive(),
+                cursorPublishedAt,
+                cursorId,
+                fetchSize
+        );
+
+        boolean hasNext = rows.size() > pageSize;
+        List<NewsItem> pageRows = hasNext ? rows.subList(0, pageSize) : rows;
+        List<NewsDto.DailyGroup> groups = toDailyGroups(pageRows);
+
+        NewsDto.PageCursor nextCursor = null;
+        if (hasNext && !pageRows.isEmpty()) {
+            NewsItem last = pageRows.get(pageRows.size() - 1);
+            nextCursor = NewsDto.PageCursor.builder()
+                    .publishedAt(last.getPublishedAt())
+                    .id(last.getArticleId())
+                    .build();
+        }
+
+        return NewsDto.PagedFeed.builder()
+                .groups(groups)
+                .nextCursor(nextCursor)
+                .hasNext(hasNext)
+                .build();
+    }
+
+    private DateRange resolveRange(LocalDate date, LocalDate startDate, LocalDate endDate) {
         LocalDateTime startInclusive;
         LocalDateTime endExclusive;
 
@@ -48,7 +101,10 @@ public class NewsService {
             startInclusive = baseDate.minusDays(3).atStartOfDay();
             endExclusive = baseDate.plusDays(1).atStartOfDay();
         }
+        return new DateRange(startInclusive, endExclusive);
+    }
 
+    private List<NewsDto.DailyGroup> toDailyGroups(List<NewsItem> rows) {
         Comparator<NewsDto.ListItem> itemComparator = (a, b) -> {
             BigDecimal leftScore = a.score();
             BigDecimal rightScore = b.score();
@@ -68,11 +124,10 @@ public class NewsService {
             return rightPublishedAt.compareTo(leftPublishedAt);
         };
 
-        Map<LocalDate, List<NewsDto.ListItem>> grouped = newsRepository
-                .findRecentNewsFeed(region, category, startInclusive, endExclusive).stream()
+        Map<LocalDate, List<NewsDto.ListItem>> grouped = rows.stream()
                 .map(NewsDto.ListItem::from)
                 .filter(item -> item.publishedAt() != null)
-                .collect(java.util.stream.Collectors.groupingBy(item -> item.publishedAt().toLocalDate()));
+                .collect(Collectors.groupingBy(item -> item.publishedAt().toLocalDate(), LinkedHashMap::new, Collectors.toList()));
 
         return grouped.entrySet().stream()
                 .sorted(Map.Entry.<LocalDate, List<NewsDto.ListItem>>comparingByKey().reversed())
@@ -83,6 +138,13 @@ public class NewsService {
                                 .toList())
                         .build())
                 .toList();
+    }
+
+    private int normalizePageSize(Integer size) {
+        if (size == null || size < 1) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        return Math.min(size, MAX_PAGE_SIZE);
     }
 
     public NewsDto.AvailableDates getAvailableDates(String region, String category) {
@@ -142,4 +204,6 @@ public class NewsService {
         }
         return normalized;
     }
+
+    private record DateRange(LocalDateTime startInclusive, LocalDateTime endExclusive) {}
 }

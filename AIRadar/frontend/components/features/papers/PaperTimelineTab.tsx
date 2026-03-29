@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, X, Sparkles, ExternalLink } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { CalendarDays, ChevronLeft, ChevronRight, X, Sparkles, ExternalLink, Loader2 } from 'lucide-react';
 import { TimelineItem, TimelineItemData } from '../news/TimelineItem';
-import { usePaperDailyQuery, useAvailablePaperDates } from '@/hooks/queries/usePaperQuery';
+import { useAvailablePaperDates, useInfinitePaperQuery } from '@/hooks/queries/usePaperQuery';
 import { usePersonalizedPapersQuery } from '@/hooks/queries/useRecommendationQuery';
 import { useBookmarksQuery } from '@/hooks/queries/useUserQuery';
 import { useAuth } from '../auth/AuthContext';
@@ -45,6 +45,7 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
   const [endDate, setEndDate] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const infiniteAnchorRef = useRef<HTMLElement | null>(null);
 
   // 북마크 목록 조회
   const { data: bookmarks } = useBookmarksQuery();
@@ -67,29 +68,58 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
   const isRangeSelected = !!(startDate && endDate && startDate !== endDate);
 
   const {
-    data: filteredGroups,
-    isLoading: isFilteredLoading,
-    isError: isFilteredError
-  } = usePaperDailyQuery({
-    date: isRangeSelected ? undefined : (startDate || displayDate || undefined),
+    data: infinitePaperData,
+    isLoading: isInfiniteLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    isError: isInfiniteError
+  } = useInfinitePaperQuery({
+    category: activeCategory !== 'ALL' ? activeCategory : undefined,
+    date: !isRangeSelected ? (startDate || displayDate || undefined) : undefined,
     startDate: isRangeSelected ? startDate : undefined,
     endDate: isRangeSelected ? endDate : undefined,
-    // 클라이언트 사이드 필터링을 위해 카테고리 파라미터는 제외합니다.
-  });
+    size: 30
+  }, !!(isRangeSelected ? (startDate || endDate) : (startDate || displayDate)));
 
   // 0) 개인화 추천 논문 조회 (로그인 시에만)
   const { data: recommendations, isLoading: isRecLoading } = usePersonalizedPapersQuery(10, isLoggedIn);
 
   const mergedGroups = useMemo<DailyPaperGroup[]>(() => {
-    if (!filteredGroups || filteredGroups.length === 0) return [];
+    const sourceGroups = infinitePaperData?.pages.flatMap((p) => p.groups || []) || [];
+
+    if (!sourceGroups || sourceGroups.length === 0) return [];
+
+    const groupedMap = new Map<string, DailyPaperGroup['items']>();
+    sourceGroups.forEach((group) => {
+      const prev = groupedMap.get(group.date) || [];
+      groupedMap.set(group.date, [...prev, ...group.items]);
+    });
+
+    const normalized = Array.from(groupedMap.entries()).map(([date, items]) => ({ date, items }));
 
     // 범위 선택 시에는 시작일(과거)부터 최신순(오름차순)으로 정렬하여 타임라인 흐름 강조
     if (isRangeSelected) {
-      return [...filteredGroups].sort((a, b) => a.date.localeCompare(b.date));
+      return [...normalized].sort((a, b) => a.date.localeCompare(b.date));
     }
 
-    return filteredGroups;
-  }, [filteredGroups, isRangeSelected]);
+    return normalized;
+  }, [infinitePaperData, isRangeSelected]);
+
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+    const target = infiniteAnchorRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) {
+        fetchNextPage();
+      }
+    }, { rootMargin: '300px' });
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // 헤더 표시용 텍스트
   const headerText = useMemo(() => {
@@ -145,8 +175,8 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
     setEndDate(newDate);
   };
 
-  const isLoading = isFilteredLoading || (activeTab === 'recommend' && isRecLoading);
-  const isError = isFilteredError;
+  const isLoading = isInfiniteLoading || (activeTab === 'recommend' && isRecLoading);
+  const isError = isInfiniteError;
 
   if (isLoading) return <Loading />;
   if (isError) return <div className="py-20 text-center text-red-500">데이터를 불러오지 못했습니다.</div>;
@@ -286,11 +316,7 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
 
                     <div className="flex flex-col gap-12">
                       {mergedGroups.map((group) => {
-                        const filteredGroupItems = group.items.filter((item: any) =>
-                          activeCategory === 'ALL' || item.category === activeCategory
-                        );
-
-                        if (filteredGroupItems.length === 0) return null;
+                        const filteredGroupItems = group.items;
 
                         return (
                           <div key={group.date} className="flex flex-col gap-6">
@@ -313,6 +339,20 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
                           </div>
                         );
                       })}
+                    </div>
+                    <div className="w-full h-10 flex justify-center items-center mt-6">
+                      {isFetchingNextPage && (
+                        <div className="flex items-center gap-2 text-xs text-gray-400 font-bold">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          이전 논문 로딩 중...
+                        </div>
+                      )}
+                      {!isFetchingNextPage && hasNextPage && (
+                        <p ref={infiniteAnchorRef} className="text-xs text-gray-400 font-bold">스크롤하면 이전 논문을 불러옵니다.</p>
+                      )}
+                      {(!hasNextPage && !isFetchingNextPage) && (
+                        <p className="text-xs text-gray-400 font-bold">마지막 논문입니다.</p>
+                      )}
                     </div>
                   </div>
                 ) : (
