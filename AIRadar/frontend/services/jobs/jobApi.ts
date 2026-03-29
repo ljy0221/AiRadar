@@ -33,6 +33,7 @@ export interface JobForecastResponse {
   stale: boolean;
   modelName: string;
   promptVersion: string;
+  aiRiskScore: number;
   keywordInsight?: {
     newsKeywords: string[];
     paperKeywords: string[];
@@ -64,6 +65,7 @@ export const fetchJobForecast = async (jobCode: string): Promise<JobForecastResp
       stale: false,
       modelName: "Qwen/Qwen2.5-3B-Instruct",
       promptVersion: "job-forecast-v1",
+      aiRiskScore: 0,
       keywordInsight: {
         newsKeywords: ["생성형AI", "실시간통역", "멀티모달"],
         paperKeywords: ["speech translation", "context modeling", "terminology consistency"],

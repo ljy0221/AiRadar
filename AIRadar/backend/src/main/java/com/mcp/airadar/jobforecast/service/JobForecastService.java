@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mcp.airadar.dashboard.entity.JobAiRisk;
+import com.mcp.airadar.dashboard.repository.JobAiRiskRepository;
 import com.mcp.airadar.dashboard.repository.TechKeywordDailyRepository;
 import com.mcp.airadar.config.RedisCacheConfig;
 import com.mcp.airadar.jobforecast.dto.JobForecastGenerationResultDto;
@@ -28,7 +30,10 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.math.BigDecimal;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,6 +43,7 @@ public class JobForecastService {
 
     private final JobRoleRepository jobRoleRepository;
     private final JobForecastRepository jobForecastRepository;
+    private final JobAiRiskRepository jobAiRiskRepository;
     private final TechKeywordDailyRepository techKeywordDailyRepository;
     private final JobForecastAiClient jobForecastAiClient;
     private final ObjectMapper objectMapper;
@@ -45,12 +51,14 @@ public class JobForecastService {
     public JobForecastService(
             JobRoleRepository jobRoleRepository,
             JobForecastRepository jobForecastRepository,
+            JobAiRiskRepository jobAiRiskRepository,
             TechKeywordDailyRepository techKeywordDailyRepository,
             JobForecastAiClient jobForecastAiClient,
             ObjectMapper objectMapper
     ) {
         this.jobRoleRepository = jobRoleRepository;
         this.jobForecastRepository = jobForecastRepository;
+        this.jobAiRiskRepository = jobAiRiskRepository;
         this.techKeywordDailyRepository = techKeywordDailyRepository;
         this.jobForecastAiClient = jobForecastAiClient;
         this.objectMapper = objectMapper;
@@ -59,7 +67,7 @@ public class JobForecastService {
     @Transactional
     @Cacheable(
             cacheNames = RedisCacheConfig.JOB_FORECAST_CURRENT_CACHE,
-            key = "#jobCode + ':' + T(java.time.YearMonth).now().toString()"
+            key = "'v2:' + #jobCode + ':' + T(java.time.YearMonth).now().toString()"
     )
     public JobForecastResponse getCurrentForecast(String jobCode) {
         LocalDate forecastMonth = YearMonth.now().atDay(1);
@@ -210,6 +218,7 @@ public class JobForecastService {
                 stale,
                 forecast.getModelName(),
                 forecast.getPromptVersion(),
+                getJobRiskScore(forecast),
                 readKeywordInsight(forecast.getRawResponseJson()),
                 forecast.getTasks().stream()
                         .map(task -> new JobForecastResponse.TaskForecast(
@@ -237,6 +246,31 @@ public class JobForecastService {
                         ))
                         .collect(Collectors.toList())
         );
+    }
+
+    private BigDecimal getJobRiskScore(JobForecast forecast) {
+        if (forecast == null || forecast.getJobRole() == null) {
+            return BigDecimal.ZERO;
+        }
+
+        String code = forecast.getJobRole().getCode();
+        String name = forecast.getJobRole().getName();
+
+        Set<String> candidates = new LinkedHashSet<>();
+        if (code != null && !code.isBlank()) {
+            candidates.add(code);
+            candidates.add(code.replace("-", "_"));
+            candidates.add(code.replace("_", "-"));
+        }
+        if (name != null && !name.isBlank()) {
+            candidates.add(name);
+        }
+
+        return jobAiRiskRepository.findAllByJobTypeIn(candidates).stream()
+                .map(JobAiRisk::getRiskScore)
+                .filter(score -> score != null)
+                .findFirst()
+                .orElse(BigDecimal.ZERO);
     }
 
     private List<String> getMonthlyTopKeywords(String sourceType, LocalDate forecastMonth, int limit) {

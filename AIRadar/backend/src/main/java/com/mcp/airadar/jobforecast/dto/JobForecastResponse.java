@@ -2,6 +2,7 @@ package com.mcp.airadar.jobforecast.dto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 
 public record JobForecastResponse(
@@ -13,6 +14,7 @@ public record JobForecastResponse(
         boolean stale,
         String modelName,
         String promptVersion,
+        BigDecimal aiRiskScore,
         KeywordInsight keywordInsight,
         List<TaskForecast> tasks
 ) {

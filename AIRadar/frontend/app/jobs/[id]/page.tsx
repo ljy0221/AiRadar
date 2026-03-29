@@ -52,7 +52,7 @@ export default function JobDetailPage() {
       <JobHeader
         jobTitle={jobData.jobName}
         category={`${jobData.forecastMonth ? jobData.forecastMonth + ' 기준 예측' : 'AI 예측 분석'}`}
-        aiRiskScore={0} // 백엔드 API 명세에 없으므로 기본값 0 처리
+        aiRiskScore={jobData.aiRiskScore ?? 0}
       />
 
       {/* 핵심업무 탭 메뉴 */}
