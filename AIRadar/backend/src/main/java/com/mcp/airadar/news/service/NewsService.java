@@ -51,15 +51,24 @@ public class NewsService {
         int pageSize = normalizePageSize(size);
         int fetchSize = pageSize + 1;
 
-        List<NewsItem> rows = newsRepository.findRecentNewsFeedPage(
-                region,
-                category,
-                dateRange.startInclusive(),
-                dateRange.endExclusive(),
-                cursorPublishedAt,
-                cursorId,
-                fetchSize
-        );
+        boolean useCursorPaging = cursorPublishedAt != null && cursorId != null && !cursorId.isBlank();
+        List<NewsItem> rows = useCursorPaging
+                ? newsRepository.findRecentNewsFeedPage(
+                        region,
+                        category,
+                        dateRange.startInclusive(),
+                        dateRange.endExclusive(),
+                        cursorPublishedAt,
+                        cursorId,
+                        fetchSize
+                )
+                : newsRepository.findRecentNewsFeedFirstPage(
+                        region,
+                        category,
+                        dateRange.startInclusive(),
+                        dateRange.endExclusive(),
+                        fetchSize
+                );
 
         boolean hasNext = rows.size() > pageSize;
         List<NewsItem> pageRows = hasNext ? rows.subList(0, pageSize) : rows;

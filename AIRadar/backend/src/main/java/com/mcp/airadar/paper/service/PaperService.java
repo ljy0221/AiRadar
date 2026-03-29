@@ -47,15 +47,24 @@ public class PaperService {
         int pageSize = normalizePageSize(size);
         int fetchSize = pageSize + 1;
 
-        List<Paper> rows = paperRepository.findRecentPaperFeedPage(
-                category,
-                researchArea,
-                dateRange.startInclusive(),
-                dateRange.endExclusive(),
-                cursorPublishedAt,
-                cursorId,
-                fetchSize
-        );
+        boolean useCursorPaging = cursorPublishedAt != null && cursorId != null && !cursorId.isBlank();
+        List<Paper> rows = useCursorPaging
+                ? paperRepository.findRecentPaperFeedPage(
+                        category,
+                        researchArea,
+                        dateRange.startInclusive(),
+                        dateRange.endExclusive(),
+                        cursorPublishedAt,
+                        cursorId,
+                        fetchSize
+                )
+                : paperRepository.findRecentPaperFeedFirstPage(
+                        category,
+                        researchArea,
+                        dateRange.startInclusive(),
+                        dateRange.endExclusive(),
+                        fetchSize
+                );
 
         boolean hasNext = rows.size() > pageSize;
         List<Paper> pageRows = hasNext ? rows.subList(0, pageSize) : rows;

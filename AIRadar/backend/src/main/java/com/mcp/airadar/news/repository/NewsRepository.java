@@ -39,9 +39,27 @@ public interface NewsRepository extends JpaRepository<NewsItem, String> {
           AND published_at < :endExclusive
           AND (:region IS NULL OR region = :region)
           AND (:category IS NULL OR category = :category)
+        ORDER BY published_at DESC, article_id DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<NewsItem> findRecentNewsFeedFirstPage(
+            @Param("region") String region,
+            @Param("category") String category,
+            @Param("startInclusive") LocalDateTime startInclusive,
+            @Param("endExclusive") LocalDateTime endExclusive,
+            @Param("limit") int limit);
+
+    @Query(value = """
+        SELECT *
+        FROM news_items
+        WHERE is_active = TRUE
+          AND published_at IS NOT NULL
+          AND published_at >= :startInclusive
+          AND published_at < :endExclusive
+          AND (:region IS NULL OR region = :region)
+          AND (:category IS NULL OR category = :category)
           AND (
-                :cursorPublishedAt IS NULL
-                OR published_at < :cursorPublishedAt
+                published_at < :cursorPublishedAt
                 OR (published_at = :cursorPublishedAt AND article_id < :cursorId)
           )
         ORDER BY published_at DESC, article_id DESC

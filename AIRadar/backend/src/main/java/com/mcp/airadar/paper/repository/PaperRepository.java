@@ -38,9 +38,27 @@ public interface PaperRepository extends JpaRepository<Paper, String> {
           AND published_at < :endExclusive
           AND (:category IS NULL OR category = :category)
           AND (:researchArea IS NULL OR research_area = :researchArea)
+        ORDER BY published_at DESC, paper_id DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<Paper> findRecentPaperFeedFirstPage(
+            @Param("category") String category,
+            @Param("researchArea") String researchArea,
+            @Param("startInclusive") LocalDateTime startInclusive,
+            @Param("endExclusive") LocalDateTime endExclusive,
+            @Param("limit") int limit);
+
+    @Query(value = """
+        SELECT *
+        FROM papers
+        WHERE is_active = TRUE
+          AND published_at IS NOT NULL
+          AND published_at >= :startInclusive
+          AND published_at < :endExclusive
+          AND (:category IS NULL OR category = :category)
+          AND (:researchArea IS NULL OR research_area = :researchArea)
           AND (
-                :cursorPublishedAt IS NULL
-                OR published_at < :cursorPublishedAt
+                published_at < :cursorPublishedAt
                 OR (published_at = :cursorPublishedAt AND paper_id < :cursorId)
           )
         ORDER BY published_at DESC, paper_id DESC
