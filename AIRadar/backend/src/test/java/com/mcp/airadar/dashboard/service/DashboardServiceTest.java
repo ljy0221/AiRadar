@@ -126,11 +126,11 @@ class DashboardServiceTest {
                 .thenReturn(rows);
         when(keywordEmbeddingRepository.findExistingKeywords("NEWS", List.of("rag", "llm")))
                 .thenReturn(Set.of("rag", "llm"));
-        when(keywordEmbeddingRepository.findSimilarKeywords(eq("NEWS"), eq("rag"), eq(List.of("rag", "llm")), eq(0.65)))
+        when(keywordEmbeddingRepository.findSimilarKeywords(eq("NEWS"), eq("rag"), eq(List.of("rag", "llm")), eq(0.6)))
                 .thenReturn(List.of(
                         new SimilarKeywordDto("llm", 0.91)
                 ));
-        when(keywordEmbeddingRepository.findSimilarKeywords(eq("NEWS"), eq("llm"), eq(List.of("rag", "llm")), eq(0.65)))
+        when(keywordEmbeddingRepository.findSimilarKeywords(eq("NEWS"), eq("llm"), eq(List.of("rag", "llm")), eq(0.6)))
                 .thenReturn(List.of(new SimilarKeywordDto("rag", 0.91)));
 
         var result = dashboardService.getWordCloud("NEWS", 5);

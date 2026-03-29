@@ -45,7 +45,7 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
   const [endDate, setEndDate] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const infiniteAnchorRef = useRef<HTMLElement | null>(null);
+  const infiniteAnchorRef = useRef<HTMLParagraphElement | null>(null);
 
   // 북마크 목록 조회
   const { data: bookmarks } = useBookmarksQuery();
