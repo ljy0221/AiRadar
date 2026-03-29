@@ -230,7 +230,7 @@ public class JobForecastService {
                                         )
                                 )
                         ))
-                        .toList()
+                        .collect(java.util.stream.Collectors.toList())
         );
     }
 
@@ -265,7 +265,7 @@ public class JobForecastService {
 
     private List<String> readTextArray(JsonNode node) {
         if (node == null || !node.isArray()) {
-            return List.of();
+            return new ArrayList<>();
         }
         List<String> values = new ArrayList<>();
         for (JsonNode item : node) {
@@ -300,7 +300,7 @@ public class JobForecastService {
     }
 
     private List<String> toList(String[] values) {
-        return values == null ? List.of() : Arrays.stream(values).toList();
+        return values == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(values));
     }
 
     private Integer defaultInt(Integer value) {
