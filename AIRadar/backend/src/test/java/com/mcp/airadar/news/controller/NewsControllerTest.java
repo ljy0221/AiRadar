@@ -100,31 +100,29 @@ class NewsControllerTest {
     @Test
     @DisplayName("given default params when get news list then returns wrapped success response")
     void givenDefaultParamsWhenGetNewsListThenReturnsWrappedSuccessResponse() throws Exception {
-        when(newsService.getNewsListPaged(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull()))
-                .thenReturn(samplePagedFeed());
+        when(newsService.getNewsList(isNull(), isNull(), isNull(), isNull(), isNull()))
+                .thenReturn(List.of(sampleDailyGroup()));
 
         mockMvc.perform(get("/api/v1/news"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
                 .andExpect(jsonPath("$.path").value("/api/v1/news"))
-                .andExpect(jsonPath("$.data.groups[0].date").value("2026-03-19"))
-                .andExpect(jsonPath("$.data.groups[0].items[0].articleId").value("article-001"))
-                .andExpect(jsonPath("$.data.hasNext").value(true))
-                .andExpect(jsonPath("$.data.nextCursor.id").value("article-001"));
+                .andExpect(jsonPath("$.data[0].date").value("2026-03-19"))
+                .andExpect(jsonPath("$.data[0].items[0].articleId").value("article-001"));
     }
 
     @Test
     @DisplayName("given region and date when get news list then keeps wrapped payload")
     void givenRegionAndDateWhenGetNewsListThenKeepsWrappedPayload() throws Exception {
-        when(newsService.getNewsListPaged(eq("GLOBAL"), isNull(), eq(LocalDate.of(2026, 3, 19)), isNull(), isNull(), isNull(), isNull(), isNull()))
-                .thenReturn(samplePagedFeed());
+        when(newsService.getNewsList(eq("GLOBAL"), isNull(), eq(LocalDate.of(2026, 3, 19)), isNull(), isNull()))
+                .thenReturn(List.of(sampleDailyGroup()));
 
         mockMvc.perform(get("/api/v1/news")
                         .param("region", "GLOBAL")
                         .param("date", "2026-03-19"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.groups[0].items").isArray());
+                .andExpect(jsonPath("$.data[0].items").isArray());
     }
 
     @Test
@@ -141,7 +139,7 @@ class NewsControllerTest {
                 eq(30)
         )).thenReturn(samplePagedFeed());
 
-        mockMvc.perform(get("/api/v1/news")
+        mockMvc.perform(get("/api/v1/news/paged")
                         .param("region", "GLOBAL")
                         .param("category", "LLM")
                         .param("startDate", "2026-03-10")

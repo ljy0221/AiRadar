@@ -4,17 +4,18 @@ import { PaperListItem, DailyPaperGroup, PaperListParams, PagedPaperFeed } from 
 
 export const paperApi = {
   // 일별 그룹화된 논문 목록 조회 (실서버 연동)
-  // GET /api/v1/papers
+  // GET /api/v1/papers/paged
   getPaperFeed: async (params?: PaperListParams): Promise<PagedPaperFeed> => {
-    const response = await api.get<PagedPaperFeed>('/papers', {
+    const response = await api.get<PagedPaperFeed>('/papers/paged', {
       params,
     });
     return response as unknown as PagedPaperFeed;
   },
 
+  // GET /api/v1/papers
   getPapers: async (params?: PaperListParams): Promise<DailyPaperGroup[]> => {
-    const feed = await paperApi.getPaperFeed(params);
-    return feed.groups || [];
+    const response = await api.get<DailyPaperGroup[]>('/papers', { params });
+    return response as unknown as DailyPaperGroup[];
   },
 
   // 특정 논문 상세 정보 조회 (추후 사용 가능)

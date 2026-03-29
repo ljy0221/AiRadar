@@ -21,7 +21,24 @@ public class NewsController {
     }
 
     @GetMapping
-    public ResponseEntity<NewsDto.PagedFeed> getNewsList(
+    public ResponseEntity<List<NewsDto.DailyGroup>> getNewsList(
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
+        return ResponseEntity.ok(newsService.getNewsList(
+                region,
+                category,
+                date,
+                startDate,
+                endDate
+        ));
+    }
+
+    @GetMapping("/paged")
+    public ResponseEntity<NewsDto.PagedFeed> getNewsListPaged(
             @RequestParam(required = false) String region,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,

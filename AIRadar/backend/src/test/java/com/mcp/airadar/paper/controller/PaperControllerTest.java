@@ -88,33 +88,31 @@ class PaperControllerTest {
     @Test
     @DisplayName("GET /api/v1/papers returns wrapped success response")
     void getPaperList_returns200() throws Exception {
-        when(paperService.getPaperListPaged(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull()))
-                .thenReturn(samplePagedFeed());
+        when(paperService.getPaperList(isNull(), isNull(), isNull(), isNull(), isNull()))
+                .thenReturn(List.of(sampleDailyGroup()));
 
         mockMvc.perform(get("/api/v1/papers"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.path").value("/api/v1/papers"))
-                .andExpect(jsonPath("$.data.groups[0].date").value("2026-03-19"))
-                .andExpect(jsonPath("$.data.groups[0].items[0].paperId").value("paper-001"))
-                .andExpect(jsonPath("$.data.groups[0].items[0].summary").value("Transformer 아키텍처 제안 논문"))
-                .andExpect(jsonPath("$.data.groups[0].items[0].url").value("https://arxiv.org/abs/1706.03762"))
-                .andExpect(jsonPath("$.data.hasNext").value(true))
-                .andExpect(jsonPath("$.data.nextCursor.id").value("paper-001"));
+                .andExpect(jsonPath("$.data[0].date").value("2026-03-19"))
+                .andExpect(jsonPath("$.data[0].items[0].paperId").value("paper-001"))
+                .andExpect(jsonPath("$.data[0].items[0].summary").value("Transformer 아키텍처 제안 논문"))
+                .andExpect(jsonPath("$.data[0].items[0].url").value("https://arxiv.org/abs/1706.03762"));
     }
 
     @Test
     @DisplayName("GET /api/v1/papers with filters returns wrapped grouped response")
     void getPaperList_withFilters_returns200() throws Exception {
-        when(paperService.getPaperListPaged(eq("NLP"), eq("cs.CL"), eq(LocalDate.of(2026, 3, 19)), isNull(), isNull(), isNull(), isNull(), isNull()))
-                .thenReturn(samplePagedFeed());
+        when(paperService.getPaperList(eq("NLP"), eq("cs.CL"), eq(LocalDate.of(2026, 3, 19)), isNull(), isNull()))
+                .thenReturn(List.of(sampleDailyGroup()));
 
         mockMvc.perform(get("/api/v1/papers")
                         .param("category", "NLP")
                         .param("researchArea", "cs.CL")
                         .param("date", "2026-03-19"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.groups[0].items").isArray());
+                .andExpect(jsonPath("$.data[0].items").isArray());
     }
 
     @Test
@@ -131,7 +129,7 @@ class PaperControllerTest {
                 eq(30)
         )).thenReturn(samplePagedFeed());
 
-        mockMvc.perform(get("/api/v1/papers")
+        mockMvc.perform(get("/api/v1/papers/paged")
                         .param("category", "NLP")
                         .param("researchArea", "cs.CL")
                         .param("startDate", "2026-03-10")

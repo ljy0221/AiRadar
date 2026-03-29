@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/papers")
@@ -20,7 +21,24 @@ public class PaperController {
     }
 
     @GetMapping
-    public ResponseEntity<PaperDto.PagedFeed> getPaperList(
+    public ResponseEntity<List<PaperDto.DailyGroup>> getPaperList(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String researchArea,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
+        return ResponseEntity.ok(paperService.getPaperList(
+                category,
+                researchArea,
+                date,
+                startDate,
+                endDate
+        ));
+    }
+
+    @GetMapping("/paged")
+    public ResponseEntity<PaperDto.PagedFeed> getPaperListPaged(
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String researchArea,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
