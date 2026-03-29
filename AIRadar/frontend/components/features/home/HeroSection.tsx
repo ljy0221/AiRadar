@@ -69,7 +69,7 @@ export const HeroSection = () => {
         </motion.div>
         <div className="relative group text-center flex flex-col items-center mb-10 w-full overflow-visible py-4">
           <motion.h1
-            style={{ x: mousePos.x * 0.1, y: mousePos.y * 0.1, fontFamily: 'var(--font-audiowide-next)' }}
+            style={{ fontFamily: 'var(--font-audiowide-next)' }}
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
@@ -98,7 +98,7 @@ export const HeroSection = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-3 gap-y-10 md:gap-0"
+          className="w-full max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-y-10 md:gap-0"
         >
           <div className="flex flex-col items-center gap-2">
             <span className="text-[11px] font-bold text-accent uppercase tracking-[0.15em]">Sensing</span>
@@ -107,10 +107,6 @@ export const HeroSection = () => {
           <div className="flex flex-col items-center gap-2 md:border-l border-text-primary/10">
             <span className="text-[11px] font-bold text-accent uppercase tracking-[0.15em]">Engine</span>
             <span className="text-lg md:text-xl font-bold text-text-primary tracking-widest">Real-time ML</span>
-          </div>
-          <div className="flex flex-col items-center gap-2 md:border-l border-text-primary/10">
-            <span className="text-[11px] font-bold text-accent uppercase tracking-[0.15em]">Forecast</span>
-            <span className="text-lg md:text-xl font-bold text-text-primary tracking-widest">99.8% Conf.</span>
           </div>
         </motion.div>
       </motion.div>
