@@ -6,6 +6,7 @@ export const useJobForecast = (jobCode: string) => {
     queryKey: ['jobForecast', jobCode],
     queryFn: () => fetchJobForecast(jobCode),
     enabled: !!jobCode,
+    refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 5,
   });
 };

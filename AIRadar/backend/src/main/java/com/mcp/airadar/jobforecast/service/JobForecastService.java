@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcp.airadar.dashboard.entity.JobAiRisk;
 import com.mcp.airadar.dashboard.repository.JobAiRiskRepository;
 import com.mcp.airadar.dashboard.repository.TechKeywordDailyRepository;
-import com.mcp.airadar.config.RedisCacheConfig;
 import com.mcp.airadar.jobforecast.dto.JobForecastGenerationResultDto;
 import com.mcp.airadar.jobforecast.dto.JobForecastResponse;
 import com.mcp.airadar.jobforecast.entity.JobForecast;
@@ -20,8 +19,6 @@ import com.mcp.airadar.jobforecast.repository.JobRoleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,23 +62,17 @@ public class JobForecastService {
     }
 
     @Transactional
-    @Cacheable(
-            cacheNames = RedisCacheConfig.JOB_FORECAST_CURRENT_CACHE,
-            key = "'v2:' + #jobCode + ':' + T(java.time.YearMonth).now().toString()"
-    )
     public JobForecastResponse getCurrentForecast(String jobCode) {
         LocalDate forecastMonth = YearMonth.now().atDay(1);
         return getOrGenerateForecast(jobCode, forecastMonth);
     }
 
     @Transactional
-    @CacheEvict(cacheNames = RedisCacheConfig.JOB_FORECAST_CURRENT_CACHE, allEntries = true)
     public JobForecastResponse regenerateForecast(String jobCode, YearMonth yearMonth) {
         return generateAndSaveForecast(getActiveJobRole(jobCode), yearMonth.atDay(1), false);
     }
 
     @Transactional
-    @CacheEvict(cacheNames = RedisCacheConfig.JOB_FORECAST_CURRENT_CACHE, allEntries = true)
     public JobForecastGenerationResultDto generateMonthlyForecasts(YearMonth yearMonth, boolean forceRegenerate) {
         LocalDate forecastMonth = yearMonth.atDay(1);
         List<String> generated = new ArrayList<>();
