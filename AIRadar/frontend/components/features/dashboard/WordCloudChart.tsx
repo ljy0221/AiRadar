@@ -420,7 +420,7 @@ export const WordCloudChart = ({
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-md bg-white dark:bg-[#0a0b14] border border-gray-200 dark:border-[var(--color-accent)]/30 shadow-2xl overflow-hidden rounded-xl"
+              className="relative w-full max-w-md max-h-[88vh] bg-white dark:bg-[#0a0b14] border border-gray-200 dark:border-[var(--color-accent)]/30 shadow-2xl overflow-hidden rounded-xl flex flex-col"
             >
               {/* Modal Header */}
               <div className="px-6 py-4 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gray-50/50 dark:bg-white/[0.02]">
@@ -439,7 +439,7 @@ export const WordCloudChart = ({
               </div>
 
               {/* Modal Content */}
-              <div className="p-6">
+              <div className="p-6 overflow-y-auto flex-1 min-h-0 custom-scrollbar">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-1 h-3 bg-[var(--color-accent)]" />
                   <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">유사 키워드 분석 (코사인 유사도)</span>
