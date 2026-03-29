@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { JobHeader, CoreTaskCard, ScenarioModal, SkillPrepCard } from '@/components/features/jobs';
+import { JobHeader, CoreTaskCard, ScenarioCard, SkillPrepCard } from '@/components/features/jobs';
 import { useJobForecast } from '@/hooks/queries/useJobForecast';
 
 export default function JobDetailPage() {
@@ -15,7 +15,6 @@ export default function JobDetailPage() {
   const { data: jobData, isLoading, isError } = useJobForecast(decodedId);
 
   const [activeTaskIdx, setActiveTaskIdx] = useState(0);
-  const [selectedScenario, setSelectedScenario] = useState<any>(null);
 
   if (isLoading) {
     return (
@@ -35,8 +34,6 @@ export default function JobDetailPage() {
       </div>
     );
   }
-
-  const handleCloseModal = () => setSelectedScenario(null);
 
   const activeTask = jobData.tasks ? jobData.tasks[activeTaskIdx] : null;
 
@@ -100,27 +97,26 @@ export default function JobDetailPage() {
       )}
 
       {activeTask && (
-        <div className="lg:grid lg:grid-cols-12 gap-10 items-start">
-          {/* 왼쪽 핵심 업무 카드 영역 */}
-          <div className="lg:col-span-8 flex flex-col gap-6">
+        <div className="lg:grid lg:grid-cols-12 gap-10 lg:items-stretch">
+          {/* 왼쪽 핵심 업무 카드 영역 — 시나리오 카드가 남은 높이를 채워 오른쪽 열과 맞춤 */}
+          <div className="lg:col-span-8 flex min-h-0 flex-col gap-6 lg:h-full">
             <CoreTaskCard
-              number={activeTaskIdx + 1}
               title={activeTask.taskTitle}
               description={activeTask.impactSummary || activeTask.taskDescription}
               sources={[
                 { type: 'paper', text: activeTask.evidence?.paper?.note || '분석 중', impact: activeTask.evidence?.paper?.level as any },
                 { type: 'news', text: activeTask.evidence?.news?.note || `${activeTask.evidence?.news?.count || 0}건 기반` }
               ]}
-              onOpenScenario={() => setSelectedScenario({
-                title: activeTask.taskTitle + ' - 상세 시나리오',
-                description: activeTask.detailedScenario?.automationEffect || '',
-                steps: activeTask.detailedScenario?.steps || []
-              })}
+            />
+            <ScenarioCard
+              taskTitle={activeTask.taskTitle}
+              description={activeTask.detailedScenario?.automationEffect || ''}
+              steps={activeTask.detailedScenario?.steps || []}
             />
           </div>
 
           {/* 오른쪽 스킬 & 대비 방안 영역 */}
-          <div className="hidden lg:block lg:col-span-4 sticky top-28">
+          <div className="hidden min-h-0 lg:col-span-4 lg:flex lg:h-full lg:flex-col">
             <SkillPrepCard
               uniqueSkills={activeTask.humanStrengths || []}
               recommendedSkills={activeTask.recommendedSkills || []}
@@ -138,15 +134,6 @@ export default function JobDetailPage() {
           </div>
         </div>
       )}
-
-      {/* 시나리오 팝업 모달 */}
-      <ScenarioModal
-        isOpen={!!selectedScenario}
-        onClose={handleCloseModal}
-        title={selectedScenario?.title || ''}
-        description={selectedScenario?.description || ''}
-        steps={selectedScenario?.steps || []}
-      />
     </div>
   );
 }
