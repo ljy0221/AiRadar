@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 public class DashboardService {
 
     private static final Logger log = LoggerFactory.getLogger(DashboardService.class);
-    private static final double SIMILARITY_THRESHOLD = 0.65;
+    private static final double SIMILARITY_THRESHOLD = 0.6;
 
     private final TechKeywordDailyRepository keywordDailyRepository;
     private final TechLifecycleRepository lifecycleRepository;

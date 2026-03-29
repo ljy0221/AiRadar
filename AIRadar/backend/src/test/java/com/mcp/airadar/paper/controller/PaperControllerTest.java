@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
@@ -73,10 +74,22 @@ class PaperControllerTest {
                 .build();
     }
 
+    private PaperDto.PagedFeed samplePagedFeed() {
+        return PaperDto.PagedFeed.builder()
+                .groups(List.of(sampleDailyGroup()))
+                .nextCursor(PaperDto.PageCursor.builder()
+                        .publishedAt(LocalDateTime.of(2026, 3, 19, 9, 0))
+                        .id("paper-001")
+                        .build())
+                .hasNext(true)
+                .build();
+    }
+
     @Test
     @DisplayName("GET /api/v1/papers returns wrapped success response")
     void getPaperList_returns200() throws Exception {
-        when(paperService.getPaperList(isNull(), isNull(), isNull(), isNull(), isNull())).thenReturn(List.of(sampleDailyGroup()));
+        when(paperService.getPaperList(isNull(), isNull(), isNull(), isNull(), isNull()))
+                .thenReturn(List.of(sampleDailyGroup()));
 
         mockMvc.perform(get("/api/v1/papers"))
                 .andExpect(status().isOk())
@@ -100,6 +113,32 @@ class PaperControllerTest {
                         .param("date", "2026-03-19"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].items").isArray());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/papers with cursor params keeps paged payload")
+    void getPaperList_withCursor_returns200() throws Exception {
+        when(paperService.getPaperListPaged(
+                eq("NLP"),
+                eq("cs.CL"),
+                isNull(),
+                eq(LocalDate.of(2026, 3, 10)),
+                eq(LocalDate.of(2026, 3, 19)),
+                any(LocalDateTime.class),
+                eq("paper-123"),
+                eq(30)
+        )).thenReturn(samplePagedFeed());
+
+        mockMvc.perform(get("/api/v1/papers/paged")
+                        .param("category", "NLP")
+                        .param("researchArea", "cs.CL")
+                        .param("startDate", "2026-03-10")
+                        .param("endDate", "2026-03-19")
+                        .param("cursorPublishedAt", "2026-03-19T09:00:00")
+                        .param("cursorId", "paper-123")
+                        .param("size", "30"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.groups").isArray());
     }
 
     @Test

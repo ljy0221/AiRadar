@@ -12,6 +12,8 @@ interface WordCloudChartProps {
 }
 
 type SourceType = 'NEWS' | 'PAPER' | 'GITHUB';
+const WORDCLOUD_REQUEST_LIMIT = 60;
+const WORDCLOUD_DISPLAY_LIMIT = 30;
 
 export const WordCloudChart = ({
   title = "주간 기술 키워드 워드클라우드",
@@ -44,12 +46,13 @@ export const WordCloudChart = ({
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const cloudData = await fetchWordCloudData(activeTab, 30);
+        const cloudData = await fetchWordCloudData(activeTab, WORDCLOUD_REQUEST_LIMIT);
+        const displayData = cloudData.slice(0, WORDCLOUD_DISPLAY_LIMIT);
         if (isMounted) {
-          setData(cloudData);
+          setData(displayData);
           // 데이터 로드 시 인덱스 초기화
-          setActiveIndices(Array.from({ length: pageSize }, (_, i) => i % (cloudData.length || 1)));
-          nextIdxRef.current = pageSize % (cloudData.length || 1);
+          setActiveIndices(Array.from({ length: pageSize }, (_, i) => i % (displayData.length || 1)));
+          nextIdxRef.current = pageSize % (displayData.length || 1);
         }
       } catch (error) {
         console.error("Failed to load word cloud data:", error);

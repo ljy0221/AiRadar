@@ -36,6 +36,8 @@ export interface NewsListParams {
   date?: string;
   startDate?: string;
   endDate?: string;
+  cursorPublishedAt?: string;
+  cursorId?: string;
   page?: number;
   size?: number;
 }
@@ -43,4 +45,15 @@ export interface NewsListParams {
 export interface DailyNewsGroup {
   date: string;
   items: NewsListItem[];
+}
+
+export interface FeedCursor {
+  publishedAt: string;
+  id: string;
+}
+
+export interface PagedNewsFeed {
+  groups: DailyNewsGroup[];
+  nextCursor: FeedCursor | null;
+  hasNext: boolean;
 }

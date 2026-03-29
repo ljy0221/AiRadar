@@ -43,6 +43,19 @@ public class PaperDto {
     ) {}
 
     @Builder
+    public record PageCursor(
+            LocalDateTime publishedAt,
+            String id
+    ) {}
+
+    @Builder
+    public record PagedFeed(
+            List<DailyGroup> groups,
+            PageCursor nextCursor,
+            boolean hasNext
+    ) {}
+
+    @Builder
     public record AvailableDates(
             List<LocalDate> dates,
             int count,

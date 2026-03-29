@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
@@ -66,6 +67,17 @@ class NewsControllerTest {
                 .build();
     }
 
+    private NewsDto.PagedFeed samplePagedFeed() {
+        return NewsDto.PagedFeed.builder()
+                .groups(List.of(sampleDailyGroup()))
+                .nextCursor(NewsDto.PageCursor.builder()
+                        .publishedAt(LocalDateTime.of(2026, 3, 19, 8, 30))
+                        .id("article-001")
+                        .build())
+                .hasNext(true)
+                .build();
+    }
+
     private NewsDto.Detail sampleDetail() {
         return NewsDto.Detail.builder()
                 .articleId("article-001")
@@ -88,7 +100,8 @@ class NewsControllerTest {
     @Test
     @DisplayName("given default params when get news list then returns wrapped success response")
     void givenDefaultParamsWhenGetNewsListThenReturnsWrappedSuccessResponse() throws Exception {
-        when(newsService.getNewsList(isNull(), isNull(), isNull(), isNull(), isNull())).thenReturn(List.of(sampleDailyGroup()));
+        when(newsService.getNewsList(isNull(), isNull(), isNull(), isNull(), isNull()))
+                .thenReturn(List.of(sampleDailyGroup()));
 
         mockMvc.perform(get("/api/v1/news"))
                 .andExpect(status().isOk())
@@ -110,6 +123,32 @@ class NewsControllerTest {
                         .param("date", "2026-03-19"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].items").isArray());
+    }
+
+    @Test
+    @DisplayName("given cursor params when get news list then passes cursor paging fields")
+    void givenCursorParamsWhenGetNewsListThenPassesCursorPagingFields() throws Exception {
+        when(newsService.getNewsListPaged(
+                eq("GLOBAL"),
+                eq("LLM"),
+                isNull(),
+                eq(LocalDate.of(2026, 3, 10)),
+                eq(LocalDate.of(2026, 3, 19)),
+                any(LocalDateTime.class),
+                eq("article-123"),
+                eq(30)
+        )).thenReturn(samplePagedFeed());
+
+        mockMvc.perform(get("/api/v1/news/paged")
+                        .param("region", "GLOBAL")
+                        .param("category", "LLM")
+                        .param("startDate", "2026-03-10")
+                        .param("endDate", "2026-03-19")
+                        .param("cursorPublishedAt", "2026-03-19T08:30:00")
+                        .param("cursorId", "article-123")
+                        .param("size", "30"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.groups").isArray());
     }
 
     @Test
