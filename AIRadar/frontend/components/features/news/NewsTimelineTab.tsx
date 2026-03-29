@@ -11,21 +11,7 @@ import { usePersonalizedNewsQuery } from '@/hooks/queries/useRecommendationQuery
 import { useAuth } from '../auth/AuthContext';
 import { useTracking } from '@/hooks/useTracking';
 import { Sparkles, ExternalLink, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import type { NewsListItem, DailyNewsGroup, NewsCategory } from '@/types/news';
-
-const NEWS_CATEGORY_LABEL_TO_CODE: Record<string, NewsCategory> = {
-  '대형 언어 모델': 'LLM',
-  '비전 AI': 'Vision',
-  '반도체': 'Semiconductor',
-  '기타 뉴스': 'ETC',
-};
-
-const NEWS_CATEGORY_CODE_TO_LABEL: Record<NewsCategory, string> = {
-  LLM: '대형 언어 모델',
-  Vision: '비전 AI',
-  Semiconductor: '반도체',
-  ETC: '기타 뉴스',
-};
+import type { NewsListItem, DailyNewsGroup } from '@/types/news';
 
 // NewsListItem → TimelineItemData 매핑 함수
 function toTimelineItemData(news: NewsListItem, bookmarkedIds: Set<string>): TimelineItemData {
@@ -46,7 +32,7 @@ function toTimelineItemData(news: NewsListItem, bookmarkedIds: Set<string>): Tim
 }
 
 function categoryLabel(cat: NewsListItem['category']): string {
-  return NEWS_CATEGORY_CODE_TO_LABEL[cat as NewsCategory] ?? cat;
+  return cat;
 }
 
 function formatDate(iso: string): string {
@@ -86,6 +72,9 @@ export const NewsTimelineTab = () => {
   // 2) 특정 날짜/범위 뉴스 조회
   const isRangeSelected = !!(startDate && endDate && startDate !== endDate);
   const infiniteAnchorRef = useRef<HTMLParagraphElement | null>(null);
+  const wasIntersectingRef = useRef(false);
+  const isFetchingNextPageRef = useRef(false);
+  const hasNextPageRef = useRef(false);
 
   const {
     data: infiniteNewsData,
@@ -96,7 +85,7 @@ export const NewsTimelineTab = () => {
     isError: isInfiniteError
   } = useInfiniteNewsQuery({
     region,
-    category: activeCategory !== 'ALL' ? NEWS_CATEGORY_LABEL_TO_CODE[activeCategory] : undefined,
+    category: activeCategory !== 'ALL' ? activeCategory : undefined,
     date: !isRangeSelected ? (startDate || displayDate || undefined) : undefined,
     startDate: isRangeSelected ? startDate : undefined,
     endDate: isRangeSelected ? endDate : undefined,
@@ -129,19 +118,38 @@ export const NewsTimelineTab = () => {
   }, [infiniteNewsData, isRangeSelected]);
 
   useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage) return;
+    isFetchingNextPageRef.current = isFetchingNextPage;
+  }, [isFetchingNextPage]);
+
+  useEffect(() => {
+    hasNextPageRef.current = !!hasNextPage;
+  }, [hasNextPage]);
+
+  useEffect(() => {
+    wasIntersectingRef.current = false;
+  }, [regionFilter, startDate, endDate, activeCategory, isRangeSelected]);
+
+  useEffect(() => {
+    if (!hasNextPage) return;
     const target = infiniteAnchorRef.current;
     if (!target) return;
 
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0]?.isIntersecting) {
+      const isIntersecting = entries[0]?.isIntersecting ?? false;
+      if (
+        isIntersecting &&
+        !wasIntersectingRef.current &&
+        hasNextPageRef.current &&
+        !isFetchingNextPageRef.current
+      ) {
         fetchNextPage();
       }
-    }, { rootMargin: '300px' });
+      wasIntersectingRef.current = isIntersecting;
+    }, { rootMargin: '120px 0px', threshold: 0.1 });
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, fetchNextPage]);
 
   // 헤더 표시용 텍스트
   const headerText = useMemo(() => {
@@ -181,8 +189,16 @@ export const NewsTimelineTab = () => {
 
   // 동적으로 수집된 키워드/카테고리 리스트 (모든 그룹에서 수집)
   const availableKeywords = useMemo(() => {
-    return ['대형 언어 모델', '비전 AI', '반도체', '기타 뉴스'];
-  }, []);
+    const categorySet = new Set<string>();
+    mergedGroups.forEach((group) => {
+      group.items.forEach((item) => {
+        if (item.category && item.category.trim()) {
+          categorySet.add(item.category.trim());
+        }
+      });
+    });
+    return Array.from(categorySet);
+  }, [mergedGroups]);
 
   // 로딩 및 에러 상태 체크
   const isLoading = (isInfiniteLoading && mergedGroups.length === 0);
@@ -351,8 +367,10 @@ export const NewsTimelineTab = () => {
                   이전 뉴스 로딩 중...
                 </div>
               )}
-              {!isFetchingNextPage && hasNextPage && (
-                <p ref={infiniteAnchorRef} className="text-xs text-gray-400 font-bold">스크롤하면 이전 뉴스를 불러옵니다.</p>
+              {hasNextPage && (
+                <p ref={infiniteAnchorRef} className="text-xs text-gray-400 font-bold">
+                  {isFetchingNextPage ? '' : '스크롤하면 이전 뉴스를 불러옵니다.'}
+                </p>
               )}
               {(!hasNextPage && !isFetchingNextPage) && (
                 <p className="text-xs text-gray-400 font-bold">마지막 뉴스입니다.</p>

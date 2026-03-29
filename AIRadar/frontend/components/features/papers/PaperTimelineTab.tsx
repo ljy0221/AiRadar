@@ -46,6 +46,9 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const infiniteAnchorRef = useRef<HTMLParagraphElement | null>(null);
+  const wasIntersectingRef = useRef(false);
+  const isFetchingNextPageRef = useRef(false);
+  const hasNextPageRef = useRef(false);
 
   // 북마크 목록 조회
   const { data: bookmarks } = useBookmarksQuery();
@@ -107,19 +110,38 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
   }, [infinitePaperData, isRangeSelected]);
 
   useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage) return;
+    isFetchingNextPageRef.current = isFetchingNextPage;
+  }, [isFetchingNextPage]);
+
+  useEffect(() => {
+    hasNextPageRef.current = !!hasNextPage;
+  }, [hasNextPage]);
+
+  useEffect(() => {
+    wasIntersectingRef.current = false;
+  }, [startDate, endDate, activeCategory, isRangeSelected]);
+
+  useEffect(() => {
+    if (!hasNextPage) return;
     const target = infiniteAnchorRef.current;
     if (!target) return;
 
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0]?.isIntersecting) {
+      const isIntersecting = entries[0]?.isIntersecting ?? false;
+      if (
+        isIntersecting &&
+        !wasIntersectingRef.current &&
+        hasNextPageRef.current &&
+        !isFetchingNextPageRef.current
+      ) {
         fetchNextPage();
       }
-    }, { rootMargin: '300px' });
+      wasIntersectingRef.current = isIntersecting;
+    }, { rootMargin: '120px 0px', threshold: 0.1 });
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, fetchNextPage]);
 
   // 헤더 표시용 텍스트
   const headerText = useMemo(() => {
@@ -347,8 +369,10 @@ export const PaperTimelineTab: React.FC<PaperTimelineTabProps> = ({ activeTab = 
                           이전 논문 로딩 중...
                         </div>
                       )}
-                      {!isFetchingNextPage && hasNextPage && (
-                        <p ref={infiniteAnchorRef} className="text-xs text-gray-400 font-bold">스크롤하면 이전 논문을 불러옵니다.</p>
+                      {hasNextPage && (
+                        <p ref={infiniteAnchorRef} className="text-xs text-gray-400 font-bold">
+                          {isFetchingNextPage ? '' : '스크롤하면 이전 논문을 불러옵니다.'}
+                        </p>
                       )}
                       {(!hasNextPage && !isFetchingNextPage) && (
                         <p className="text-xs text-gray-400 font-bold">마지막 논문입니다.</p>
