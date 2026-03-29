@@ -8,7 +8,7 @@ interface SkillPrepCardProps {
 
 export const SkillPrepCard = ({ uniqueSkills, recommendedSkills, tools }: SkillPrepCardProps) => {
   return (
-    <div className="w-full bg-white dark:bg-[#1a1c2e] border border-gray-200 dark:border-gray-800 rounded-xl p-6 md:p-8 flex flex-col gap-8 shadow-sm sticky top-28">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-8 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-[#1a1c2e] md:p-8 lg:h-full lg:min-h-0">
       <h3 className="text-xl font-bold">차별화 스킬 & 대비 방안</h3>
 
       <div className="flex flex-col gap-3">
