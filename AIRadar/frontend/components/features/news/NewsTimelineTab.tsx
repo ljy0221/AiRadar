@@ -109,12 +109,8 @@ export const NewsTimelineTab = () => {
 
     const normalized = Array.from(groupedMap.entries()).map(([date, items]) => ({ date, items }));
 
-    // 범위 선택 시에는 시작일(과거)부터 최신순(오름차순)으로 정렬하여 타임라인 흐름 강조
-    if (isRangeSelected) {
-      return [...normalized].sort((a, b) => a.date.localeCompare(b.date));
-    }
-
-    return normalized;
+    // 범위 선택 여부와 무관하게 최신일이 먼저 오도록 정렬
+    return [...normalized].sort((a, b) => b.date.localeCompare(a.date));
   }, [infiniteNewsData, isRangeSelected]);
 
   useEffect(() => {
