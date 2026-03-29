@@ -16,6 +16,8 @@ import com.mcp.airadar.jobforecast.entity.JobRoleType;
 import com.mcp.airadar.jobforecast.repository.JobForecastRepository;
 import com.mcp.airadar.jobforecast.repository.JobRoleRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -27,9 +29,12 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class JobForecastService {
+
+    private static final Logger log = LoggerFactory.getLogger(JobForecastService.class);
 
     private final JobRoleRepository jobRoleRepository;
     private final JobForecastRepository jobForecastRepository;
@@ -144,7 +149,7 @@ public class JobForecastService {
                                         task.getTaskDescription(),
                                         task.getDisplayOrder()
                                 ))
-                                .toList()
+                                .collect(Collectors.toList())
                 );
 
         JobForecastAiClient.GenerateJobForecastResponse aiResponse = jobForecastAiClient.generate(request);
@@ -230,7 +235,7 @@ public class JobForecastService {
                                         )
                                 )
                         ))
-                        .collect(java.util.stream.Collectors.toList())
+                        .collect(Collectors.toList())
         );
     }
 
@@ -241,7 +246,7 @@ public class JobForecastService {
                 .stream()
                 .map(row -> row[0] == null ? null : String.valueOf(row[0]))
                 .filter(keyword -> keyword != null && !keyword.isBlank())
-                .toList();
+                .collect(Collectors.toList());
     }
 
     private JobForecastResponse.KeywordInsight readKeywordInsight(String rawResponseJson) {
@@ -288,10 +293,14 @@ public class JobForecastService {
     }
 
     private List<String> readSteps(String json) {
+        if (json == null || json.isBlank()) {
+            return new ArrayList<>();
+        }
         try {
             return objectMapper.readValue(json, new TypeReference<List<String>>() {});
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Failed to deserialize workflow steps JSON.", e);
+            log.warn("Invalid workflow_steps_json (using empty steps): {}", e.getMessage());
+            return new ArrayList<>();
         }
     }
 
