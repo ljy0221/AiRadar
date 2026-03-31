@@ -17,11 +17,15 @@ import com.mcp.airadar.jobforecast.entity.JobRoleType;
 import com.mcp.airadar.jobforecast.repository.JobForecastRepository;
 import com.mcp.airadar.jobforecast.repository.JobRoleRepository;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -34,42 +38,40 @@ import java.math.BigDecimal;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class JobForecastService {
 
     private static final Logger log = LoggerFactory.getLogger(JobForecastService.class);
+    private static final String JOB_FORECAST_CACHE_KEY = "job:forecast:current:%s";
 
     private final JobRoleRepository jobRoleRepository;
     private final JobForecastRepository jobForecastRepository;
     private final JobAiRiskRepository jobAiRiskRepository;
     private final TechKeywordDailyRepository techKeywordDailyRepository;
     private final JobForecastAiClient jobForecastAiClient;
+    private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
-
-    public JobForecastService(
-            JobRoleRepository jobRoleRepository,
-            JobForecastRepository jobForecastRepository,
-            JobAiRiskRepository jobAiRiskRepository,
-            TechKeywordDailyRepository techKeywordDailyRepository,
-            JobForecastAiClient jobForecastAiClient,
-            ObjectMapper objectMapper
-    ) {
-        this.jobRoleRepository = jobRoleRepository;
-        this.jobForecastRepository = jobForecastRepository;
-        this.jobAiRiskRepository = jobAiRiskRepository;
-        this.techKeywordDailyRepository = techKeywordDailyRepository;
-        this.jobForecastAiClient = jobForecastAiClient;
-        this.objectMapper = objectMapper;
-    }
+    @Value("${job-forecast.cache.ttl:PT24H}")
+    private Duration jobForecastCacheTtl;
 
     @Transactional
     public JobForecastResponse getCurrentForecast(String jobCode) {
+        JobForecastResponse cached = getCachedCurrentForecast(jobCode);
+        if (cached != null) {
+            return cached;
+        }
+
         LocalDate forecastMonth = YearMonth.now().atDay(1);
-        return getOrGenerateForecast(jobCode, forecastMonth);
+        JobForecastResponse response = getOrGenerateForecast(jobCode, forecastMonth);
+        cacheCurrentForecast(jobCode, response);
+        return response;
     }
 
     @Transactional
     public JobForecastResponse regenerateForecast(String jobCode, YearMonth yearMonth) {
-        return generateAndSaveForecast(getActiveJobRole(jobCode), yearMonth.atDay(1), false);
+        JobForecastResponse response = generateAndSaveForecast(getActiveJobRole(jobCode), yearMonth.atDay(1), false);
+        syncCurrentForecastCache(jobCode, yearMonth.atDay(1), response);
+        return response;
     }
 
     @Transactional
@@ -86,7 +88,8 @@ public class JobForecastService {
                     skipped.add(role.getCode());
                     continue;
                 }
-                generateAndSaveForecast(role, forecastMonth, false);
+                JobForecastResponse response = generateAndSaveForecast(role, forecastMonth, false);
+                syncCurrentForecastCache(role.getCode(), forecastMonth, response);
                 generated.add(role.getCode());
             } catch (Exception ex) {
                 failed.add(role.getCode());
@@ -124,6 +127,47 @@ public class JobForecastService {
         JobRoleType roleType = JobRoleType.fromCode(jobCode);
         return jobRoleRepository.findByCodeAndActiveTrue(jobCode)
                 .orElseThrow(() -> new EntityNotFoundException("Job role not found: " + roleType.getCode()));
+    }
+
+    private JobForecastResponse getCachedCurrentForecast(String jobCode) {
+        String json = redisTemplate.opsForValue().get(cacheKey(jobCode));
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+
+        try {
+            return objectMapper.readValue(json, JobForecastResponse.class);
+        } catch (Exception e) {
+            log.warn("Invalid job forecast cache entry for {}. Removing stale cache.", jobCode);
+            evictCurrentForecast(jobCode);
+            return null;
+        }
+    }
+
+    private void cacheCurrentForecast(String jobCode, JobForecastResponse response) {
+        try {
+            redisTemplate.opsForValue().set(
+                    cacheKey(jobCode),
+                    objectMapper.writeValueAsString(response),
+                    jobForecastCacheTtl
+            );
+        } catch (Exception e) {
+            log.warn("Failed to cache current job forecast for {}.", jobCode);
+        }
+    }
+
+    private void syncCurrentForecastCache(String jobCode, LocalDate forecastMonth, JobForecastResponse response) {
+        if (YearMonth.from(forecastMonth).equals(YearMonth.now())) {
+            cacheCurrentForecast(jobCode, response);
+        }
+    }
+
+    private void evictCurrentForecast(String jobCode) {
+        redisTemplate.delete(cacheKey(jobCode));
+    }
+
+    private String cacheKey(String jobCode) {
+        return JOB_FORECAST_CACHE_KEY.formatted(jobCode);
     }
 
     private JobForecastResponse generateAndSaveForecast(JobRole role, LocalDate forecastMonth, boolean stale) {
