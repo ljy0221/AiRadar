@@ -60,7 +60,7 @@ AI 기술은 매일 수백 개의 뉴스·논문·오픈소스 프로젝트가 �
 
 ## 시스템 아키텍처
 
-![시스템 아키텍처](docs/diagrams/Architecture.svg)
+![시스템 아키텍처](docs/diagrams/Architecture.png)
 
 **Lambda Architecture + Medallion Architecture** 기반으로 설계되었습니다.
 
