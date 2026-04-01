@@ -1,0 +1,187 @@
+package com.mcp.airadar.paper.controller;
+
+import com.mcp.airadar.paper.dto.PaperDto;
+import com.mcp.airadar.paper.service.PaperService;
+import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest(PaperController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
+@Import({com.mcp.airadar.common.GlobalExceptionHandler.class, com.mcp.airadar.common.api.ApiResponseAdvice.class})
+class PaperControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private PaperService paperService;
+
+    private PaperDto.ListItem sampleListItem() {
+        return PaperDto.ListItem.builder()
+                .paperId("paper-001")
+                .title("Attention Is All You Need")
+                .url("https://arxiv.org/abs/1706.03762")
+                .source("arxiv")
+                .authors(new String[]{"Vaswani"})
+                .researchArea("cs.CL")
+                .category("NLP")
+                .summary("Transformer 아키텍처 제안 논문")
+                .publishedAt(LocalDateTime.of(2026, 3, 19, 9, 0))
+                .build();
+    }
+
+    private PaperDto.DailyGroup sampleDailyGroup() {
+        return PaperDto.DailyGroup.builder()
+                .date(LocalDate.of(2026, 3, 19))
+                .items(List.of(sampleListItem()))
+                .build();
+    }
+
+    private PaperDto.Detail sampleDetail() {
+        return PaperDto.Detail.builder()
+                .paperId("paper-001")
+                .title("Attention Is All You Need")
+                .abstractText("We propose the Transformer...")
+                .url("https://arxiv.org/abs/1706.03762")
+                .source("arxiv")
+                .authors(new String[]{"Vaswani"})
+                .researchArea("cs.CL")
+                .keywords(new String[]{"transformer", "attention"})
+                .summary("summary")
+                .category("NLP")
+                .publishedAt(LocalDateTime.of(2026, 3, 19, 9, 0))
+                .build();
+    }
+
+    private PaperDto.PagedFeed samplePagedFeed() {
+        return PaperDto.PagedFeed.builder()
+                .groups(List.of(sampleDailyGroup()))
+                .nextCursor(PaperDto.PageCursor.builder()
+                        .publishedAt(LocalDateTime.of(2026, 3, 19, 9, 0))
+                        .id("paper-001")
+                        .build())
+                .hasNext(true)
+                .build();
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/papers returns wrapped success response")
+    void getPaperList_returns200() throws Exception {
+        when(paperService.getPaperList(isNull(), isNull(), isNull(), isNull(), isNull()))
+                .thenReturn(List.of(sampleDailyGroup()));
+
+        mockMvc.perform(get("/api/v1/papers"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.path").value("/api/v1/papers"))
+                .andExpect(jsonPath("$.data[0].date").value("2026-03-19"))
+                .andExpect(jsonPath("$.data[0].items[0].paperId").value("paper-001"))
+                .andExpect(jsonPath("$.data[0].items[0].summary").value("Transformer 아키텍처 제안 논문"))
+                .andExpect(jsonPath("$.data[0].items[0].url").value("https://arxiv.org/abs/1706.03762"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/papers with filters returns wrapped grouped response")
+    void getPaperList_withFilters_returns200() throws Exception {
+        when(paperService.getPaperList(eq("NLP"), eq("cs.CL"), eq(LocalDate.of(2026, 3, 19)), isNull(), isNull()))
+                .thenReturn(List.of(sampleDailyGroup()));
+
+        mockMvc.perform(get("/api/v1/papers")
+                        .param("category", "NLP")
+                        .param("researchArea", "cs.CL")
+                        .param("date", "2026-03-19"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].items").isArray());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/papers with cursor params keeps paged payload")
+    void getPaperList_withCursor_returns200() throws Exception {
+        when(paperService.getPaperListPaged(
+                eq("NLP"),
+                eq("cs.CL"),
+                isNull(),
+                eq(LocalDate.of(2026, 3, 10)),
+                eq(LocalDate.of(2026, 3, 19)),
+                any(LocalDateTime.class),
+                eq("paper-123"),
+                eq(30)
+        )).thenReturn(samplePagedFeed());
+
+        mockMvc.perform(get("/api/v1/papers/paged")
+                        .param("category", "NLP")
+                        .param("researchArea", "cs.CL")
+                        .param("startDate", "2026-03-10")
+                        .param("endDate", "2026-03-19")
+                        .param("cursorPublishedAt", "2026-03-19T09:00:00")
+                        .param("cursorId", "paper-123")
+                        .param("size", "30"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.groups").isArray());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/papers/available-dates returns wrapped calendar metadata")
+    void getAvailablePaperDates_returns200() throws Exception {
+        PaperDto.AvailableDates availableDates = PaperDto.AvailableDates.builder()
+                .dates(List.of(LocalDate.of(2026, 3, 19), LocalDate.of(2026, 3, 17)))
+                .count(2)
+                .startDate(LocalDate.of(2026, 3, 17))
+                .endDate(LocalDate.of(2026, 3, 19))
+                .build();
+        when(paperService.getAvailableDates("NLP", "cs.CL")).thenReturn(availableDates);
+
+        mockMvc.perform(get("/api/v1/papers/available-dates")
+                        .param("category", "NLP")
+                        .param("researchArea", "cs.CL"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.path").value("/api/v1/papers/available-dates"))
+                .andExpect(jsonPath("$.data.count").value(2))
+                .andExpect(jsonPath("$.data.startDate").value("2026-03-17"))
+                .andExpect(jsonPath("$.data.endDate").value("2026-03-19"))
+                .andExpect(jsonPath("$.data.dates[1]").value("2026-03-17"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/papers/{id} returns wrapped detail response")
+    void getPaperDetail_found() throws Exception {
+        when(paperService.getPaperDetail("paper-001")).thenReturn(sampleDetail());
+
+        mockMvc.perform(get("/api/v1/papers/paper-001"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.paperId").value("paper-001"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/papers/{id} returns wrapped error response on not found")
+    void getPaperDetail_notFound() throws Exception {
+        when(paperService.getPaperDetail("no-paper")).thenThrow(new EntityNotFoundException("not found"));
+
+        mockMvc.perform(get("/api/v1/papers/no-paper"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("COMMON_005"))
+                .andExpect(jsonPath("$.error.path").value("/api/v1/papers/no-paper"));
+    }
+}

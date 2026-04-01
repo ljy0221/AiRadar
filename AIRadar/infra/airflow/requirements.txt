@@ -1,0 +1,8 @@
+apache-airflow==2.8.3
+requests
+pandas
+kafka-python
+redis
+python-dotenv
+beautifulsoup4
+lxml

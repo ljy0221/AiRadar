@@ -1,0 +1,127 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.5'
+    id 'io.spring.dependency-management' version '1.1.6'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'  // Spark용 Fat JAR 생성
+}
+
+ext {
+    // 버전 변수 관리
+    sparkVersion = '3.5.0'
+    scalaVersion = '2.12'
+    deltaVersion = '3.1.0'   // Spark Dockerfile과 통일
+    hadoopVersion = '3.3.4'  // S3A (MinIO 연동)
+}
+
+configurations {
+    // Spark Job Fat JAR 전용 설정 — bootJar에는 포함되지 않음
+    sparkCompile.extendsFrom implementation
+
+    all {
+        // Logback 제거 후 Log4j2로 통합 (Spark와의 호환성)
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+
+        resolutionStrategy {
+            // [중요] 모든 모듈의 Jackson 버전을 통일하여 Serialization 에러 방지
+            force 'com.fasterxml.jackson.core:jackson-databind:2.15.3'
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // 1. Spring Boot Core
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // 2. Data Lake (Delta Lake & Spark) — compileOnly: bootJar 제외, shadowJar에만 포함
+    compileOnly "org.apache.spark:spark-sql_${scalaVersion}:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-mllib_${scalaVersion}:${sparkVersion}"
+    compileOnly "io.delta:delta-spark_${scalaVersion}:${deltaVersion}"
+    compileOnly "javax.servlet:javax.servlet-api:3.1.0"
+
+    // 3. S3A (MinIO 연동) — compileOnly: bootJar 제외
+    compileOnly "org.apache.hadoop:hadoop-aws:${hadoopVersion}"
+    compileOnly "com.amazonaws:aws-java-sdk-bundle:1.12.262"
+
+    // 4. Database & Cache
+    runtimeOnly 'org.postgresql:postgresql'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis' // 실시간 트렌드용
+
+    // 4-1. Spark 로컬 실행 — javax.servlet (compileOnly로 이미 선언됨)
+
+    // 5. Utils & Client
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    // 6. Kafka (Spring Boot 이벤트 Consumer/Producer)
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // 7. Security & JWT
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    // 8. Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+// -----------------------------------------------------------------------------
+// Airflow SparkSubmitOperator용 Fat JAR
+// Spring Boot nested JAR 포맷은 Spark와 호환 안 됨 → Shadow JAR 필수
+// 출력: build/libs/airadar-spark.jar
+// -----------------------------------------------------------------------------
+shadowJar {
+    zip64 = true  // 대용량 JAR 지원
+    archiveBaseName = 'airadar-spark'
+    archiveClassifier = ''
+    archiveVersion = ''
+    mergeServiceFiles()  // META-INF/services 병합 (Delta Lake 카탈로그 등록에 필요)
+    // compileOnly(Spark/Hadoop) + runtimeOnly(postgresql 등)를 Fat JAR에 포함
+    configurations = [project.configurations.compileClasspath, project.configurations.runtimeClasspath]
+}
+
+// -----------------------------------------------------------------------------
+// Spark Job 로컬 실행 태스크
+// 사용: ./gradlew runSparkJob -Pjob=SilverRefinementJob -PbronzePath=/data/bronze
+// -----------------------------------------------------------------------------
+tasks.register('runSparkJob', JavaExec) {
+    def jobName = project.findProperty('job') ?: 'SilverRefinementJob'
+    mainClass = "com.mcp.airadar.spark.${jobName}"
+    classpath = sourceSets.main.runtimeClasspath
+    
+    jvmArgs = [
+        '--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.util=ALL-UNNAMED',
+        '--add-opens', 'java.base/sun.util.calendar=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.nio=ALL-UNNAMED',
+    ]
+    // Windows에서 Hadoop winutils 경로 설정 (HADOOP_HOME 미설정 시 기본값)
+    systemProperty 'hadoop.home.dir', System.getenv('HADOOP_HOME') ?: 'C:/hadoop'
+    environment 'BRONZE_BASE_PATH', project.findProperty('bronzePath') ?: '/tmp/bronze'
+    environment 'SILVER_BASE_PATH', project.findProperty('silverPath') ?: '/tmp/silver'
+
+    // CLI args 전달 (-Pfile, -PsourceType, -Pdate)
+    def cliArgs = []
+    if (project.hasProperty('file'))       cliArgs += ['--file',        project.findProperty('file')]
+    if (project.hasProperty('sourceType')) cliArgs += ['--source-type', project.findProperty('sourceType')]
+    if (project.hasProperty('date'))       cliArgs += ['--date',        project.findProperty('date')]
+    args = cliArgs
+}
