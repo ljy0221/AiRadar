@@ -1,0 +1,242 @@
+@import "tailwindcss";
+
+/* 수동 다크모드(.dark) 토글을 위한 커스텀 variant (Tailwind v4) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-text-primary: var(--text-primary);
+  --color-accent: var(--accent);
+  /* 폰트 토큰: layout.tsx에서 next/font가 주입한 CSS 변수와 연결 */
+  --font-sans: var(--font-exo2-next), var(--font-korean), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-serif), var(--font-korean), ui-serif, Georgia, serif;
+  --font-orbitron: var(--font-orbitron-next), sans-serif;
+  --font-audiowide: var(--font-audiowide-next), sans-serif;
+}
+
+body, button, input, textarea, select {
+  font-family: var(--font-exo2-next), var(--font-korean), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 5s infinite linear;
+}
+
+@layer base {
+  :root {
+    --bg-primary: #FAF9F5;
+    --bg-secondary: #F0F4FA;
+    --bg-tertiary: #E6EDF3;
+    --text-primary: #2C3E50;
+    --accent: #D16D6D;
+  }
+
+  /* 수동 테마 토글 (next-themes가 제어) */
+  :root.dark,
+  .dark {
+    --bg-primary: #03080f;
+    /* 1단계 (가장 어두운 기본) */
+    --bg-secondary: #080f1a;
+    /* 2단계 */
+    --bg-tertiary: #0d1825;
+    /* 3단계 (카드 배경) */
+    --text-primary: #f0f4fa;
+    /* 차가운 흰색 */
+    --accent: #00d4c8;
+    /* 시안 (포인트/CTA) */
+  }
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+nav {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Reveal animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal-on-scroll {
+  opacity: 0;
+  transition: all 0.8s ease-out;
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+/* 추가된 고급 효과들 */
+.card-hover-effect {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.card-hover-effect:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
+
+.delay-500 {
+  animation-delay: 0.5s;
+}
+
+.delay-600 {
+  animation-delay: 0.6s;
+}
+
+.delay-700 {
+  animation-delay: 0.7s;
+}
+
+
+@keyframes radar-pulse {
+  0% {
+    transform: scale(0.2);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes scan-line {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-radar {
+  animation: radar-pulse 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+.animate-scan {
+  animation: scan-line 4s linear infinite;
+}
+
+/* Recharts 전역 포커스 테두리 제거 */
+.recharts-wrapper,
+.recharts-surface {
+  outline: none !important;
+}
+
+.recharts-legend-item {
+  cursor: default !important;
+}
+
+/* --- Cyberpunk / Sci-fi Effects --- */
+@keyframes glitch {
+  0% { transform: translate(0); clip-path: inset(0 0 0 0); }
+  20% { transform: translate(-1.5px, 1.5px); clip-path: inset(10% 0 40% 0); }
+  40% { transform: translate(-1.5px, -1.5px); clip-path: inset(30% 0 20% 0); }
+  60% { transform: translate(1.5px, 1.5px); clip-path: inset(50% 0 5% 0); }
+  80% { transform: translate(1.5px, -1.5px); clip-path: inset(15% 0 15% 0); }
+  100% { transform: translate(0); clip-path: inset(0 0 0 0); }
+}
+
+.animate-glitch:active {
+  animation: glitch 0.2s cubic-bezier(.25,.46,.45,.94) both;
+}
+
+@keyframes cyber-pulse {
+  0%, 100% { text-shadow: 0 0 8px var(--accent); }
+  50% { text-shadow: 0 0 15px var(--accent), 0 0 25px var(--accent); }
+}
+
+.animate-cyber-glow {
+  animation: cyber-pulse 2.5s infinite ease-in-out;
+}
+
+.scanlines {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.015) 50%
+  );
+  background-size: 100% 3px;
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.dark .scanlines {
+  background: linear-gradient(
+    to bottom,
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 212, 200, 0.01) 50%
+  );
+  opacity: 0.6;
+}
