@@ -82,7 +82,7 @@ async function completeOnboarding(keywords: string[]): Promise<void> {
 
 ### 2-1. 기사 조회 이벤트
 
-30초 이상 체류 시에만 프로파일에 반영됩니다. (백엔드에서 필터링)
+백엔드는 `dwellTimeSeconds`를 받지만 체류 시간에 따른 필터링은 하지 않으며, 수신한 조회 이벤트를 모두 프로파일에 반영합니다. (현재 프론트는 기사 클릭 시 체류 0으로 발송합니다.)
 
 ```
 POST /api/v1/events/article-view
@@ -131,7 +131,9 @@ Content-Type: application/json
 api.post('/events/search', { query }).catch(() => {});
 ```
 
-### 2-3. 좋아요 이벤트
+### 2-3. 좋아요 이벤트 (백엔드 미구현)
+
+> **백엔드에 아직 구현되지 않았습니다.** `POST /api/v1/events/article-like`를 처리하는 핸들러가 없어 호출해도 반영되지 않습니다. 추천에 반영되는 강한 긍정 신호는 북마크를 사용하세요.
 
 ```
 POST /api/v1/events/article-like
@@ -159,9 +161,9 @@ Content-Type: application/json
 
 | 이벤트 | 가중치 | 프로파일 반영 |
 |--------|--------|--------------|
-| 기사 조회 (30초+) | 1.0 | 로그인만 |
+| 기사 조회 | 1.0 | 로그인만 |
 | 검색 | 2.0 | 로그인만 |
-| 좋아요 | 3.0 | 로그인만 |
+| 좋아요 (미구현) | 3.0 | 로그인만 |
 | 북마크 | 5.0 | 로그인만 |
 
 ---
@@ -266,6 +268,6 @@ GET /api/v1/recommendations/trending/hourly?limit=10
 - [ ] `POST /api/v1/users/me/onboarding` 호출
 - [ ] 기사 상세 페이지에 체류 시간 측정 + 조회 이벤트 발송
 - [ ] 검색바에 검색 이벤트 발송 연동
-- [ ] 좋아요 / 북마크 버튼에 이벤트 발송 연동
+- [ ] 북마크 버튼에 이벤트 발송 연동 (좋아요는 백엔드 미구현)
 - [ ] `GET /api/v1/recommendations/news` 개인화 피드 화면 구현
 - [ ] `reason` 필드로 추천 이유 배지 표시 (선택)

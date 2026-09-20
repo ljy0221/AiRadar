@@ -5,7 +5,7 @@ flowchart TD
     subgraph USER["사용자 행동 이벤트"]
         E1["기사 조회<br/>POST /events/article-view<br/>{articleId, dwellTimeSeconds}"]
         E2["검색<br/>POST /events/search<br/>{query}"]
-        E3["좋아요<br/>POST /events/article-like"]
+        E3["좋아요 (미구현)<br/>POST /events/article-like"]
         E4["북마크<br/>POST /events/article-bookmark"]
     end
 
@@ -45,7 +45,7 @@ flowchart TD
     end
 
     E1 & E2 & E3 & E4 -->|동기 수신| EVT
-    E1 -->|"30초↑ 체류 시<br/>키워드 가중치 반영"| RED
+    E1 -->|"키워드 가중치 반영<br/>(체류 시간 무관)"| RED
     E1 & E3 & E4 -->|event_type 기록| SL
     E2 -->|query 기록| SL
     E2 -->|ZINCRBY| TRD
