@@ -4,6 +4,7 @@ import com.mcp.airadar.auth.entity.User;
 import com.mcp.airadar.auth.repository.UserRepository;
 import com.mcp.airadar.recommendation.entity.SearchLog;
 import com.mcp.airadar.recommendation.repository.SearchLogRepository;
+import com.mcp.airadar.recommendation.service.RecommendationCacheKeys;
 import com.mcp.airadar.user.dto.BookmarkHistoryDto;
 import com.mcp.airadar.user.dto.OnboardingRequest;
 import com.mcp.airadar.user.entity.UserInterest;
@@ -92,11 +93,11 @@ class UserServiceTest {
 
         // then — Redis에 3개 키 설정
         verify(hashOperations).putIfAbsent(
-                eq("user:" + userId + ":profile"), eq("kw:AI"), eq("1.0"));
+                eq(RecommendationCacheKeys.profile(userId)), eq("kw:AI"), eq("1.0"));
         verify(hashOperations).putIfAbsent(
-                eq("user:" + userId + ":profile"), eq("kw:HBM"), eq("1.0"));
+                eq(RecommendationCacheKeys.profile(userId)), eq("kw:HBM"), eq("1.0"));
         verify(hashOperations).putIfAbsent(
-                eq("user:" + userId + ":profile"), eq("kw:GPU"), eq("1.0"));
+                eq(RecommendationCacheKeys.profile(userId)), eq("kw:GPU"), eq("1.0"));
 
         // then — onboardingCompleted = true
         assertThat(user.isOnboardingCompleted()).isTrue();

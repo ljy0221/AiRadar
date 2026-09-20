@@ -37,7 +37,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserEventService {
 
-    private static final String PROFILE_KEY      = "user:%s:profile";
     private static final String TRENDING_KEY     = "search:trending";
     private static final String TRENDING_HOURLY  = "search:trending:%s";
 
@@ -90,7 +89,7 @@ public class UserEventService {
 
             // 로그인 사용자만 프로파일 반영
             if (!isAnonymous) {
-                String key = PROFILE_KEY.formatted(userId);
+                String key = RecommendationCacheKeys.profile(userId);
                 redisTemplate.opsForHash().increment(key, "kw:" + normalizedQuery, W_SEARCH);
                 refreshProfileTtl(key);
             }
@@ -110,7 +109,7 @@ public class UserEventService {
     public void onPaperViewed(UUID userId, String paperId, int dwellTimeSeconds) {
         try {
             if (userId == null) return;
-            String key = PROFILE_KEY.formatted(userId);
+            String key = RecommendationCacheKeys.profile(userId);
             // 본 논문 ID 기록 (추천 필터링용)
             redisTemplate.opsForHash().increment(key, "ppv:" + paperId, 1.0);
             updateProfileForPaper(userId, paperId, W_VIEW_LONG);
@@ -161,7 +160,7 @@ public class UserEventService {
      */
     private void updateProfileForArticle(UUID userId, String articleId, double weight) {
         if (userId == null) return;
-        String key = PROFILE_KEY.formatted(userId);
+        String key = RecommendationCacheKeys.profile(userId);
 
         // 본 기사 ID 기록 (추천 필터링용)
         redisTemplate.opsForHash().increment(key, "art:" + articleId, weight);
@@ -182,7 +181,7 @@ public class UserEventService {
     /** 논문의 실제 keywords를 DB에서 조회해 프로파일 kw: 필드에 반영 */
     private void updateProfileForPaper(UUID userId, String paperId, double weight) {
         if (userId == null) return;
-        String key = PROFILE_KEY.formatted(userId);
+        String key = RecommendationCacheKeys.profile(userId);
         paperRepository.findByPaperIdAndIsActiveTrue(paperId).ifPresent(paper -> {
             String[] keywords = paper.getKeywords();
             if (keywords != null) {
@@ -204,23 +203,33 @@ public class UserEventService {
         invalidatePaperRecommendationCache(userId);
     }
 
-    /** 삭제 실패가 이벤트 로그 저장·후속 캐시 삭제를 막지 않도록 예외를 삼킨다 (TTL 만료로 자연 갱신됨) */
     private void invalidateNewsRecommendationCache(UUID userId) {
-        if (userId == null) return;
-        try {
-            redisTemplate.delete("user:" + userId + ":recommendations");
-        } catch (Exception e) {
-            log.warn("[Event] 뉴스 추천 캐시 삭제 실패 (무시): userId={}, cause={}", userId, e.toString());
-        }
+        invalidateCache(userId, RecommendationCacheKeys.news(userId), "뉴스");
     }
 
-    /** 삭제 실패가 프로파일 TTL 갱신·이벤트 로그 저장을 막지 않도록 예외를 삼킨다 (TTL 만료로 자연 갱신됨) */
     private void invalidatePaperRecommendationCache(UUID userId) {
+        invalidateCache(userId, RecommendationCacheKeys.paper(userId), "논문");
+    }
+
+    /**
+     * 프로파일 revision을 먼저 올린 뒤 캐시를 삭제한다.
+     * 서빙은 계산 전후 revision이 다를 때 결과를 저장하지 않으므로, 삭제 직후 진행 중이던
+     * 요청이 stale 결과를 다시 캐시에 쓰는 경합을 막는다.
+     * revision 증가는 보조 수단이므로 실패해도 캐시 삭제를 막아서는 안 된다 — 각각 따로 예외를 삼킨다.
+     * 실패가 이벤트 로그 저장·후속 캐시 삭제를 막지 않는다 (TTL 만료로 자연 갱신됨).
+     */
+    private void invalidateCache(UUID userId, String cacheKey, String label) {
         if (userId == null) return;
         try {
-            redisTemplate.delete("user:" + userId + ":paper-recommendations");
+            redisTemplate.opsForHash().increment(
+                    RecommendationCacheKeys.profile(userId), RecommendationCacheKeys.PROFILE_REVISION_FIELD, 1L);
         } catch (Exception e) {
-            log.warn("[Event] 논문 추천 캐시 삭제 실패 (무시): userId={}, cause={}", userId, e.toString());
+            log.warn("[Event] 프로파일 revision 증가 실패 (무시, 대상={}): userId={}, cause={}", label, userId, e.toString());
+        }
+        try {
+            redisTemplate.delete(cacheKey);
+        } catch (Exception e) {
+            log.warn("[Event] {} 추천 캐시 삭제 실패 (무시): userId={}, cause={}", label, userId, e.toString());
         }
     }
 

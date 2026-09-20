@@ -4,6 +4,7 @@ import com.mcp.airadar.auth.entity.AuthProvider;
 import com.mcp.airadar.auth.entity.User;
 import com.mcp.airadar.auth.repository.UserRepository;
 import com.mcp.airadar.recommendation.repository.SearchLogRepository;
+import com.mcp.airadar.recommendation.service.RecommendationCacheKeys;
 import com.mcp.airadar.user.dto.AddInterestRequest;
 import com.mcp.airadar.user.dto.BookmarkHistoryDto;
 import com.mcp.airadar.user.dto.OnboardingRequest;
@@ -28,8 +29,6 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-
-    private static final String PROFILE_KEY = "user:%s:profile";
 
     private final UserRepository userRepository;
     private final UserInterestRepository userInterestRepository;
@@ -79,7 +78,7 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 온보딩이 완료된 계정입니다.");
         }
 
-        String profileKey = PROFILE_KEY.formatted(userId);
+        String profileKey = RecommendationCacheKeys.profile(userId);
         for (String keyword : request.keywords()) {
             if (!userInterestRepository.existsByUserIdAndKeyword(userId, keyword)) {
                 userInterestRepository.save(UserInterest.builder()

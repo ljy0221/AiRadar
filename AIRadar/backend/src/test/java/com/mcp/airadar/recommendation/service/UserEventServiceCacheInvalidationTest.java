@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,8 +51,8 @@ class UserEventServiceCacheInvalidationTest {
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
-        newsCacheKey = "user:" + userId + ":recommendations";
-        paperCacheKey = "user:" + userId + ":paper-recommendations";
+        newsCacheKey = RecommendationCacheKeys.news(userId);
+        paperCacheKey = RecommendationCacheKeys.paper(userId);
         when(redisTemplate.opsForHash()).thenReturn(hashOps);
         when(newsRepository.findByArticleIdAndIsActiveTrue(anyString())).thenReturn(Optional.empty());
         when(paperRepository.findByPaperIdAndIsActiveTrue(anyString())).thenReturn(Optional.empty());
@@ -84,7 +85,7 @@ class UserEventServiceCacheInvalidationTest {
 
         userEventService.onPaperViewed(userId, "paper-001", 40);
 
-        verify(redisTemplate).expire(eq("user:" + userId + ":profile"), any(Duration.class));
+        verify(redisTemplate).expire(eq(RecommendationCacheKeys.profile(userId)), any(Duration.class));
         verify(searchLogRepository).save(any(SearchLog.class));
     }
 
@@ -141,6 +142,71 @@ class UserEventServiceCacheInvalidationTest {
         userEventService.onArticleViewed(userId, "art-001", 40);
 
         verify(searchLogRepository).save(any(SearchLog.class));
+    }
+
+    @Test
+    @DisplayName("캐시 삭제 전에 프로파일 revision을 먼저 올려 진행 중인 서빙의 stale 저장을 막음")
+    void onPaperViewed_bumpsRevisionBeforeDelete() {
+        userEventService.onPaperViewed(userId, "paper-001", 40);
+
+        InOrder inOrder = inOrder(hashOps, redisTemplate);
+        inOrder.verify(hashOps).increment(
+                eq(RecommendationCacheKeys.profile(userId)), eq("rev"), eq(1L));
+        inOrder.verify(redisTemplate).delete(paperCacheKey);
+    }
+
+    @Test
+    @DisplayName("기사 조회 시에도 revision을 올린 뒤 뉴스 캐시를 삭제")
+    void onArticleViewed_bumpsRevisionBeforeDelete() {
+        userEventService.onArticleViewed(userId, "art-001", 40);
+
+        InOrder inOrder = inOrder(hashOps, redisTemplate);
+        inOrder.verify(hashOps).increment(
+                eq(RecommendationCacheKeys.profile(userId)), eq("rev"), eq(1L));
+        inOrder.verify(redisTemplate).delete(newsCacheKey);
+    }
+
+    @Test
+    @DisplayName("로그인 사용자는 revision을 정확히 1 올리고, 비로그인은 올리지 않음")
+    void onArticleViewed_bumpsRevisionOnlyForLoggedInUser() {
+        userEventService.onArticleViewed(userId, "art-001", 40);
+        userEventService.onArticleViewed(null, "art-002", 40);
+
+        verify(hashOps, times(1)).increment(
+                eq(RecommendationCacheKeys.profile(userId)), eq("rev"), eq(1L));
+        verify(hashOps, times(1)).increment(anyString(), eq("rev"), eq(1L));
+    }
+
+    @Test
+    @DisplayName("북마크는 뉴스·논문 캐시를 각각 무효화하므로 revision이 2 오름")
+    void onArticleBookmarked_bumpsRevisionForBothCaches() {
+        userEventService.onArticleBookmarked(userId, "art-001");
+
+        verify(hashOps, times(2)).increment(
+                eq(RecommendationCacheKeys.profile(userId)), eq("rev"), eq(1L));
+    }
+
+    @Test
+    @DisplayName("revision 증가가 실패해도 캐시 삭제와 이벤트 로그 저장은 수행 (보조 수단이 본 무효화를 막으면 안 됨)")
+    void onPaperViewed_revisionBumpFails_stillDeletesCacheAndSavesLog() {
+        when(hashOps.increment(anyString(), eq("rev"), eq(1L)))
+                .thenThrow(new RedisConnectionFailureException("boom"));
+
+        userEventService.onPaperViewed(userId, "paper-001", 40);
+
+        verify(redisTemplate).delete(paperCacheKey);
+        verify(searchLogRepository).save(any(SearchLog.class));
+    }
+
+    @Test
+    @DisplayName("기사 조회에서도 revision 증가가 실패하면 뉴스 캐시는 그래도 삭제")
+    void onArticleViewed_revisionBumpFails_stillDeletesCache() {
+        when(hashOps.increment(anyString(), eq("rev"), eq(1L)))
+                .thenThrow(new RedisConnectionFailureException("boom"));
+
+        userEventService.onArticleViewed(userId, "art-001", 40);
+
+        verify(redisTemplate).delete(newsCacheKey);
     }
 
     @Test
