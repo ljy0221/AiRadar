@@ -204,9 +204,14 @@ public class UserEventService {
         invalidatePaperRecommendationCache(userId);
     }
 
+    /** 삭제 실패가 프로파일 TTL 갱신·이벤트 로그 저장을 막지 않도록 예외를 삼킨다 (TTL 만료로 자연 갱신됨) */
     private void invalidatePaperRecommendationCache(UUID userId) {
         if (userId == null) return;
-        redisTemplate.delete("user:" + userId + ":paper-recommendations");
+        try {
+            redisTemplate.delete("user:" + userId + ":paper-recommendations");
+        } catch (Exception e) {
+            log.warn("[Event] 논문 추천 캐시 삭제 실패 (무시): userId={}, cause={}", userId, e.toString());
+        }
     }
 
     private void saveLog(UUID userId, String articleId, String query, EventType eventType) {
