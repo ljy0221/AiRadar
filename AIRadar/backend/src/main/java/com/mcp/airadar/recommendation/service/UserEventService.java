@@ -62,6 +62,7 @@ public class UserEventService {
     public void onArticleViewed(UUID userId, String articleId, int dwellTimeSeconds) {
         try {
             updateProfileForArticle(userId, articleId, W_VIEW_LONG);
+            invalidateNewsRecommendationCache(userId);
             saveLog(userId, articleId, null, EventType.ARTICLE_VIEWED);
         } catch (Exception e) {
             log.warn("[Event] ARTICLE_VIEWED 처리 실패 (무시): {}", e.getMessage());
@@ -199,9 +200,18 @@ public class UserEventService {
 
     /** 프로파일 kw: 가중치는 뉴스·논문이 공유하므로 북마크 시 두 캐시를 함께 무효화 */
     private void invalidateRecommendationCache(UUID userId) {
-        if (userId == null) return;
-        redisTemplate.delete("user:" + userId + ":recommendations");
+        invalidateNewsRecommendationCache(userId);
         invalidatePaperRecommendationCache(userId);
+    }
+
+    /** 삭제 실패가 이벤트 로그 저장·후속 캐시 삭제를 막지 않도록 예외를 삼킨다 (TTL 만료로 자연 갱신됨) */
+    private void invalidateNewsRecommendationCache(UUID userId) {
+        if (userId == null) return;
+        try {
+            redisTemplate.delete("user:" + userId + ":recommendations");
+        } catch (Exception e) {
+            log.warn("[Event] 뉴스 추천 캐시 삭제 실패 (무시): userId={}, cause={}", userId, e.toString());
+        }
     }
 
     /** 삭제 실패가 프로파일 TTL 갱신·이벤트 로그 저장을 막지 않도록 예외를 삼킨다 (TTL 만료로 자연 갱신됨) */

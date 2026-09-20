@@ -106,11 +106,52 @@ class UserEventServiceCacheInvalidationTest {
     }
 
     @Test
-    @DisplayName("기사 조회는 추천 캐시를 삭제하지 않음 (TTL 만료에 의존)")
-    void onArticleViewed_doesNotInvalidateCache() {
+    @DisplayName("기사 조회 시 뉴스 추천 캐시만 삭제하고 논문 추천 캐시는 유지")
+    void onArticleViewed_invalidatesOnlyNewsCache() {
         userEventService.onArticleViewed(userId, "art-001", 40);
 
-        verify(redisTemplate, never()).delete(newsCacheKey);
+        verify(redisTemplate).delete(newsCacheKey);
         verify(redisTemplate, never()).delete(paperCacheKey);
+    }
+
+    @Test
+    @DisplayName("기사 조회 시 프로파일(art:) 기록 이후에 뉴스 캐시를 삭제")
+    void onArticleViewed_invalidatesAfterProfileWrite() {
+        userEventService.onArticleViewed(userId, "art-001", 40);
+
+        InOrder inOrder = inOrder(hashOps, redisTemplate);
+        inOrder.verify(hashOps).increment(anyString(), eq("art:art-001"), eq(1.0));
+        inOrder.verify(redisTemplate).delete(newsCacheKey);
+    }
+
+    @Test
+    @DisplayName("비로그인(userId null) 기사 조회는 캐시 삭제를 시도하지 않음")
+    void onArticleViewed_anonymous_doesNotTouchCache() {
+        userEventService.onArticleViewed(null, "art-001", 40);
+
+        verify(redisTemplate, never()).delete(anyString());
+    }
+
+    @Test
+    @DisplayName("뉴스 캐시 삭제가 실패해도 이벤트 로그 저장은 수행")
+    void onArticleViewed_deleteFails_stillSavesLog() {
+        when(redisTemplate.delete(newsCacheKey))
+                .thenThrow(new RedisConnectionFailureException("boom"));
+
+        userEventService.onArticleViewed(userId, "art-001", 40);
+
+        verify(searchLogRepository).save(any(SearchLog.class));
+    }
+
+    @Test
+    @DisplayName("북마크 시 뉴스 캐시 삭제가 실패해도 논문 캐시 삭제와 이벤트 로그 저장은 수행")
+    void onArticleBookmarked_newsDeleteFails_stillInvalidatesPaperAndSavesLog() {
+        when(redisTemplate.delete(newsCacheKey))
+                .thenThrow(new RedisConnectionFailureException("boom"));
+
+        userEventService.onArticleBookmarked(userId, "art-001");
+
+        verify(redisTemplate).delete(paperCacheKey);
+        verify(searchLogRepository).save(any(SearchLog.class));
     }
 }
