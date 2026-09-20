@@ -179,12 +179,20 @@ API 응답의 `reason` 필드로 이 기사가 왜 추천되었는지 알 수 �
 
 | 캐시 항목 | 저장소 | TTL | 키 |
 |-----------|--------|-----|-----|
-| 추천 결과 | Redis String | 30분 | `user:{userId}:recommendations` |
+| 뉴스 추천 결과 | Redis String | 30분 | `user:{userId}:recommendations` |
+| 논문 추천 결과 | Redis String | 30분 | `user:{userId}:paper-recommendations` |
 | 사용자 프로파일 | Redis Hash | 30일 | `user:{userId}:profile` |
 | 트렌딩 키워드 | Redis Sorted Set | 무제한 (매일 50% 감쇠) | `search:trending` |
 | 시간별 트렌딩 | Redis Sorted Set | 2시간 | `search:trending:{yyyy-MM-dd'T'HH}` |
 
-추천 결과 캐시(30분)가 살아있는 동안은 관심사를 변경해도 피드가 바뀌지 않습니다. 최대 30분 후 자동으로 갱신됩니다.
+추천 결과 캐시는 아래 이벤트에서 즉시 삭제되며, 그 외에는 TTL(30분) 만료 시 갱신됩니다.
+
+| 이벤트 | 삭제되는 캐시 |
+|--------|---------------|
+| 기사 북마크 | 뉴스 + 논문 (프로파일 `kw:` 가중치를 공유하므로) |
+| 논문 조회 (30초 이상 체류) | 논문 |
+
+관심사 변경, 좋아요, 뉴스 조회에서는 캐시를 삭제하지 않으므로 최대 30분 후에 반영됩니다.
 
 ---
 
