@@ -113,6 +113,7 @@ public class UserEventService {
             // 본 논문 ID 기록 (추천 필터링용)
             redisTemplate.opsForHash().increment(key, "ppv:" + paperId, 1.0);
             updateProfileForPaper(userId, paperId, W_VIEW_LONG);
+            invalidatePaperRecommendationCache(userId);
             refreshProfileTtl(key);
             saveLog(userId, paperId, null, EventType.ARTICLE_VIEWED);
         } catch (Exception e) {
@@ -196,9 +197,16 @@ public class UserEventService {
         redisTemplate.opsForHash().put(key, "last_active", LocalDateTime.now().toString());
     }
 
+    /** 프로파일 kw: 가중치는 뉴스·논문이 공유하므로 북마크 시 두 캐시를 함께 무효화 */
     private void invalidateRecommendationCache(UUID userId) {
         if (userId == null) return;
         redisTemplate.delete("user:" + userId + ":recommendations");
+        invalidatePaperRecommendationCache(userId);
+    }
+
+    private void invalidatePaperRecommendationCache(UUID userId) {
+        if (userId == null) return;
+        redisTemplate.delete("user:" + userId + ":paper-recommendations");
     }
 
     private void saveLog(UUID userId, String articleId, String query, EventType eventType) {
