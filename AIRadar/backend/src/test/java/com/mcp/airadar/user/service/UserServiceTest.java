@@ -5,6 +5,7 @@ import com.mcp.airadar.auth.repository.UserRepository;
 import com.mcp.airadar.recommendation.entity.SearchLog;
 import com.mcp.airadar.recommendation.repository.SearchLogRepository;
 import com.mcp.airadar.recommendation.service.RecommendationCacheKeys;
+import com.mcp.airadar.recommendation.service.UserEventService;
 import com.mcp.airadar.user.dto.BookmarkHistoryDto;
 import com.mcp.airadar.user.dto.OnboardingRequest;
 import com.mcp.airadar.user.entity.UserInterest;
@@ -21,6 +22,8 @@ import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -32,6 +35,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -46,6 +50,7 @@ class UserServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private UserInterestRepository userInterestRepository;
     @Mock private SearchLogRepository searchLogRepository;
+    @Mock private UserEventService userEventService;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private StringRedisTemplate redisTemplate;
     @Mock private HashOperations<String, Object, Object> hashOperations;
@@ -211,5 +216,49 @@ class UserServiceTest {
 
         // then
         verify(searchLogRepository).deleteByUserIdAndArticleIdAndEventType(userId, articleId, "ARTICLE_BOOKMARKED");
+    }
+
+    // ─── 북마크 삭제 ──────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("북마크 삭제: 트랜잭션이 없으면 삭제된 이벤트 수를 프로파일 되돌리기에 즉시 전달")
+    void deleteBookmark_noTransaction_passesRemovedCountImmediately() {
+        when(searchLogRepository.deleteByUserIdAndArticleIdAndEventType(userId, "art-1", "ARTICLE_BOOKMARKED"))
+                .thenReturn(2L);
+
+        userService.deleteBookmark(userId, "art-1");
+
+        verify(userEventService).onBookmarkRemoved(userId, "art-1", 2L);
+    }
+
+    @Test
+    @DisplayName("북마크 삭제: 삭제된 행이 없으면 프로파일 되돌리기를 호출하지 않음")
+    void deleteBookmark_nothingDeleted_doesNotTouchProfile() {
+        when(searchLogRepository.deleteByUserIdAndArticleIdAndEventType(userId, "art-1", "ARTICLE_BOOKMARKED"))
+                .thenReturn(0L);
+
+        userService.deleteBookmark(userId, "art-1");
+
+        verify(userEventService, never()).onBookmarkRemoved(any(), anyString(), anyLong());
+    }
+
+    @Test
+    @DisplayName("북마크 삭제: 트랜잭션 안에서는 커밋 이후에만 프로파일을 되돌림 (롤백되면 호출하지 않음)")
+    void deleteBookmark_inTransaction_runsOnlyAfterCommit() {
+        when(searchLogRepository.deleteByUserIdAndArticleIdAndEventType(userId, "art-1", "ARTICLE_BOOKMARKED"))
+                .thenReturn(1L);
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            userService.deleteBookmark(userId, "art-1");
+
+            verify(userEventService, never()).onBookmarkRemoved(any(), anyString(), anyLong());   // 커밋 전에는 호출 안 됨
+
+            TransactionSynchronizationManager.getSynchronizations()
+                    .forEach(TransactionSynchronization::afterCommit);
+            verify(userEventService).onBookmarkRemoved(userId, "art-1", 1L);
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
     }
 }
