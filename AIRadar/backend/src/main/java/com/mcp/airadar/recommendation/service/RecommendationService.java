@@ -10,6 +10,8 @@ import com.mcp.airadar.recommendation.repository.UserRecommendationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -39,6 +40,21 @@ import java.util.stream.Collectors;
 public class RecommendationService {
 
     private static final Duration REC_CACHE_TTL      = Duration.ofMinutes(30);
+
+    /**
+     * 프로파일 revision이 계산 시작 시점과 같을 때만 캐시에 저장한다 (확인과 저장을 Redis 안에서 원자적으로 수행).
+     * 스크립트 본문은 resources/redis/cache_if_profile_unchanged.lua에 있다 (인자 규약은 파일 주석 참고).
+     * 스크립트를 고쳤다면 src/test/resources/redis/verify_cache_if_profile_unchanged.py로 동작을 다시 검증해야 한다.
+     * 두 키가 같은 노드에 있어야 하므로 Redis Cluster에서는 해시 태그가 필요하다 (현재는 단일 노드 구성).
+     */
+    static final DefaultRedisScript<Long> CACHE_IF_PROFILE_UNCHANGED = cacheIfProfileUnchangedScript();
+
+    private static DefaultRedisScript<Long> cacheIfProfileUnchangedScript() {
+        DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+        script.setLocation(new ClassPathResource("redis/cache_if_profile_unchanged.lua"));
+        script.setResultType(Long.class);
+        return script;
+    }
 
     // 추천 후보 확보를 위한 배수 (페이지 크기의 N배를 DB에서 가져와 재랭킹)
     private static final int CANDIDATE_MULTIPLIER = 5;
@@ -245,15 +261,7 @@ public class RecommendationService {
                 .toList();
 
         // 5. 캐시 저장 (30분) — 계산 중 프로파일이 바뀌었으면 stale 결과이므로 저장하지 않는다
-        try {
-            // 직렬화는 revision 확인 앞에서 끝내, 확인과 저장 사이 구간을 Redis 왕복 한 번으로 줄인다
-            String json = objectMapper.writeValueAsString(ranked);
-            if (isProfileUnchanged(userId, revisionBefore)) {
-                redisTemplate.opsForValue().set(cacheKey, json, REC_CACHE_TTL);
-            }
-        } catch (Exception e) {
-            log.warn("[Rec] 논문 캐시 저장 실패 (무시): userId={}", userId);
-        }
+        cacheIfProfileUnchanged(userId, cacheKey, ranked, revisionBefore);
 
         return ranked;
     }
@@ -274,15 +282,7 @@ public class RecommendationService {
     }
 
     private void cacheRecommendations(UUID userId, List<RecommendationDto.NewsItem> items, Object revisionBefore) {
-        try {
-            // 직렬화는 revision 확인 앞에서 끝내, 확인과 저장 사이 구간을 Redis 왕복 한 번으로 줄인다
-            String json = objectMapper.writeValueAsString(items);
-            if (isProfileUnchanged(userId, revisionBefore)) {
-                redisTemplate.opsForValue().set(RecommendationCacheKeys.news(userId), json, REC_CACHE_TTL);
-            }
-        } catch (Exception e) {
-            log.warn("[Rec] 캐시 저장 실패 (무시): userId={}", userId);
-        }
+        cacheIfProfileUnchanged(userId, RecommendationCacheKeys.news(userId), items, revisionBefore);
     }
 
     /**
@@ -410,25 +410,26 @@ public class RecommendationService {
     }
 
     /**
-     * 계산 시작 이후 프로파일 revision이 그대로인지 확인한다.
-     * 무효화 이벤트가 그 사이에 끼어들었다면 방금 계산한 결과는 stale이므로 캐시에 저장하면 안 된다.
-     * 확인 자체가 실패하면 저장하지 않는 쪽(안전한 쪽)으로 판단한다.
-     * 확인과 저장 사이의 아주 짧은 구간은 여전히 남는다 (원자적 처리는 하지 않음).
+     * 계산 시작 이후 프로파일 revision이 그대로일 때만 결과를 캐시에 저장한다.
+     * 무효화 이벤트가 그 사이에 끼어들었다면 방금 계산한 결과는 stale이므로 저장하지 않는다.
+     * 확인과 저장이 Redis 안에서 한 번에 실행되므로 그 사이에 이벤트가 끼어들 수 없다.
+     * 직렬화나 실행이 실패하면 저장하지 않는 쪽(안전한 쪽)으로 판단하고 결과 응답에는 영향을 주지 않는다.
      */
-    private boolean isProfileUnchanged(UUID userId, Object revisionBefore) {
+    private void cacheIfProfileUnchanged(UUID userId, String cacheKey, Object payload, Object revisionBefore) {
         try {
-            Object revisionNow = redisTemplate.opsForHash()
-                    .get(RecommendationCacheKeys.profile(userId), RecommendationCacheKeys.PROFILE_REVISION_FIELD);
-            boolean unchanged = Objects.equals(
-                    revisionBefore == null ? null : revisionBefore.toString(),
-                    revisionNow == null ? null : revisionNow.toString());
-            if (!unchanged) {
+            String json = objectMapper.writeValueAsString(payload);
+            Long stored = redisTemplate.execute(
+                    CACHE_IF_PROFILE_UNCHANGED,
+                    List.of(RecommendationCacheKeys.profile(userId), cacheKey),
+                    RecommendationCacheKeys.PROFILE_REVISION_FIELD,
+                    revisionBefore == null ? "" : revisionBefore.toString(),
+                    json,
+                    String.valueOf(REC_CACHE_TTL.toMillis()));
+            if (!Long.valueOf(1L).equals(stored)) {
                 log.debug("[Rec] 계산 중 프로파일 변경 감지, 캐시 저장 생략: userId={}", userId);
             }
-            return unchanged;
         } catch (Exception e) {
-            log.warn("[Rec] 프로파일 revision 확인 실패, 캐시 저장 생략: userId={}, cause={}", userId, e.toString());
-            return false;
+            log.warn("[Rec] 캐시 저장 실패, 저장 생략: userId={}, cause={}", userId, e.toString());
         }
     }
 
