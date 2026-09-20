@@ -4,6 +4,8 @@ import com.mcp.airadar.auth.entity.AuthProvider;
 import com.mcp.airadar.auth.entity.User;
 import com.mcp.airadar.auth.repository.UserRepository;
 import com.mcp.airadar.recommendation.repository.SearchLogRepository;
+import com.mcp.airadar.recommendation.service.RecommendationCacheKeys;
+import com.mcp.airadar.recommendation.service.UserEventService;
 import com.mcp.airadar.user.dto.AddInterestRequest;
 import com.mcp.airadar.user.dto.BookmarkHistoryDto;
 import com.mcp.airadar.user.dto.OnboardingRequest;
@@ -20,6 +22,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -29,11 +33,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
 
-    private static final String PROFILE_KEY = "user:%s:profile";
-
     private final UserRepository userRepository;
     private final UserInterestRepository userInterestRepository;
     private final SearchLogRepository searchLogRepository;
+    private final UserEventService userEventService;
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate redisTemplate;
 
@@ -79,7 +82,7 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 온보딩이 완료된 계정입니다.");
         }
 
-        String profileKey = PROFILE_KEY.formatted(userId);
+        String profileKey = RecommendationCacheKeys.profile(userId);
         for (String keyword : request.keywords()) {
             if (!userInterestRepository.existsByUserIdAndKeyword(userId, keyword)) {
                 userInterestRepository.save(UserInterest.builder()
@@ -113,7 +116,10 @@ public class UserService {
 
     @Transactional
     public void deleteBookmark(UUID userId, String articleId) {
-        searchLogRepository.deleteByUserIdAndArticleIdAndEventType(userId, articleId, "ARTICLE_BOOKMARKED");
+        long removed = searchLogRepository.deleteByUserIdAndArticleIdAndEventType(userId, articleId, "ARTICLE_BOOKMARKED");
+        if (removed <= 0) return;
+        // Redis는 트랜잭션에 참여하지 않으므로, DB 삭제가 커밋된 뒤에만 프로파일을 되돌린다 (롤백 시 어긋남 방지)
+        runAfterCommit(() -> userEventService.onBookmarkRemoved(userId, articleId, removed));
     }
 
     @Transactional
@@ -143,5 +149,19 @@ public class UserService {
     private User findUser(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+    }
+
+    /** 활성 트랜잭션이 있으면 커밋 이후에, 없으면 즉시 실행한다 */
+    private void runAfterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+        } else {
+            action.run();
+        }
     }
 }

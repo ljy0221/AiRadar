@@ -40,7 +40,7 @@ AI 기술은 매일 수백 개의 뉴스·논문·오픈소스 프로젝트가 �
 
 - **자동 수집**: AITimes, GDELT, arXiv, GitHub Archive에서 30분마다 최신 AI 정보를 수집합니다.
 - **AI 분석**: Claude Haiku LLM으로 키워드 추출·감정 분석·요약·카테고리 분류를 자동으로 수행합니다.
-- **개인화**: 사용자의 조회·검색·좋아요 행동을 학습하여 ALS 협업 필터링 기반 개인화 피드를 제공합니다.
+- **개인화**: 사용자의 조회·검색·북마크 행동을 학습하여 ALS 협업 필터링 기반 개인화 피드를 제공합니다.
 - **트렌드 분석**: 일별 키워드 통계, 기술 생애주기, 직업별 AI 위험도를 대시보드로 시각화합니다.
 
 ---
@@ -52,7 +52,7 @@ AI 기술은 매일 수백 개의 뉴스·논문·오픈소스 프로젝트가 �
 | **자동 수집** | AITimes·GDELT(뉴스), arXiv(논문), GitHub Archive(레포) 30분 주기 크롤링 → Kafka 발행 |
 | **AI 분석** | Claude Haiku: 키워드·감정(POSITIVE/NEGATIVE/NEUTRAL)·요약·카테고리·지역 분류 |
 | **벡터 검색** | `paraphrase-multilingual-mpnet-base-v2` 768차원 임베딩 + pgvector 코사인 유사도 검색 |
-| **개인화 추천** | 행동 이벤트(조회·검색·좋아요·북마크) → Redis 프로파일 → Spark ALS 배치 추천 |
+| **개인화 추천** | 행동 이벤트(조회·검색·북마크) → Redis 프로파일 → Spark ALS 배치 추천 |
 | **트렌드 대시보드** | 일별 키워드 언급량, 기술 생애주기(성장/성숙/쇠퇴), 직업별 AI 대체 위험도 |
 | **인증·계정** | JWT Access(15분)/Refresh(7일) Rotation, 관심 키워드 수동 등록·추론 |
 
@@ -99,7 +99,7 @@ AI 기술은 매일 수백 개의 뉴스·논문·오픈소스 프로젝트가 �
 
 | 단계 | 설명 |
 | --- | --- |
-| **이벤트 수집** | 기사 조회(30초↑)·검색·좋아요·북마크 → `@Async` fire-and-forget, 즉시 202 반환 |
+| **이벤트 수집** | 기사 조회·검색·북마크 → `@Async` fire-and-forget, 즉시 202 반환 |
 | **실시간 프로파일** | Redis `user:{userId}:profile` Hash에 키워드 가중치 실시간 반영 (TTL 30일) |
 | **배치 추천** | 매일 새벽 2시 Spark ALS로 `search_logs`(최근 30일) 학습 → `user_recommendations` 저장 |
 | **서빙 우선순위** | ① Redis 캐시(30분) → ② ALS 결과 → ③ 관심 키워드 매칭 → ④ 트렌딩 Fallback |
@@ -134,7 +134,7 @@ S14P21B104/
 │   ├── backend/                # Spring Boot 3.3.5 + Spark 3.5.0
 │   │   └── src/main/java/com/mcp/airadar/
 │   │       ├── auth/           # JWT 인증·소셜 로그인
-│   │       ├── user/           # 유저 프로파일·관심사·북마크/좋아요
+│   │       ├── user/           # 유저 프로파일·관심사·북마크
 │   │       ├── news/           # 뉴스 조회 API
 │   │       ├── paper/          # 논문 조회 API
 │   │       ├── github/         # GitHub 레포 API
@@ -248,8 +248,8 @@ curl -X POST "http://localhost:8002/crawl/dummy?date=$(date +%Y-%m-%d)&news_coun
 | **검색** | `GET /api/search?q={query}` | — |
 | **대시보드** | `GET /api/v1/dashboard/keywords`, `/lifecycle`, `/jobs` | — |
 | **추천** | `GET /api/v1/recommendations/news`, `/trending` | 일부 필요 |
-| **이벤트** | `POST /api/v1/events/article-view`, `/search`, `/article-like`, `/article-bookmark` | 필요 |
-| **사용자** | `GET/PATCH /api/v1/users/me`, `/interests`, `/history`, `/bookmarks`, `/likes` | 필요 |
+| **이벤트** | `POST /api/v1/events/article-view`, `/search`, `/article-bookmark` | 필요 |
+| **사용자** | `GET/PATCH /api/v1/users/me`, `/interests`, `/history`, `/bookmarks` | 필요 |
 | **뉴스레터** | `POST /api/v1/mail`, `DELETE /api/v1/mail` | — |
 
 > 응답 형식: `{"success": true, "data": {...}}`

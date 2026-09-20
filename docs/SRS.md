@@ -98,7 +98,7 @@ AiRadar는 독립 실행형 웹 플랫폼으로, 다음 외부 시스템과 연�
 | 분류 | 설명 | 주요 사용 기능 |
 |------|------|--------------|
 | **일반 사용자** | AI 기술 동향에 관심 있는 개발자·연구자 | 뉴스 피드, 논문 조회, 검색, 대시보드 |
-| **로그인 사용자** | 계정을 보유한 사용자 | 개인화 추천, 북마크, 좋아요, 관심 키워드 |
+| **로그인 사용자** | 계정을 보유한 사용자 | 개인화 추천, 북마크, 관심 키워드 (좋아요는 미구현) |
 | **구독자** | 뉴스레터 신청 사용자 | 이메일 뉴스레터 수신 |
 | **시스템 관리자** | 파이프라인 운영자 | Airflow DAG, Spark Job 모니터링 |
 
@@ -183,7 +183,7 @@ AI Server (FastAPI :8000)
 ### 3.3 추천 흐름
 
 ```
-사용자 행동 이벤트 (기사 조회, 좋아요, 북마크, 검색)
+사용자 행동 이벤트 (기사 조회, 북마크, 검색)
     │ @Async fire-and-forget
     ▼
 search_logs (PostgreSQL) + Redis user:{userId}:profile Hash
@@ -422,7 +422,7 @@ user_recommendations (PostgreSQL)
 #### FR-EVENT-01: 기사 조회 이벤트
 - **엔드포인트**: `POST /api/v1/events/article-view`
 - **Body**: `{articleId, dwellTimeSeconds}`
-- **설명**: 30초 이상 체류 시 사용자 Redis 프로파일에 키워드 가중치를 반영한다.
+- **설명**: 사용자 Redis 프로파일에 키워드 가중치를 반영한다. `dwellTimeSeconds`는 수신하지만 현재 체류 시간에 따른 필터링은 하지 않는다.
 - **처리 방식**: `@Async` fire-and-forget, 즉시 202 반환
 - **인증**: 필수
 - **우선순위**: 필수
@@ -437,6 +437,7 @@ user_recommendations (PostgreSQL)
 #### FR-EVENT-03: 좋아요 / 북마크
 - **엔드포인트**: `POST /api/v1/events/article-like`, `POST /api/v1/events/article-bookmark`
 - **설명**: 사용자가 기사에 좋아요·북마크를 남긴다. `search_logs`에 기록된다.
+- **구현 상태**: 북마크만 구현되었다. `article-like`는 백엔드 핸들러와 `ARTICLE_LIKED` 이벤트 기록이 없어 미구현이다.
 - **인증**: 필수
 - **우선순위**: 필수
 
@@ -458,6 +459,7 @@ user_recommendations (PostgreSQL)
 #### FR-USER-03: 활동 이력 조회
 - **엔드포인트**: `GET /api/v1/users/me/history`, `/bookmarks`, `/likes`
 - **설명**: 최근 30일 조회 이력, 북마크 목록, 좋아요 목록을 반환한다.
+- **구현 상태**: `/history`, `/bookmarks`만 구현되었다. `/likes`는 미구현이다.
 - **우선순위**: 필수
 
 #### FR-USER-04: 온보딩

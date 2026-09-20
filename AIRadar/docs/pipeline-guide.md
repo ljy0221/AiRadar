@@ -481,7 +481,7 @@ run_recommendation_batch (CollaborativeFilteringJob --date {{ ds }})
 ### 전체 흐름
 
 ```
-사용자 행동 이벤트 발생 (뷰, 검색, 좋아요, 북마크)
+사용자 행동 이벤트 발생 (뷰, 검색, 북마크 — 좋아요는 배치에만 정의)
     ↓
 search_logs 테이블에 기록 (월별 파티셔닝)
     ↓
@@ -501,8 +501,8 @@ CollaborativeFilteringJob
 | 이벤트 타입 | 가중치 | 설명 |
 |---|---|---|
 | `ARTICLE_VIEWED` | 1.0 | 기사 조회 |
-| `ARTICLE_SEARCHED` | 2.0 | 검색 결과에서 클릭 |
-| `ARTICLE_LIKED` | 3.0 | 좋아요 |
+| `ARTICLE_SEARCHED` | 2.0 | 검색 (article_id가 있는 경우만 반영) |
+| `ARTICLE_LIKED` | 3.0 | 좋아요 (이벤트 수집 미구현) |
 | `ARTICLE_BOOKMARKED` | 5.0 | 북마크 |
 
 같은 (사용자, 기사) 쌍의 이벤트는 가중치를 합산합니다 (implicit feedback).

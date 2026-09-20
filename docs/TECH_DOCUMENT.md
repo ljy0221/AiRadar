@@ -311,9 +311,9 @@ AI_WORD_PATTERN = "\\b(ai|ml|llm|nlp|rag)\\b"
 
 **이벤트 가중치 설계 근거**:
 ```
-ARTICLE_VIEWED    → 1.0  (30초 이상 체류 시만 기록 — 가벼운 관심)
+ARTICLE_VIEWED    → 1.0  (가벼운 관심 — 체류 시간과 무관하게 기록)
 ARTICLE_SEARCHED  → 2.0  (의도적 탐색 — 중간 관심)
-ARTICLE_LIKED     → 3.0  (명시적 긍정 반응)
+ARTICLE_LIKED     → 3.0  (명시적 긍정 반응 — 배치에만 정의, 이벤트 수집은 미구현)
 ARTICLE_BOOKMARKED → 5.0  (나중에 다시 보려는 강한 관심)
 ```
 
@@ -491,10 +491,10 @@ final_score = ALS_score × 0.4
 
 **Redis 프로파일 갱신 기준**:
 ```
-ARTICLE_VIEWED (30초 이상 체류):  kw:{keyword} += 1.0
-ARTICLE_LIKED:                   kw:{keyword} += 5.0
-ARTICLE_BOOKMARKED:              kw:{keyword} += 10.0
-ARTICLE_SEARCHED (article 포함): kw:{keyword} += 2.0
+ARTICLE_VIEWED:                  kw:{keyword} += 1.0   (체류 시간과 무관)
+ARTICLE_LIKED:                   (미구현 — 백엔드에 핸들러 없음)
+ARTICLE_BOOKMARKED:              kw:{keyword} += 5.0
+ARTICLE_SEARCHED:                kw:{검색어} += 2.0
 
 Top 키워드 추출: Hash에서 가중치 상위 10개 선택
 ```

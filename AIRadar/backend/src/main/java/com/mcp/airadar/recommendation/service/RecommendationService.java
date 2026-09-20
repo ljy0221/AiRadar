@@ -10,6 +10,8 @@ import com.mcp.airadar.recommendation.repository.UserRecommendationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,10 +39,22 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class RecommendationService {
 
-    private static final String REC_CACHE_KEY        = "user:%s:recommendations";
-    private static final String PAPER_CACHE_KEY      = "user:%s:paper-recommendations";
-    private static final String PROFILE_KEY          = "user:%s:profile";
     private static final Duration REC_CACHE_TTL      = Duration.ofMinutes(30);
+
+    /**
+     * 프로파일 revision이 계산 시작 시점과 같을 때만 캐시에 저장한다 (확인과 저장을 Redis 안에서 원자적으로 수행).
+     * 스크립트 본문은 resources/redis/cache_if_profile_unchanged.lua에 있다 (인자 규약은 파일 주석 참고).
+     * 스크립트를 고쳤다면 src/test/resources/redis/verify_cache_if_profile_unchanged.py로 동작을 다시 검증해야 한다.
+     * 두 키가 같은 노드에 있어야 하므로 Redis Cluster에서는 해시 태그가 필요하다 (현재는 단일 노드 구성).
+     */
+    static final DefaultRedisScript<Long> CACHE_IF_PROFILE_UNCHANGED = cacheIfProfileUnchangedScript();
+
+    private static DefaultRedisScript<Long> cacheIfProfileUnchangedScript() {
+        DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+        script.setLocation(new ClassPathResource("redis/cache_if_profile_unchanged.lua"));
+        script.setResultType(Long.class);
+        return script;
+    }
 
     // 추천 후보 확보를 위한 배수 (페이지 크기의 N배를 DB에서 가져와 재랭킹)
     private static final int CANDIDATE_MULTIPLIER = 5;
@@ -68,15 +82,19 @@ public class RecommendationService {
             return cached.stream().limit(cappedSize).toList();
         }
 
+        // 프로파일은 한 번만 읽고, 계산 시작 시점의 revision을 기억해 둔다 (캐시 저장 직전 비교용)
+        Map<Object, Object> profile = getProfile(userId);
+        Object revisionBefore = profile.get(RecommendationCacheKeys.PROFILE_REVISION_FIELD);
+
         // 2. ALS 배치 추천 결과 조회 (유효 기간 내)
         List<UserRecommendation> alsRecs = userRecommendationRepository
                 .findValidByUserId(userId, LocalDateTime.now());
 
         // 3. 이미 본 기사 ID 수집 (art: 접두사 필드)
-        Set<String> viewedArticleIds = getViewedArticleIds(userId);
+        Set<String> viewedArticleIds = getViewedArticleIds(profile);
 
         // 4. 유저 프로파일 기반 키워드 매칭 후보 조회 (최근 7일)
-        List<String> topKeywords = getTopKeywordsFromProfile(userId);
+        List<String> topKeywords = getTopKeywordsFromProfile(profile);
         List<com.mcp.airadar.news.entity.NewsItem> keywordCandidates = List.of();
         if (!topKeywords.isEmpty()) {
             String pgArrayLiteral = toPgArrayLiteral(topKeywords);
@@ -127,7 +145,7 @@ public class RecommendationService {
             return getColdStartFeed(cappedSize, viewedArticleIds);
         }
 
-        Map<String, Double> profileWeights = getProfileKeywordWeights(userId);
+        Map<String, Double> profileWeights = getProfileKeywordWeights(profile);
 
         List<RecommendationDto.NewsItem> ranked = allCandidates.stream()
                 .sorted((a, b) -> Double.compare(
@@ -139,8 +157,8 @@ public class RecommendationService {
                         alsScoreMap.containsKey(item.getArticleId()) ? "ALS" : "KEYWORD_MATCH"))
                 .toList();
 
-        // 6. 캐시 저장 (30분)
-        cacheRecommendations(userId, ranked);
+        // 6. 캐시 저장 (30분) — 계산 중 프로파일이 바뀌었으면 stale 결과이므로 저장하지 않는다
+        cacheRecommendations(userId, ranked, revisionBefore);
 
         return ranked;
     }
@@ -157,7 +175,7 @@ public class RecommendationService {
         int cappedSize = Math.min(size, 50);
 
         // 1. Redis 캐시 확인
-        String cacheKey = PAPER_CACHE_KEY.formatted(userId);
+        String cacheKey = RecommendationCacheKeys.paper(userId);
         String cachedJson = redisTemplate.opsForValue().get(cacheKey);
         if (cachedJson != null) {
             try {
@@ -170,8 +188,12 @@ public class RecommendationService {
             }
         }
 
+        // 프로파일은 한 번만 읽고, 계산 시작 시점의 revision을 기억해 둔다 (캐시 저장 직전 비교용)
+        Map<Object, Object> profile = getProfile(userId);
+        Object revisionBefore = profile.get(RecommendationCacheKeys.PROFILE_REVISION_FIELD);
+
         // 2. 이미 본 논문 ID 수집
-        Set<String> viewedPaperIds = getViewedPaperIds(userId);
+        Set<String> viewedPaperIds = getViewedPaperIds(profile);
 
         // 3. ALS 배치 추천 결과 조회 (content_type = PAPER)
         List<UserRecommendation> alsRecs = userRecommendationRepository
@@ -185,7 +207,7 @@ public class RecommendationService {
                 ));
 
         // 4. 유저 프로파일 키워드 매칭 (최근 30일)
-        List<String> topKeywords = getTopKeywordsFromProfile(userId);
+        List<String> topKeywords = getTopKeywordsFromProfile(profile);
         List<com.mcp.airadar.paper.entity.Paper> keywordCandidates = List.of();
         if (!topKeywords.isEmpty()) {
             String pgArrayLiteral = toPgArrayLiteral(topKeywords);
@@ -226,7 +248,7 @@ public class RecommendationService {
                     .toList();
         }
 
-        Map<String, Double> profileWeights = getProfileKeywordWeights(userId);
+        Map<String, Double> profileWeights = getProfileKeywordWeights(profile);
 
         List<RecommendationDto.PaperItem> ranked = allCandidates.stream()
                 .sorted((a, b) -> Double.compare(
@@ -238,12 +260,8 @@ public class RecommendationService {
                         alsScoreMap.containsKey(p.getPaperId()) ? "ALS" : "KEYWORD_MATCH"))
                 .toList();
 
-        // 5. 캐시 저장 (30분)
-        try {
-            redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(ranked), REC_CACHE_TTL);
-        } catch (Exception e) {
-            log.warn("[Rec] 논문 캐시 저장 실패 (무시): userId={}", userId);
-        }
+        // 5. 캐시 저장 (30분) — 계산 중 프로파일이 바뀌었으면 stale 결과이므로 저장하지 않는다
+        cacheIfProfileUnchanged(userId, cacheKey, ranked, revisionBefore);
 
         return ranked;
     }
@@ -251,7 +269,7 @@ public class RecommendationService {
     // ─── 내부 헬퍼 ─────────────────────────────────────────────────────
 
     private List<RecommendationDto.NewsItem> getCachedRecommendations(UUID userId) {
-        String key = REC_CACHE_KEY.formatted(userId);
+        String key = RecommendationCacheKeys.news(userId);
         String json = redisTemplate.opsForValue().get(key);
         if (json == null) return List.of();
         try {
@@ -263,22 +281,14 @@ public class RecommendationService {
         }
     }
 
-    private void cacheRecommendations(UUID userId, List<RecommendationDto.NewsItem> items) {
-        try {
-            String json = objectMapper.writeValueAsString(items);
-            redisTemplate.opsForValue().set(REC_CACHE_KEY.formatted(userId), json, REC_CACHE_TTL);
-        } catch (Exception e) {
-            log.warn("[Rec] 캐시 저장 실패 (무시): userId={}", userId);
-        }
+    private void cacheRecommendations(UUID userId, List<RecommendationDto.NewsItem> items, Object revisionBefore) {
+        cacheIfProfileUnchanged(userId, RecommendationCacheKeys.news(userId), items, revisionBefore);
     }
 
     /**
      * Redis Hash에서 "kw:" 접두사 필드를 score 내림차순으로 정렬하여 상위 키워드 반환
      */
-    private List<String> getTopKeywordsFromProfile(UUID userId) {
-        Map<Object, Object> profile = redisTemplate.opsForHash()
-                .entries(PROFILE_KEY.formatted(userId));
-
+    private List<String> getTopKeywordsFromProfile(Map<Object, Object> profile) {
         return profile.entrySet().stream()
                 .filter(e -> e.getKey().toString().startsWith("kw:"))
                 .sorted((a, b) -> Double.compare(
@@ -292,10 +302,7 @@ public class RecommendationService {
     /**
      * Redis Hash 전체에서 키워드 가중치 Map 반환 (재랭킹용)
      */
-    private Map<String, Double> getProfileKeywordWeights(UUID userId) {
-        Map<Object, Object> profile = redisTemplate.opsForHash()
-                .entries(PROFILE_KEY.formatted(userId));
-
+    private Map<String, Double> getProfileKeywordWeights(Map<Object, Object> profile) {
         return profile.entrySet().stream()
                 .filter(e -> e.getKey().toString().startsWith("kw:"))
                 .collect(Collectors.toMap(
@@ -377,9 +384,7 @@ public class RecommendationService {
     }
 
     /** 이미 본 논문 ID 집합 (Redis profile art: 접두사, paper 전용 ppv: 접두사) */
-    private Set<String> getViewedPaperIds(UUID userId) {
-        Map<Object, Object> profile = redisTemplate.opsForHash()
-                .entries(PROFILE_KEY.formatted(userId));
+    private Set<String> getViewedPaperIds(Map<Object, Object> profile) {
         return profile.keySet().stream()
                 .map(Object::toString)
                 .filter(k -> k.startsWith("ppv:"))
@@ -388,22 +393,44 @@ public class RecommendationService {
     }
 
     /**
-     * Redis profile의 kw: 필드에서 이미 본(좋아요/북마크/조회) 기사 ID 집합 반환
-     * UserEventService.updateProfileForArticle은 이제 kw: 필드에 키워드를 기록하므로
-     * 기존에 남아있던 art: 접두사 필드는 더 이상 생성되지 않음
-     * — 본 기사 추적은 search_logs에서 조회
+     * Redis profile의 art: 접두사 필드에서 이미 본(조회/북마크) 기사 ID 집합 반환.
+     * UserEventService.updateProfileForArticle이 조회·북마크마다 art:{articleId}를 기록한다.
      */
-    private Set<String> getViewedArticleIds(UUID userId) {
-        // search_logs 조회 없이 Redis profile의 기록만으로 추적하기엔 한계가 있으므로
-        // UserRecommendationRepository를 통해 최근 30일 내 조회 이벤트를 별도 쿼리하는 대신,
-        // 간단히 Redis에서 kw: 가 아닌 art: 접두사 필드를 수집 (이전 데이터 호환)
-        Map<Object, Object> profile = redisTemplate.opsForHash()
-                .entries(PROFILE_KEY.formatted(userId));
+    private Set<String> getViewedArticleIds(Map<Object, Object> profile) {
         return profile.keySet().stream()
                 .map(Object::toString)
                 .filter(k -> k.startsWith("art:"))
                 .map(k -> k.substring(4))
                 .collect(Collectors.toSet());
+    }
+
+    /** 유저 프로파일 Hash 전체 (추천 1회 계산당 한 번만 읽는다) */
+    private Map<Object, Object> getProfile(UUID userId) {
+        return redisTemplate.opsForHash().entries(RecommendationCacheKeys.profile(userId));
+    }
+
+    /**
+     * 계산 시작 이후 프로파일 revision이 그대로일 때만 결과를 캐시에 저장한다.
+     * 무효화 이벤트가 그 사이에 끼어들었다면 방금 계산한 결과는 stale이므로 저장하지 않는다.
+     * 확인과 저장이 Redis 안에서 한 번에 실행되므로 그 사이에 이벤트가 끼어들 수 없다.
+     * 직렬화나 실행이 실패하면 저장하지 않는 쪽(안전한 쪽)으로 판단하고 결과 응답에는 영향을 주지 않는다.
+     */
+    private void cacheIfProfileUnchanged(UUID userId, String cacheKey, Object payload, Object revisionBefore) {
+        try {
+            String json = objectMapper.writeValueAsString(payload);
+            Long stored = redisTemplate.execute(
+                    CACHE_IF_PROFILE_UNCHANGED,
+                    List.of(RecommendationCacheKeys.profile(userId), cacheKey),
+                    RecommendationCacheKeys.PROFILE_REVISION_FIELD,
+                    revisionBefore == null ? "" : revisionBefore.toString(),
+                    json,
+                    String.valueOf(REC_CACHE_TTL.toMillis()));
+            if (!Long.valueOf(1L).equals(stored)) {
+                log.debug("[Rec] 계산 중 프로파일 변경 감지, 캐시 저장 생략: userId={}", userId);
+            }
+        } catch (Exception e) {
+            log.warn("[Rec] 캐시 저장 실패, 저장 생략: userId={}, cause={}", userId, e.toString());
+        }
     }
 
     /** PostgreSQL TEXT[] 리터럴 변환: ["HBM","AI"] → {"HBM","AI"} */

@@ -209,6 +209,6 @@ const handleComplete = async () => {
 
 ## 관련 문서
 
-- [이벤트 발송 API 명세](./03-event-api.md) — 조회/검색/좋아요 이벤트로 추천을 더 정확하게
+- [이벤트 발송 API 명세](./03-event-api.md) — 조회/검색/북마크 이벤트로 추천을 더 정확하게
 - [개인화 피드 API 명세](./04-feed-api.md) — 온보딩 완료 후 피드 화면 구현
 - [추천 시스템 아키텍처 개요](./01-architecture-overview.md) — 전체 구조 이해

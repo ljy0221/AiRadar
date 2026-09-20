@@ -43,9 +43,11 @@ await api.post('/events/article-view', payload);
 
 ### 언제 발송하나
 
-사용자가 기사 상세 페이지에서 **5초 이상 체류**하다가 떠날 때 발송합니다.
+**(권장 원칙)** 사용자가 기사 상세 페이지에서 **5초 이상 체류**하다가 떠날 때 발송합니다. 아래 "현재 프론트의 실제 동작"과 다르니 함께 읽으세요.
 
-> **왜 5초인가**: 실수로 열거나 즉시 닫는 경우를 제외하기 위해 클라이언트에서 최소 5초를 필터링합니다. 백엔드는 `dwellTimeSeconds`를 받지만 현재 체류 시간에 따른 추가 필터링은 하지 않으며, 수신한 이벤트를 모두 프로파일에 반영합니다.
+> **현재 프론트의 실제 동작**: 이 원칙(체류 측정)을 구현한 `useArticleViewTracking`은 정의만 되어 있고 사용처가 없습니다. 실제로 조회 이벤트를 보내는 곳은 기사 클릭(`trackArticleClick`)이며, 체류 시간 **0**으로 발송합니다. 백엔드는 체류 시간을 사용하지 않으므로 이 클릭이 그대로 프로파일에 반영됩니다. 논문 조회(`paper-view`)를 발송하는 프론트 코드는 아직 없습니다.
+
+> **왜 5초인가**: 실수로 열거나 즉시 닫는 경우를 제외하기 위해 클라이언트에서 최소 5초를 필터링하는 것이 원칙입니다 (현재 프론트에는 이 필터가 구현되어 있지 않습니다). 백엔드는 `dwellTimeSeconds`를 받지만 체류 시간에 따른 필터링은 하지 않으며, 수신한 이벤트를 모두 프로파일에 반영합니다. (현재 프론트의 기사 클릭 트래킹은 체류 0으로 발송합니다.)
 
 ### 엔드포인트
 
@@ -141,42 +143,13 @@ const handleSearch = (query: string) => {
 
 ---
 
-## 이벤트 3: 좋아요
+## 이벤트 3: 좋아요 (미구현)
 
-### 언제 발송하나
-
-사용자가 좋아요 버튼을 누를 때 발송합니다. **로그인 필수**입니다.
-
-### 엔드포인트
-
-```
-POST /api/v1/events/article-like
-Authorization: Bearer {accessToken}
-Content-Type: application/json
-```
-
-### 요청 Body
-
-```json
-{
-  "articleId": "news_abc123"
-}
-```
-
-### 구현 예시
-
-```typescript
-const handleLike = (articleId: string) => {
-  // UI 즉시 업데이트 (낙관적 업데이트)
-  setLiked(true);
-
-  // 이벤트 발송
-  api.post('/events/article-like', { articleId }).catch(() => {
-    // 실패 시 UI 롤백
-    setLiked(false);
-  });
-};
-```
+> **현재 백엔드에는 좋아요 이벤트가 구현되어 있지 않습니다.** `POST /api/v1/events/article-like`를 처리하는 핸들러가 없고, `ARTICLE_LIKED` 이벤트도 기록되지 않습니다.
+> 프론트의 `trackArticleLike`가 이 경로를 호출하더라도 `.catch(() => {})`로 실패가 무시되어 아무 일도 일어나지 않습니다.
+> Spark ALS 배치는 `ARTICLE_LIKED`에 가중치 3.0을 정의해 두었으므로, 백엔드가 구현되면 그대로 학습에 반영됩니다.
+>
+> 구현 전까지 좋아요 버튼의 상태 표시는 클라이언트 로컬에서만 처리하고, 추천에 반영되는 강한 긍정 신호는 **북마크**(이벤트 4)를 사용하세요.
 
 ---
 
@@ -233,14 +206,6 @@ export function trackSearch(query: string): void {
 }
 
 /**
- * 좋아요 이벤트 발송 (로그인 필요)
- * @param articleId 기사 ID
- */
-export function trackArticleLike(articleId: string): void {
-  api.post('/events/article-like', { articleId }).catch(() => {});
-}
-
-/**
  * 북마크 이벤트 발송 (로그인 필요)
  * @param articleId 기사 ID
  */
@@ -257,10 +222,9 @@ export function trackArticleBookmark(articleId: string): void {
 
 - [ ] 기사 상세 페이지: 컴포넌트 언마운트 시 체류 시간 계산 + 발송
 - [ ] 검색바: 검색 실행 시 쿼리 발송
-- [ ] 뉴스 카드: 좋아요 버튼 클릭 시 발송
 - [ ] 뉴스 카드: 북마크 버튼 클릭 시 발송
 - [ ] 모든 이벤트: `.catch(() => {})` 로 실패 무시 처리 확인
-- [ ] 기사 조회 이벤트: `dwellTimeSeconds >= 5` 조건 확인
+- [ ] 기사 조회 이벤트: `dwellTimeSeconds >= 5` 조건 확인 (**미구현** — 현재 프론트는 클릭 시 체류 0으로 발송)
 
 ---
 

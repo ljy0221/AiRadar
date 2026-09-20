@@ -37,7 +37,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserEventService {
 
-    private static final String PROFILE_KEY      = "user:%s:profile";
     private static final String TRENDING_KEY     = "search:trending";
     private static final String TRENDING_HOURLY  = "search:trending:%s";
 
@@ -45,6 +44,15 @@ public class UserEventService {
     private static final double W_VIEW_LONG  = 1.0;  // 30초 이상 체류
     private static final double W_SEARCH     = 2.0;
     private static final double W_BOOKMARK   = 5.0;
+
+    // 부동소수 오차를 고려해, 되돌린 뒤 이 값 이하가 된 프로파일 필드는 제거한다
+    private static final double PROFILE_WEIGHT_EPSILON = 1e-9;
+
+    // 북마크가 프로파일에 반영된 횟수(bm:)와 그때 반영한 키워드(bmkw:) — 프로파일과 같은 수명(TTL)을 가진다.
+    // 북마크 삭제 시 "프로파일이 실제로 기록한 만큼만" 되돌리기 위한 근거이며, 프로파일이 만료되면 함께 사라진다.
+    private static final String BOOKMARK_COUNT_PREFIX    = "bm:";
+    private static final String BOOKMARK_KEYWORDS_PREFIX = "bmkw:";
+    private static final String KEYWORD_SEPARATOR        = "";
 
     private static final double W_TRENDING_AUTH = 1.0;
     private static final double W_TRENDING_ANON = 0.5;
@@ -90,7 +98,7 @@ public class UserEventService {
 
             // 로그인 사용자만 프로파일 반영
             if (!isAnonymous) {
-                String key = PROFILE_KEY.formatted(userId);
+                String key = RecommendationCacheKeys.profile(userId);
                 redisTemplate.opsForHash().increment(key, "kw:" + normalizedQuery, W_SEARCH);
                 refreshProfileTtl(key);
             }
@@ -110,7 +118,7 @@ public class UserEventService {
     public void onPaperViewed(UUID userId, String paperId, int dwellTimeSeconds) {
         try {
             if (userId == null) return;
-            String key = PROFILE_KEY.formatted(userId);
+            String key = RecommendationCacheKeys.profile(userId);
             // 본 논문 ID 기록 (추천 필터링용)
             redisTemplate.opsForHash().increment(key, "ppv:" + paperId, 1.0);
             updateProfileForPaper(userId, paperId, W_VIEW_LONG);
@@ -127,11 +135,50 @@ public class UserEventService {
     @Transactional
     public void onArticleBookmarked(UUID userId, String articleId) {
         try {
-            updateProfileForArticle(userId, articleId, W_BOOKMARK);
+            String[] credited = updateProfileForArticle(userId, articleId, W_BOOKMARK);
+            recordBookmarkContribution(userId, articleId, credited);
             invalidateRecommendationCache(userId);
             saveLog(userId, articleId, null, EventType.ARTICLE_BOOKMARKED);
         } catch (Exception e) {
             log.warn("[Event] ARTICLE_BOOKMARKED 처리 실패 (무시): {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 북마크 삭제 시 북마크가 프로파일에 더한 가중치를 되돌린다.
+     *
+     * search_logs의 삭제된 행 수를 그대로 믿지 않고, 프로파일이 실제로 기록해 둔 북마크 횟수(bm:{articleId})만큼만
+     * 원자적으로 차감(claim)한다. 프로파일이 그 사이 만료되었거나(기록도 함께 사라짐), 이 기능 도입 이전의 북마크라서
+     * 기록이 없으면 되돌릴 것이 없다고 보고 아무것도 건드리지 않는다 — 조회·검색으로 쌓은 가중치를 지우지 않기 위함이다.
+     * 되돌릴 때 빼는 키워드도 삭제 시점의 기사가 아니라 북마크 시점에 반영한 키워드(bmkw:)를 쓴다.
+     * 동시에 같은 삭제가 두 번 들어와도 차감 총량은 기록된 횟수를 넘지 않는다.
+     * 되돌린 뒤(또는 되돌리는 도중 실패해도) 추천 캐시를 무효화한다. 실패해도 북마크 삭제 자체를 막지 않는다.
+     *
+     * @param removedCount search_logs에서 실제로 삭제된 ARTICLE_BOOKMARKED 행 수
+     */
+    @Async("eventExecutor")
+    public void onBookmarkRemoved(UUID userId, String articleId, long removedCount) {
+        if (userId == null || removedCount <= 0) return;
+        try {
+            String key = RecommendationCacheKeys.profile(userId);
+            Object recordedKeywords = redisTemplate.opsForHash().get(key, BOOKMARK_KEYWORDS_PREFIX + articleId);
+
+            long claimed = claimBookmarkContribution(key, articleId, removedCount);
+            if (claimed <= 0) return;
+
+            try {
+                double delta = W_BOOKMARK * claimed;
+                subtractFromProfile(key, "art:" + articleId, delta);
+                if (recordedKeywords != null && !recordedKeywords.toString().isEmpty()) {
+                    for (String kw : recordedKeywords.toString().split(KEYWORD_SEPARATOR)) {
+                        subtractFromProfile(key, "kw:" + kw, delta);
+                    }
+                }
+            } finally {
+                invalidateRecommendationCache(userId);
+            }
+        } catch (Exception e) {
+            log.warn("[Event] 북마크 삭제 프로파일 되돌리기 실패 (무시): {}", e.getMessage());
         }
     }
 
@@ -159,30 +206,71 @@ public class UserEventService {
      * 기사의 keywords 컬럼을 DB에서 조회하여 프로파일 가중치 업데이트.
      * kw:{keyword} 필드에 가중치를 누적 → RecommendationService 재랭킹에 반영.
      */
-    private void updateProfileForArticle(UUID userId, String articleId, double weight) {
-        if (userId == null) return;
-        String key = PROFILE_KEY.formatted(userId);
+    private String[] updateProfileForArticle(UUID userId, String articleId, double weight) {
+        if (userId == null) return new String[0];
+        String key = RecommendationCacheKeys.profile(userId);
 
         // 본 기사 ID 기록 (추천 필터링용)
         redisTemplate.opsForHash().increment(key, "art:" + articleId, weight);
 
         // 기사의 실제 키워드를 DB에서 조회해 kw: 필드에 반영
-        newsRepository.findByArticleIdAndIsActiveTrue(articleId).ifPresent(article -> {
-            String[] keywords = article.getKeywords();
-            if (keywords != null) {
-                for (String kw : keywords) {
-                    redisTemplate.opsForHash().increment(key, "kw:" + kw, weight);
-                }
-            }
-        });
+        String[] credited = newsRepository.findByArticleIdAndIsActiveTrue(articleId)
+                .map(article -> article.getKeywords() == null ? new String[0] : article.getKeywords())
+                .orElse(new String[0]);
+        for (String kw : credited) {
+            redisTemplate.opsForHash().increment(key, "kw:" + kw, weight);
+        }
 
         refreshProfileTtl(key);
+        return credited;
     }
+
+    /**
+     * 북마크가 프로파일에 반영한 횟수와 키워드를 프로파일 안에 기록한다 (북마크 삭제 시 되돌릴 근거).
+     * 보조 기록이므로 실패해도 북마크 이벤트 처리(캐시 무효화·로그 저장)를 막지 않는다.
+     */
+    private void recordBookmarkContribution(UUID userId, String articleId, String[] credited) {
+        if (userId == null) return;
+        try {
+            String key = RecommendationCacheKeys.profile(userId);
+            redisTemplate.opsForHash().increment(key, BOOKMARK_COUNT_PREFIX + articleId, 1L);
+            if (credited.length > 0) {
+                redisTemplate.opsForHash().put(key, BOOKMARK_KEYWORDS_PREFIX + articleId,
+                        String.join(KEYWORD_SEPARATOR, credited));
+            }
+        } catch (Exception e) {
+            log.warn("[Event] 북마크 반영 기록 실패 (무시): userId={}, cause={}", userId, e.toString());
+        }
+    }
+
+    /**
+     * 프로파일이 기록한 북마크 횟수(bm:{articleId})에서 최대 requested만큼을 원자적으로 차감하고, 실제로 차감한 횟수를 반환한다.
+     * 기록된 횟수보다 많이 요청되면(동시 삭제, 만료 후 삭제 등) 초과분은 되돌려 놓고 기록된 만큼만 반환한다.
+     * 기록이 모두 소진되면 bm:/bmkw: 필드를 정리한다.
+     */
+    private long claimBookmarkContribution(String key, String articleId, long requested) {
+        String countField = BOOKMARK_COUNT_PREFIX + articleId;
+        Long after = redisTemplate.opsForHash().increment(key, countField, -requested);
+        if (after == null) return 0;
+
+        long claimed = requested;
+        long remaining = after;
+        if (after < 0) {
+            claimed = requested + after;                                   // 기록된 만큼만 차감한 것으로 본다
+            redisTemplate.opsForHash().increment(key, countField, -after); // 초과 차감분 복구 (0으로)
+            remaining = 0;
+        }
+        if (remaining <= 0) {
+            redisTemplate.opsForHash().delete(key, countField, BOOKMARK_KEYWORDS_PREFIX + articleId);
+        }
+        return Math.max(claimed, 0);
+    }
+
 
     /** 논문의 실제 keywords를 DB에서 조회해 프로파일 kw: 필드에 반영 */
     private void updateProfileForPaper(UUID userId, String paperId, double weight) {
         if (userId == null) return;
-        String key = PROFILE_KEY.formatted(userId);
+        String key = RecommendationCacheKeys.profile(userId);
         paperRepository.findByPaperIdAndIsActiveTrue(paperId).ifPresent(paper -> {
             String[] keywords = paper.getKeywords();
             if (keywords != null) {
@@ -191,6 +279,14 @@ public class UserEventService {
                 }
             }
         });
+    }
+
+    /** 프로파일 필드 값에서 delta를 빼고, 0 이하가 되면 필드를 제거한다 */
+    private void subtractFromProfile(String key, String field, double delta) {
+        Double remaining = redisTemplate.opsForHash().increment(key, field, -delta);
+        if (remaining != null && remaining <= PROFILE_WEIGHT_EPSILON) {
+            redisTemplate.opsForHash().delete(key, field);
+        }
     }
 
     private void refreshProfileTtl(String key) {
@@ -204,23 +300,33 @@ public class UserEventService {
         invalidatePaperRecommendationCache(userId);
     }
 
-    /** 삭제 실패가 이벤트 로그 저장·후속 캐시 삭제를 막지 않도록 예외를 삼킨다 (TTL 만료로 자연 갱신됨) */
     private void invalidateNewsRecommendationCache(UUID userId) {
-        if (userId == null) return;
-        try {
-            redisTemplate.delete("user:" + userId + ":recommendations");
-        } catch (Exception e) {
-            log.warn("[Event] 뉴스 추천 캐시 삭제 실패 (무시): userId={}, cause={}", userId, e.toString());
-        }
+        invalidateCache(userId, RecommendationCacheKeys.news(userId), "뉴스");
     }
 
-    /** 삭제 실패가 프로파일 TTL 갱신·이벤트 로그 저장을 막지 않도록 예외를 삼킨다 (TTL 만료로 자연 갱신됨) */
     private void invalidatePaperRecommendationCache(UUID userId) {
+        invalidateCache(userId, RecommendationCacheKeys.paper(userId), "논문");
+    }
+
+    /**
+     * 프로파일 revision을 먼저 올린 뒤 캐시를 삭제한다.
+     * 서빙은 계산 전후 revision이 다를 때 결과를 저장하지 않으므로, 삭제 직후 진행 중이던
+     * 요청이 stale 결과를 다시 캐시에 쓰는 경합을 막는다.
+     * revision 증가는 보조 수단이므로 실패해도 캐시 삭제를 막아서는 안 된다 — 각각 따로 예외를 삼킨다.
+     * 실패가 이벤트 로그 저장·후속 캐시 삭제를 막지 않는다 (TTL 만료로 자연 갱신됨).
+     */
+    private void invalidateCache(UUID userId, String cacheKey, String label) {
         if (userId == null) return;
         try {
-            redisTemplate.delete("user:" + userId + ":paper-recommendations");
+            redisTemplate.opsForHash().increment(
+                    RecommendationCacheKeys.profile(userId), RecommendationCacheKeys.PROFILE_REVISION_FIELD, 1L);
         } catch (Exception e) {
-            log.warn("[Event] 논문 추천 캐시 삭제 실패 (무시): userId={}, cause={}", userId, e.toString());
+            log.warn("[Event] 프로파일 revision 증가 실패 (무시, 대상={}): userId={}, cause={}", label, userId, e.toString());
+        }
+        try {
+            redisTemplate.delete(cacheKey);
+        } catch (Exception e) {
+            log.warn("[Event] {} 추천 캐시 삭제 실패 (무시): userId={}, cause={}", label, userId, e.toString());
         }
     }
 

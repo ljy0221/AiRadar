@@ -29,5 +29,5 @@ public interface SearchLogRepository extends JpaRepository<SearchLog, Long> {
             """, nativeQuery = true)
     List<SearchLog> findBookmarkHistory(@Param("userId") UUID userId);
 
-    void deleteByUserIdAndArticleIdAndEventType(UUID userId, String articleId, String eventType);
+    long deleteByUserIdAndArticleIdAndEventType(UUID userId, String articleId, String eventType);
 }
