@@ -7,11 +7,20 @@ RecommendationCacheScriptChecksumTest 의 기대 SHA-1을 함께 갱신할 것.
 
     pip install "fakeredis[lua]"
     python verify_cache_if_profile_unchanged.py
+
+실제 Redis가 있으면 같은 케이스를 그대로 실제 Lua 엔진으로 검증할 수 있다 (fakeredis는 에뮬레이터이므로 이쪽이 더 확실하다).
+
+    docker run -d --name airadar-redis-verify -p 6390:6379 redis:7-alpine
+    REDIS_URL=redis://localhost:6390/15 python verify_cache_if_profile_unchanged.py
+
+주의: REDIS_URL을 주면 해당 DB에 FLUSHALL을 실행하므로 반드시 검증 전용 인스턴스를 가리킬 것.
 """
+import os
 import pathlib
 import sys
 
 import fakeredis
+import redis as redis_lib
 
 sys.stdout.reconfigure(encoding="utf-8")  # Windows 콘솔에서도 한글이 깨지지 않도록
 
@@ -20,7 +29,13 @@ SCRIPT_PATH = (pathlib.Path(__file__).resolve().parents[3]
 SCRIPT = SCRIPT_PATH.read_text(encoding="utf-8")
 TTL_MS = 1_800_000
 
-r = fakeredis.FakeStrictRedis()
+REDIS_URL = os.environ.get("REDIS_URL")
+if REDIS_URL:
+    r = redis_lib.Redis.from_url(REDIS_URL)
+    print(f"[실제 Redis] {REDIS_URL} — {r.info('server')['redis_version']}")
+else:
+    r = fakeredis.FakeStrictRedis()
+    print("[fakeredis 에뮬레이터]")
 
 
 def run(rev_at_start: str) -> int:
