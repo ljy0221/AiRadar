@@ -206,7 +206,7 @@ API 응답의 `reason` 필드로 이 기사가 왜 추천되었는지 알 수 �
 
 관심사(`user_interests`) 추가·삭제는 Redis 프로파일에 반영되지 않으므로 피드에 영향이 없습니다(온보딩만 프로파일에 초기 키워드를 기록). 검색·온보딩처럼 프로파일이 바뀌지만 위 표에 없는 이벤트는 캐시를 삭제하지 않으므로 TTL 만료 후 반영됩니다. 조회 이벤트마다 캐시가 삭제되므로, 조회가 잦은 사용자는 피드가 매번 새로 계산됩니다.
 
-**삭제 직후 재캐싱 방지**: 캐시를 삭제하는 이벤트는 삭제 대상 캐시마다 프로파일의 `rev` 값을 먼저 1 올립니다(`rev` 증가가 실패해도 캐시 삭제는 그대로 수행합니다). 추천을 계산하는 요청은 시작 시점의 `rev`를 기억해 두었다가, 결과를 저장할 때 Redis Lua 스크립트(`resources/redis/cache_if_profile_unchanged.lua`)로 "`rev`가 그대로일 때만 저장"을 **확인과 저장을 한 번에(원자적으로)** 수행합니다. 계산 중에 무효화가 발생했다면 `rev`가 달라져 있으므로 저장하지 않고 결과만 응답합니다. 프로파일 Hash 전체는 계산 1회당 한 번만 읽습니다. 스크립트 본문은 mock 단위 테스트로는 검증되지 않으므로 `src/test/resources/redis/verify_cache_if_profile_unchanged.py`(fakeredis)로 검증하며, 내용이 바뀌면 체크섬 테스트가 실패해 재검증을 요구합니다. 스크립트는 프로파일 키와 캐시 키를 함께 다루므로 Redis Cluster로 옮길 때는 두 키가 같은 슬롯에 있도록 해시 태그가 필요합니다 (현재는 단일 노드).
+**삭제 직후 재캐싱 방지**: 캐시를 삭제하는 이벤트는 삭제 대상 캐시마다 프로파일의 `rev` 값을 먼저 1 올립니다(`rev` 증가가 실패해도 캐시 삭제는 그대로 수행합니다). 추천을 계산하는 요청은 시작 시점의 `rev`를 기억해 두었다가, 결과를 저장할 때 Redis Lua 스크립트(`resources/redis/cache_if_profile_unchanged.lua`)로 "`rev`가 그대로일 때만 저장"을 **확인과 저장을 한 번에(원자적으로)** 수행합니다. 계산 중에 무효화가 발생했다면 `rev`가 달라져 있으므로 저장하지 않고 결과만 응답합니다. 프로파일 Hash 전체는 계산 1회당 한 번만 읽습니다. 스크립트 본문과 자바↔Redis 연결은 mock 단위 테스트로는 검증되지 않으므로, 실제 Redis 7에서 동작하는 통합 테스트(`RecommendationRedisIntegrationTest`, `AIRADAR_REDIS_IT=host:port`가 있을 때만 실행)와 `src/test/resources/redis/verify_cache_if_profile_unchanged.py`(fakeredis, 또는 `REDIS_URL`로 실제 Redis)로 검증하며, 스크립트 내용이 바뀌면 체크섬 테스트가 실패해 재검증을 요구합니다. 스크립트는 프로파일 키와 캐시 키를 함께 다루므로 Redis Cluster로 옮길 때는 두 키가 같은 슬롯에 있도록 해시 태그가 필요합니다 (현재는 단일 노드).
 
 ---
 
