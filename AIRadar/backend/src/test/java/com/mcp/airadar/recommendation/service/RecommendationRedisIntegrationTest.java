@@ -43,7 +43,9 @@ import static org.mockito.Mockito.when;
  * 환경변수 AIRADAR_REDIS_IT=host:port 가 있고 접속 가능할 때만 실행되며, 없으면 건너뛴다 (CI에는 영향 없음).
  *
  *   docker run -d --name airadar-redis-verify -p 6390:6379 redis:7-alpine
- *   AIRADAR_REDIS_IT=localhost:6390 ./gradlew test --tests '*RecommendationRedisIntegrationTest'
+ *   AIRADAR_REDIS_IT=localhost:6390 ./gradlew cleanTest test --tests '*RecommendationRedisIntegrationTest'
+ *
+ * 주의: 환경변수는 Gradle 태스크의 입력이 아니므로 cleanTest 없이 실행하면 이전 결과(건너뜀)가 그대로 재사용될 수 있다.
  *
  * 사용자마다 임의의 UUID를 쓰고 끝나면 자기 키만 지우므로 FLUSH는 하지 않는다.
  */
