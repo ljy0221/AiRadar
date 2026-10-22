@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 
-from analyzer import analyze_news_batch, analyze_paper_batch, get_local_model
+from analyzer import analyze_news_batch, analyze_paper_batch, get_local_model, has_gms_key
 from embedder import get_model, embed_texts
 from models import (
     EmbedBatchRequest,
@@ -33,9 +33,13 @@ async def lifespan(app: FastAPI):
     logger.info("서버 시작: 임베딩 모델 로딩 중...")
     get_model()
     logger.info("임베딩 모델 로딩 완료.")
-    logger.info("로컬 LLM 로딩 중... (최초 1회, 수 분 소요될 수 있습니다)")
-    get_local_model()
-    logger.info("로컬 LLM 로딩 완료. 서버 준비됨.")
+    if has_gms_key():
+        # GMS 사용 시 로컬 LLM은 장애 fallback 때만 필요하므로 첫 사용 시점에 로딩
+        logger.info("GMS_KEY 설정됨: 로컬 LLM 사전 로딩 생략. 서버 준비됨.")
+    else:
+        logger.info("로컬 LLM 로딩 중... (최초 1회, 수 분 소요될 수 있습니다)")
+        get_local_model()
+        logger.info("로컬 LLM 로딩 완료. 서버 준비됨.")
     yield
 
 
