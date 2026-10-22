@@ -1,6 +1,8 @@
 import os
+from contextlib import closing
 
 import psycopg2
+from psycopg2.extras import execute_values
 
 
 def _get_conn():
@@ -24,14 +26,18 @@ def save_embeddings(items: list[tuple[str, str, list[float]]]) -> None:
 
     sql = """
         INSERT INTO content_embeddings (content_id, content_type, embedding)
-        VALUES (%s, %s, %s::vector)
+        VALUES %s
         ON CONFLICT (content_id)
         DO UPDATE SET
             embedding  = EXCLUDED.embedding,
             updated_at = NOW()
     """
 
-    with _get_conn() as conn, conn.cursor() as cur:
-        for content_id, content_type, embedding in items:
-            cur.execute(sql, (content_id, content_type, str(embedding)))
-        conn.commit()
+    # psycopg2의 `with conn`은 트랜잭션만 커밋/롤백하고 연결은 닫지 않으므로 closing으로 감싼다.
+    with closing(_get_conn()) as conn, conn, conn.cursor() as cur:
+        execute_values(
+            cur,
+            sql,
+            [(content_id, content_type, str(embedding)) for content_id, content_type, embedding in items],
+            template="(%s, %s, %s::vector)",
+        )

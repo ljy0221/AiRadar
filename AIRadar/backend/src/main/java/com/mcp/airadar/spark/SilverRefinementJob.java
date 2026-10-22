@@ -376,14 +376,13 @@ public class SilverRefinementJob {
 
         JsonNode response = postJson(client, "/analyze/news/batch", payload);
 
-        List<Row> result = new ArrayList<>();
-        for (int i = 0; i < response.size(); i++) {
-            JsonNode item = response.get(i);
-            Row original = rows.get(i);
-
-            String[] keywords = parseStringArray(item.get("keywords"));
-
-            result.add(RowFactory.create(
+        // 응답을 인덱스가 아니라 article_id로 짝지어야 LLM이 항목을 빠뜨려도 원본 필드가 섞이지 않는다
+        return AnalyzeResponseMatcher.matchById(
+            rows,
+            row -> safeGet(row, "article_id"),
+            response,
+            "article_id",
+            (item, original) -> RowFactory.create(
                 item.get("article_id").asText(),
                 safeGet(original, "title"),
                 safeGet(original, "content"),
@@ -391,7 +390,7 @@ public class SilverRefinementJob {
                 safeGet(original, "source"),
                 safeGet(original, "published_at"),
                 item.get("sentiment").asText(),
-                keywords,
+                parseStringArray(item.get("keywords")),
                 item.get("score").asDouble(),
                 item.get("summary").asText(),
                 item.get("category").asText(),
@@ -399,9 +398,9 @@ public class SilverRefinementJob {
                 parseStringArray(item.get("companies")),  // companies
                 null,           // error_log
                 batchDate
-            ));
-        }
-        return result;
+            ),
+            row -> buildErrorRow(row, "news", batchDate, AnalyzeResponseMatcher.MISSING_RESULT_MESSAGE)
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -423,14 +422,13 @@ public class SilverRefinementJob {
 
         JsonNode response = postJson(client, "/analyze/paper/batch", payload);
 
-        List<Row> result = new ArrayList<>();
-        for (int i = 0; i < response.size(); i++) {
-            JsonNode item = response.get(i);
-            Row original = rows.get(i);
-
-            String[] keywords = parseStringArray(item.get("keywords"));
-
-            result.add(RowFactory.create(
+        // 응답을 인덱스가 아니라 paper_id로 짝지어야 LLM이 항목을 빠뜨려도 원본 필드가 섞이지 않는다
+        return AnalyzeResponseMatcher.matchById(
+            rows,
+            row -> safeGet(row, "paper_id"),
+            response,
+            "paper_id",
+            (item, original) -> RowFactory.create(
                 item.get("paper_id").asText(),
                 safeGet(original, "title"),
                 safeGet(original, "abstract"),
@@ -438,15 +436,15 @@ public class SilverRefinementJob {
                 safeGet(original, "source"),
                 safeGetArray(original, "authors"),
                 safeGet(original, "published_at"),
-                keywords,
+                parseStringArray(item.get("keywords")),
                 item.get("summary").asText(),
                 item.get("category").asText(),
                 item.get("research_area").asText(),
                 null,           // error_log
                 batchDate
-            ));
-        }
-        return result;
+            ),
+            row -> buildErrorRow(row, "paper", batchDate, AnalyzeResponseMatcher.MISSING_RESULT_MESSAGE)
+        );
     }
 
     // -------------------------------------------------------------------------
